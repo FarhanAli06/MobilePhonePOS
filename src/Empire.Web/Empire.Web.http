@@ -1,0 +1,6 @@
+@Empire.Web_HostAddress = http://localhost:5036
+
+GET {{Empire.Web_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

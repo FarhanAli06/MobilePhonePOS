@@ -1,0 +1,344 @@
+@model EditRepairViewModel
+@{
+    ViewData["Title"] = "Edit Repair";
+}
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-edit me-2"></i>
+        Edit Repair
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>
+            Back to Repairs
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Repair Information
+                </h6>
+            </div>
+            <div class="card-body">
+                <form asp-action="Edit" method="post">
+                    <input asp-for="Id" type="hidden" />
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+                    
+                    <!-- Read-only customer and brand selection -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Customer</label>
+                            <input type="text" class="form-control" value="@Model.CustomerName" readonly>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="BrandId" class="form-label">Brand</label>
+                            <select asp-for="BrandId" id="BrandId" name="BrandId" class="form-select">
+                                <option value="">Select Brand</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label asp-for="Issue" class="form-label"></label>
+                        <input asp-for="Issue" class="form-control" list="issueList">
+                        <datalist id="issueList">
+                            <option value="Screen replacement" />
+                            <option value="Battery replacement" />
+                            <option value="Charging port replacement" />
+                            <option value="Back glass" />
+                            <option value="Phone service" />
+                        </datalist>
+                        <span asp-validation-for="Issue" class="text-danger"></span>
+                    </div>                    
+                    <!-- Device Category and Model Selection -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="DeviceCategoryId" class="form-label">Device Category</label>
+                            <select asp-for="DeviceCategoryId" id="DeviceCategoryId" name="DeviceCategoryId" class="form-select">
+                                <option value="">Select Category</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="DeviceModelId" class="form-label">Device Model</label>
+                            <select asp-for="DeviceModelId" id="DeviceModelId" name="DeviceModelId" class="form-select" disabled>
+                                <option value="">Select Model</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label"></label>
+                        <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                        <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label asp-for="Comments" class="form-label"></label>
+                        <textarea asp-for="Comments" class="form-control" rows="2" 
+                                  placeholder="Additional comments or notes"></textarea>
+                        <span asp-validation-for="Comments" class="text-danger"></span>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="Status" class="form-label"></label>
+                            <select asp-for="Status" class="form-select">
+                                <option value="Diagnose">Diagnose</option>
+                                <option value="WaitingForParts">Waiting for Parts</option>
+                                <option value="InProgress">In Progress</option>
+                                <option value="Complete">Complete</option>
+                                <option value="PickedUp">Picked Up</option>
+                            </select>
+                            <span asp-validation-for="Status" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="PaymentStatus" class="form-label"></label>
+                            <select asp-for="PaymentStatus" class="form-select">
+                                <option value="Unpaid">Unpaid</option>
+                                <option value="Paid">Paid</option>
+                            </select>
+                            <span asp-validation-for="PaymentStatus" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="Cost" class="form-label"></label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input asp-for="Cost" class="form-control" step="0.01">
+                            </div>
+                            <span asp-validation-for="Cost" class="text-danger"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a asp-action="Index" class="btn btn-outline-secondary me-md-2">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>
+                            Update Repair
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold text-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Status Guide
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <span class="badge bg-primary me-2">In Progress</span>
+                    <small class="text-muted">Repair is currently being worked on</small>
+                </div>
+                <div class="mb-3">
+                    <span class="badge bg-success me-2">Complete</span>
+                    <small class="text-muted">Repair work is finished, ready for pickup</small>
+                </div>
+                <div class="mb-3">
+                    <span class="badge bg-success me-2">Done</span>
+                    <small class="text-muted">Repair completed and device picked up</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold text-warning">
+                    <i class="fas fa-dollar-sign me-2"></i>
+                    Payment Status
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <span class="badge bg-danger me-2">Unpaid</span>
+                    <small class="text-muted">Payment not yet received</small>
+                </div>
+                <div class="mb-2">
+                    <span class="badge bg-success me-2">Paid</span>
+                    <small class="text-muted">Payment has been received</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+    
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    
+    <script>
+        $(document).ready(function() {
+            // Initialize Select2 for dropdowns
+            $('#BrandId, #DeviceCategoryId, #DeviceModelId').select2({
+                theme: 'bootstrap-5',
+                allowClear: true,
+                placeholder: function() {
+                    return $(this).data('placeholder') || $(this).find('option:first').text();
+                }
+            });
+            
+            // Load initial data
+            loadBrands();
+            loadDeviceCategories();
+            
+            // Setup cascading dropdown logic
+            setupCascadingDropdowns();
+            
+            // Set current values if available
+            var currentBrandId = '@(Model.BrandId ?? 0)';
+            var currentCategoryId = '@(Model.DeviceCategoryId ?? 0)';
+            var currentModelId = '@(Model.DeviceModelId ?? 0)';
+            
+            if (currentBrandId && currentBrandId !== '0') {
+                setTimeout(() => {
+                    $('#BrandId').val(currentBrandId).trigger('change');
+                }, 500);
+            }
+            
+            if (currentCategoryId && currentCategoryId !== '0') {
+                setTimeout(() => {
+                    $('#DeviceCategoryId').val(currentCategoryId).trigger('change');
+                    if (currentModelId && currentModelId !== '0') {
+                        setTimeout(() => {
+                            $('#DeviceModelId').val(currentModelId).trigger('change');
+                        }, 500);
+                    }
+                }, 500);
+            }
+        });
+        
+        function loadBrands() {
+            var url = '@Url.Action("GetBrands", "Repairs")';
+            $.get(url, function(response) {
+                if (response.success) {
+                    const brandSelect = $('#BrandId');
+                    brandSelect.empty().append('<option value="">Select Brand</option>');
+                    
+                    response.data.forEach(function(brand) {
+                        brandSelect.append('<option value="' + brand.id + '">' + brand.name + '</option>');
+                    });
+                    
+                    // Initialize Select2 for brand dropdown
+                    brandSelect.select2({
+                        theme: 'bootstrap-5',
+                        placeholder: 'Select Brand'
+                    });
+                    
+                    console.log('Loaded ' + response.data.length + ' brands');
+                } else {
+                    console.error('Failed to load brands:', response.message);
+                }
+            }).fail(function(xhr, status, error) {
+                console.error('Error loading brands:', error);
+            });
+        }
+        
+        function loadDeviceCategories() {
+            var url = '@Url.Action("GetDeviceCategories", "Repairs")';
+            $.get(url, function(response) {
+                if (response.success) {
+                    const categorySelect = $('#DeviceCategoryId');
+                    categorySelect.empty().append('<option value="">Select Category</option>');
+                    
+                    response.data.forEach(function(category) {
+                        categorySelect.append('<option value="' + category.id + '">' + category.name + '</option>');
+                    });
+                    
+                    // Refresh Select2 after updating options
+                    categorySelect.trigger('change.select2');
+                    console.log('Loaded ' + response.data.length + ' device categories');
+                } else {
+                    console.error('Failed to load device categories:', response.message);
+                }
+            }).fail(function(xhr, status, error) {
+                console.error('Error loading device categories:', error);
+            });
+        }
+        
+        function loadDeviceModels(categoryId, brandId) {
+            const modelSelect = $('#DeviceModelId');
+            
+            if (!categoryId) {
+                modelSelect.empty().append('<option value="">Select Model</option>').prop('disabled', true);
+                modelSelect.trigger('change.select2');
+                return;
+            }
+            
+            var url = '@Url.Action("GetDeviceModels", "Repairs")';
+            var params = { categoryId: categoryId };
+            if (brandId) {
+                params.brandId = brandId;
+            }
+            $.get(url, params, function(response) {
+                if (response.success) {
+                    modelSelect.empty().append('<option value="">Select Model</option>');
+                    
+                    response.data.forEach(function(model) {
+                        modelSelect.append('<option value="' + model.id + '">' + model.name + '</option>');
+                    });
+                    
+                    modelSelect.prop('disabled', response.data.length === 0);
+                    modelSelect.trigger('change.select2');
+                    console.log('Loaded ' + response.data.length + ' device models for category ' + categoryId);
+                } else {
+                    console.error('Failed to load device models:', response.message);
+                    modelSelect.empty().append('<option value="">Select Model</option>').prop('disabled', true);
+                    modelSelect.trigger('change.select2');
+                }
+            }).fail(function(xhr, status, error) {
+                console.error('Error loading device models:', error);
+                modelSelect.empty().append('<option value="">Select Model</option>').prop('disabled', true);
+                modelSelect.trigger('change.select2');
+            });
+        }
+        
+        function setupCascadingDropdowns() {
+            // Brand change -> load models
+            $('#BrandId').change(function() {
+                const brandId = $(this).val();
+                const categoryId = $('#DeviceCategoryId').val();
+                if (brandId && categoryId) {
+                    loadDeviceModels(categoryId, brandId);
+                } else {
+                    // Clear models if brand is cleared
+                    $('#DeviceModelId').empty().append('<option value="">Select Model</option>');
+                }
+            });
+            
+            // Category change -> load models
+            $('#DeviceCategoryId').change(function() {
+                const categoryId = $(this).val();
+                const brandId = $('#BrandId').val();
+                if (categoryId && brandId) {
+                    loadDeviceModels(categoryId, brandId);
+                } else {
+                    // Clear models if category is cleared
+                    $('#DeviceModelId').empty().append('<option value="">Select Model</option>');
+                }
+            });
+        }
+    </script>
+}
+

@@ -1,0 +1,677 @@
+@model IEnumerable<Empire.Application.DTOs.Inventory.InventoryDto>
+
+@{
+    ViewData["Title"] = "Inventory Management";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">Inventory Management</h2>
+            <p class="text-muted mb-0">Manage parts and accessories with selective notifications</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-primary" id="addBrandBtn">
+                <i class="fas fa-plus"></i> Add Brand
+            </button>
+            <button type="button" class="btn btn-outline-info" id="weeklyCountBtn">
+                <i class="fas fa-calendar-week"></i> Weekly Count
+            </button>
+            <button type="button" class="btn btn-success" id="createPOBtn">
+                <i class="fas fa-file-plus"></i> Create PO
+            </button>
+        </div>
+    </div>
+
+    <!-- Device Selection Section -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title mb-3">Select Device</h5>
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Brand</label>
+                    <select class="form-select" id="brandSelect" data-placeholder="Search and select brand...">
+                        <option value="">Select Brand</option>
+                        <option value="Apple">Apple</option>
+                        <option value="Samsung">Samsung</option>
+                        <option value="Google">Google</option>
+                        <option value="OnePlus">OnePlus</option>
+                        <option value="Xiaomi">Xiaomi</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Device Type</label>
+                    <select class="form-select" id="deviceTypeSelect" disabled data-placeholder="Search and select device type...">
+                        <option value="">Select Device Type</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Model</label>
+                    <select class="form-select" id="modelSelect" disabled data-placeholder="Search and select model...">
+                        <option value="">Select Model</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="button" class="btn btn-primary d-block w-100" id="addItemBtn" disabled>
+                        <i class="fas fa-plus"></i> Add Item
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Selected Device Inventory -->
+    <div id="selectedDeviceSection" class="card mb-4" style="display: none;">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0" id="selectedDeviceTitle">Apple iPhone iPhone 6 (A1549) - 2014</h5>
+            <button type="button" class="btn btn-outline-primary btn-sm" id="addModelBtn">
+                <i class="fas fa-plus"></i> Add Model
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="row" id="inventoryItemsContainer">
+                <!-- Inventory items will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Pricing Toggle -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h6 class="mb-1">Pricing Mode</h6>
+                    <small class="text-muted">Toggle between retail and wholesale pricing</small>
+                </div>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="pricingModeToggle" style="transform: scale(1.5);">
+                    <label class="form-check-label ms-2" for="pricingModeToggle">
+                        <span id="pricingModeLabel">Retail Pricing</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- All Inventory Items Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">All Inventory Items</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover" id="inventoryTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Item Name</th>
+                            <th>Category</th>
+                            <th>Brand</th>
+                            <th>Model</th>
+                            <th>Stock</th>
+                            <th>Reorder Point</th>
+                            <th>Cost</th>
+                            <th>Retail Price</th>
+                            <th>Wholesale Price</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <div>@item.Name</div>
+                                        @if (item.Stock <= item.ReorderPoint)
+                                        {
+                                            <small class="badge bg-danger">Low Stock</small>
+                                        }
+                                    </td>
+                                    <td>@item.Category</td>
+                                    <td>-</td>
+                                    <td>-</td>
+                                    <td>
+                                        <span class="fw-semibold @(item.Stock <= item.ReorderPoint ? "text-danger" : "")">
+                                            @item.Stock
+                                        </span>
+                                    </td>
+                                    <td>@item.ReorderPoint</td>
+                                    <td>$@item.CostPrice.ToString("F2")</td>
+                                    <td>$@item.RetailPrice.ToString("F2")</td>
+                                    <td>$0.00</td>
+                                    <td>
+                                        @if (item.Stock <= 0)
+                                        {
+                                            <span class="badge bg-danger">Out of Stock</span>
+                                        }
+                                        else if (item.Stock <= item.ReorderPoint)
+                                        {
+                                            <span class="badge bg-warning">Low Stock</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-success">In Stock</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-primary" onclick="viewInventoryItem(@item.Id)">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-success" onclick="editInventoryItem(@item.Id)">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-warning" onclick="adjustStock(@item.Id)">
+                                                <i class="fas fa-exchange-alt"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-danger" onclick="deleteInventoryItem(@item.Id)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="11" class="text-center py-4">
+                                    <div class="text-muted">
+                                        <i class="fas fa-box-open fa-3x mb-3"></i>
+                                        <p>No inventory items found. Start by adding your first item!</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Inventory Item Modal -->
+<div class="modal fade" id="addInventoryModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Inventory Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addInventoryForm">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="itemName" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Category</label>
+                            <select class="form-select" id="itemCategory" data-placeholder="Search and select category...">
+                                <option value="">Select category</option>
+                                <!-- Categories will be loaded dynamically from database -->
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Stock <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="itemStock" min="0" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Reorder Point <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="itemReorderPoint" min="0" value="5" required>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" id="enableLowStockNotifications" checked>
+                                <label class="form-check-label" for="enableLowStockNotifications">
+                                    <i class="fas fa-bell text-info"></i> Enable low stock notifications
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Cost <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="itemCost" step="0.01" min="0" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Retail Price <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="itemRetailPrice" step="0.01" min="0" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Wholesale Price</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="itemWholesalePrice" step="0.01" min="0">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveInventoryItem">
+                    <i class="fas fa-save"></i> Add Item
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Inventory Item Modal -->
+<div class="modal fade" id="editInventoryModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Inventory Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editInventoryForm">
+                    <input type="hidden" id="editItemId">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Name <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="editItemName" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Category</label>
+                            <select class="form-select" id="editItemCategory">
+                                <option value="">Select category</option>
+                                <option value="Screen Assembly">Screen Assembly</option>
+                                <option value="Battery">Battery</option>
+                                <option value="Camera">Camera</option>
+                                <option value="Speaker">Speaker</option>
+                                <option value="Charging Port">Charging Port</option>
+                                <option value="Frame">Frame</option>
+                                <option value="Back Cover">Back Cover</option>
+                                <option value="Flex Cable">Flex Cable</option>
+                                <option value="Button">Button</option>
+                                <option value="Sensor">Sensor</option>
+                                <option value="Antenna">Antenna</option>
+                                <option value="Motherboard">Motherboard</option>
+                                <option value="SIM Tray">SIM Tray</option>
+                                <option value="Screws">Screws</option>
+                                <option value="Adhesive">Adhesive</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Stock <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="editItemStock" min="0" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Reorder Point <span class="text-danger">*</span></label>
+                            <input type="number" class="form-control" id="editItemReorderPoint" min="0" required>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" id="editEnableLowStockNotifications">
+                                <label class="form-check-label" for="editEnableLowStockNotifications">
+                                    <i class="fas fa-bell text-info"></i> Enable low stock notifications
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Cost <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="editItemCost" step="0.01" min="0" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Retail Price <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="editItemRetailPrice" step="0.01" min="0" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Wholesale Price</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="editItemWholesalePrice" step="0.01" min="0">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="updateInventoryItem">
+                    <i class="fas fa-save"></i> Update Item
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stock Adjustment Modal -->
+<div class="modal fade" id="stockAdjustmentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Stock Adjustment</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="stockAdjustmentForm">
+                    <input type="hidden" id="adjustItemId">
+                    <div class="mb-3">
+                        <label class="form-label">Item Name</label>
+                        <input type="text" class="form-control" id="adjustItemName" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Current Stock</label>
+                        <input type="number" class="form-control" id="adjustCurrentStock" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Adjustment Type</label>
+                        <select class="form-select" id="adjustmentType" required>
+                            <option value="">Select adjustment type</option>
+                            <option value="add">Add Stock</option>
+                            <option value="remove">Remove Stock</option>
+                            <option value="set">Set Stock Level</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Quantity</label>
+                        <input type="number" class="form-control" id="adjustmentQuantity" min="0" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Reason</label>
+                        <textarea class="form-control" id="adjustmentReason" rows="3" placeholder="Enter reason for adjustment..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning" id="applyStockAdjustment">
+                    <i class="fas fa-exchange-alt"></i> Apply Adjustment
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            loadInventoryCategories();
+            loadInventoryData();
+        });
+
+        function loadInventoryCategories() {
+            $.get('/Lookup/GetInventoryCategories', function(data) {
+                const $categorySelect = $('#itemCategory');
+                $categorySelect.empty().append('<option value="">Select category</option>');
+                
+                if (data.error) {
+                    console.error('Error loading categories:', data.error);
+                    return;
+                }
+                
+                data.forEach(function(category) {
+                    $categorySelect.append(`<option value="${category.Id}">${category.Name}</option>`);
+                });
+                
+                // Reinitialize Select2 after loading options
+                $categorySelect.select2('destroy').select2({
+                    theme: 'bootstrap-5',
+                    width: '100%',
+                    placeholder: 'Search and select category...',
+                    dropdownParent: $('#addInventoryModal')
+                });
+            });
+        }
+
+        function loadInventoryData() {
+            // Initialize DataTable
+            $('#inventoryTable').DataTable({
+                responsive: true,
+                pageLength: 25,
+                order: [[0, 'asc']],
+                columnDefs: [
+                    { orderable: false, targets: [10] }
+                ]
+            });
+
+            // Load device hierarchy from database
+            loadDeviceHierarchy();
+
+            // Model selection change
+            $('#deviceModel').change(function() {
+                const selectedModel = $(this).val();
+                $('#addItemBtn').prop('disabled', !selectedModel);
+                
+                if (selectedModel) {
+                    const brand = $('#deviceBrand option:selected').text();
+                    const deviceType = $('#deviceType option:selected').text();
+                    const model = $('#deviceModel option:selected').text();
+                    $('#selectedDeviceTitle').text(`${brand} ${deviceType} ${model}`);
+                    $('#selectedDeviceSection').show();
+                    loadDeviceInventory(brand, deviceType, model);
+                }
+            });
+        }
+
+        function loadDeviceHierarchy() {
+            // Load brands for device selection
+            $.get('/Lookup/GetBrands', function(brands) {
+                const $brandSelect = $('#deviceBrand');
+                $brandSelect.empty().append('<option value="">Select Brand</option>');
+                
+                brands.forEach(function(brand) {
+                    $brandSelect.append(`<option value="${brand.Id}">${brand.Name}</option>`);
+                });
+                
+                // Initialize Select2 for brand dropdown
+                $brandSelect.select2({
+                    theme: 'bootstrap-5',
+                    width: '100%',
+                    placeholder: 'Search and select brand...'
+                });
+            });
+
+            // Brand change handler
+            $('#deviceBrand').change(function() {
+                const brandId = $(this).val();
+                const $typeSelect = $('#deviceType');
+                const $modelSelect = $('#deviceModel');
+                
+                // Reset dependent dropdowns
+                $typeSelect.empty().append('<option value="">Select Device Type</option>');
+                $modelSelect.empty().append('<option value="">Select Model</option>');
+                
+                if (brandId) {
+                    // Load device categories for selected brand
+                    $.get('/Lookup/GetDeviceCategories', { brandId: brandId }, function(categories) {
+                        categories.forEach(function(category) {
+                            $typeSelect.append(`<option value="${category.Id}">${category.Name}</option>`);
+                        });
+                        
+                        // Reinitialize Select2
+                        $typeSelect.select2('destroy').select2({
+                            theme: 'bootstrap-5',
+                            width: '100%',
+                            placeholder: 'Search and select device type...'
+                        });
+                    });
+                }
+            });
+
+            // Device type change handler
+            $('#deviceType').change(function() {
+                const categoryId = $(this).val();
+                const $modelSelect = $('#deviceModel');
+                
+                $modelSelect.empty().append('<option value="">Select Model</option>');
+                
+                if (categoryId) {
+                    // Load device models for selected category
+                    $.get('/Lookup/GetDeviceModels', { categoryId: categoryId }, function(models) {
+                        models.forEach(function(model) {
+                            $modelSelect.append(`<option value="${model.Id}">${model.Name}</option>`);
+                        });
+                        
+                        // Reinitialize Select2
+                        $modelSelect.select2('destroy').select2({
+                            theme: 'bootstrap-5',
+                            width: '100%',
+                            placeholder: 'Search and select model...'
+                        });
+                    });
+                }
+            });
+        }
+
+            // Pricing mode toggle
+            $('#pricingModeToggle').change(function() {
+                const isWholesale = $(this).is(':checked');
+                $('#pricingModeLabel').text(isWholesale ? 'Wholesale Pricing' : 'Retail Pricing');
+                
+                // Update price displays in the table
+                updatePriceDisplay(isWholesale);
+            });
+
+            // Add item button
+            $('#addItemBtn').click(function() {
+                const brand = $('#brandSelect').val();
+                const deviceType = $('#deviceTypeSelect').val();
+                const model = $('#modelSelect').val();
+                
+                // Pre-fill modal with selected device info
+                $('#addInventoryModal .modal-title').text(`Add a new item for ${brand} ${deviceType} ${model}`);
+                $('#addInventoryModal').modal('show');
+            });
+
+            // Save inventory item
+            $('#saveInventoryItem').click(function() {
+                const formData = {
+                    name: $('#itemName').val(),
+                    category: $('#itemCategory').val(),
+                    brand: $('#brandSelect').val(),
+                    deviceType: $('#deviceTypeSelect').val(),
+                    model: $('#modelSelect').val(),
+                    stock: parseInt($('#itemStock').val()),
+                    reorderPoint: parseInt($('#itemReorderPoint').val()),
+                    cost: parseFloat($('#itemCost').val()),
+                    retailPrice: parseFloat($('#itemRetailPrice').val()),
+                    wholesalePrice: parseFloat($('#itemWholesalePrice').val()) || 0,
+                    enableNotifications: $('#enableLowStockNotifications').is(':checked')
+                };
+
+                // Here you would make an AJAX call to save the item
+                console.log('Saving inventory item:', formData);
+                
+                // For demo, just close modal and show success
+                $('#addInventoryModal').modal('hide');
+                showToast('success', 'Inventory item added successfully!');
+                
+                // Reset form
+                $('#addInventoryForm')[0].reset();
+            });
+        });
+
+        function loadDeviceInventory(brand, deviceType, model) {
+            // Load inventory items for the selected device
+            // This would make an AJAX call to get device-specific inventory
+            const sampleItems = [
+                { name: 'Screen Assembly', category: 'Screens', stock: 0, reorderPoint: 5, cost: 50.00, retail: 100.00, status: 'Low Stock' },
+                { name: 'Front Camera', category: 'Cameras', stock: 0, reorderPoint: 5, cost: 25.00, retail: 50.00, status: 'Low Stock' },
+                { name: 'Rear Camera', category: 'Cameras', stock: 0, reorderPoint: 5, cost: 35.00, retail: 70.00, status: 'Low Stock' },
+                { name: 'Speaker', category: 'Frames', stock: 0, reorderPoint: 5, cost: 15.00, retail: 30.00, status: 'Low Stock' }
+            ];
+
+            const container = $('#inventoryItemsContainer');
+            container.empty();
+
+            sampleItems.forEach(item => {
+                const itemHtml = `
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <h6 class="card-title">${item.name}</h6>
+                                <p class="card-text text-muted small">${item.category}</p>
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="text-danger fw-bold">Stock: ${item.stock}</span>
+                                    <span class="badge bg-danger">Low Stock</span>
+                                </div>
+                                <div class="small text-muted mb-2">
+                                    <div>Reorder: ${item.reorderPoint}</div>
+                                    <div>Cost: $${item.cost.toFixed(2)} | Retail: $${item.retail.toFixed(2)}</div>
+                                </div>
+                                <div class="btn-group w-100" role="group">
+                                    <button type="button" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-sync"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-success btn-sm">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger btn-sm">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.append(itemHtml);
+            });
+        }
+
+        function updatePriceDisplay(isWholesale) {
+            // Update price columns visibility or highlighting
+            const priceColumn = isWholesale ? 8 : 7; // Wholesale vs Retail column
+            // Implementation would highlight the active pricing column
+        }
+
+        function viewInventoryItem(id) {
+            // Show item details
+            console.log('Viewing inventory item:', id);
+        }
+
+        function editInventoryItem(id) {
+            // Load item data and show edit modal
+            console.log('Editing inventory item:', id);
+            $('#editInventoryModal').modal('show');
+        }
+
+        function adjustStock(id) {
+            // Show stock adjustment modal
+            console.log('Adjusting stock for item:', id);
+            $('#stockAdjustmentModal').modal('show');
+        }
+
+        function deleteInventoryItem(id) {
+            if (confirm('Are you sure you want to delete this inventory item?')) {
+                console.log('Deleting inventory item:', id);
+                showToast('success', 'Inventory item deleted successfully!');
+            }
+        }
+
+        function showToast(type, message) {
+            // Simple toast notification
+            const toast = $(`
+                <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0" role="alert">
+                    <div class="d-flex">
+                        <div class="toast-body">${message}</div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                </div>
+            `);
+            
+            $('body').append(toast);
+            toast.toast({ delay: 3000 }).toast('show');
+            
+            setTimeout(() => toast.remove(), 4000);
+        }
+    </script>
+}
+

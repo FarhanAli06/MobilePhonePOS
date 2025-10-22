@@ -1,0 +1,246 @@
+@model DashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-tachometer-alt me-2"></i>
+        Dashboard
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-download me-1"></i>
+                Export
+            </button>
+        </div>
+    </div>
+</div>
+
+@if (!string.IsNullOrEmpty(ViewBag.Error as string))
+{
+    <div class="alert alert-danger" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        @ViewBag.Error
+    </div>
+}
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-uppercase mb-1">Total Repairs</div>
+                        <div class="h5 mb-0 font-weight-bold">@Model.TotalRepairs</div>
+                        <div class="text-xs mt-1">@Model.InProgressRepairs in progress</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-tools fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card-success h-100">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-uppercase mb-1">Completed Repairs</div>
+                        <div class="h5 mb-0 font-weight-bold">@Model.CompletedRepairs</div>
+                        <div class="text-xs mt-1">This month</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-check-circle fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card-info h-100">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-uppercase mb-1">Inventory Value</div>
+                        <div class="h5 mb-0 font-weight-bold">$@Model.TotalInventoryValue.ToString("N0")</div>
+                        <div class="text-xs mt-1">Total retail value</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-dollar-sign fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card stat-card-warning h-100">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-uppercase mb-1">Low Stock Items</div>
+                        <div class="h5 mb-0 font-weight-bold">@Model.LowStockItemsCount</div>
+                        <div class="text-xs mt-1">Need restocking</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-exclamation-triangle fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-tools me-2"></i>
+                    Recent Repairs
+                </h6>
+            </div>
+            <div class="card-body">
+                @if (Model.RecentRepairs.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Repair #</th>
+                                    <th>Customer</th>
+                                    <th>Status</th>
+                                    <th>Payment</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var repair in Model.RecentRepairs)
+                                {
+                                    <tr>
+                                        <td class="fw-semibold">@repair.RepairNumber</td>
+                                        <td>
+                                            <div>@repair.CustomerName</div>
+                                            <small class="text-muted">@repair.DeviceBrand @repair.DeviceModel</small>
+                                        </td>
+                                        <td>
+                                            @switch (repair.Status)
+                                            {
+                                                case "InProgress":
+                                                    <span class="badge bg-primary">In Progress</span>
+                                                    break;
+                                                case "Completed":
+                                                    <span class="badge bg-success">Complete</span>
+                                                    break;
+                                                case "Done":
+                                                    <span class="badge bg-success">Done</span>
+                                                    break;
+                                                default:
+                                                    <span class="badge bg-secondary">@repair.Status</span>
+                                                    break;
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (repair.PaymentStatus == "Paid")
+                                            {
+                                                <span class="badge bg-success">Paid</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">Unpaid</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-center mt-3">
+                        <a asp-controller="Repairs" asp-action="Index" class="btn btn-sm btn-outline-primary">
+                            View All Repairs
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4">
+                        <i class="fas fa-tools fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No recent repairs</p>
+                        <a asp-controller="Repairs" asp-action="Create" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>
+                            Create First Repair
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h6 class="m-0 font-weight-bold text-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Low Stock Alert
+                </h6>
+            </div>
+            <div class="card-body">
+                @if (Model.LowStockItems.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Type</th>
+                                    <th>Stock</th>
+                                    <th>Reorder</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.LowStockItems)
+                                {
+                                    <tr>
+                                        <td class="fw-semibold">@item.Name</td>
+                                        <td>
+                                            <span class="badge bg-secondary">@item.DeviceType</span>
+                                        </td>
+                                        <td>
+                                            <span class="text-danger fw-bold">@item.Stock</span>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">@item.ReorderPoint</small>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-center mt-3">
+                        <a asp-controller="Inventories" asp-action="Index" class="btn btn-sm btn-outline-warning">
+                            Manage Inventory
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4">
+                        <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                        <p class="text-muted">All items are well stocked</p>
+                        <a asp-controller="Inventories" asp-action="Index" class="btn btn-success">
+                            <i class="fas fa-boxes me-1"></i>
+                            View Inventory
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+

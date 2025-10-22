@@ -1,0 +1,1439 @@
+@{
+    ViewData["Title"] = "Lookup Management";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="fas fa-cogs me-2"></i>Lookup Management</h2>
+        <p class="text-muted mb-0">Manage brands, device categories, models, and other lookup values</p>
+    </div>
+</div>
+
+<!-- Tab Navigation -->
+<ul class="nav nav-tabs mb-4" id="lookupTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="brands-tab" data-bs-toggle="tab" data-bs-target="#brands" type="button" role="tab">
+            <i class="fas fa-tags me-2"></i>Brands
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="device-categories-tab" data-bs-toggle="tab" data-bs-target="#device-categories" type="button" role="tab">
+            <i class="fas fa-mobile-alt me-2"></i>Device Categories
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="device-models-tab" data-bs-toggle="tab" data-bs-target="#device-models" type="button" role="tab">
+            <i class="fas fa-list me-2"></i>Device Models
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="inventory-categories-tab" data-bs-toggle="tab" data-bs-target="#inventory-categories" type="button" role="tab">
+            <i class="fas fa-boxes me-2"></i>Inventory Categories
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="categories-tab" data-bs-toggle="tab" data-bs-target="#categories" type="button" role="tab">
+            <i class="fas fa-folder-open me-2"></i>Categories
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link" id="lookup-values-tab" data-bs-toggle="tab" data-bs-target="#lookup-values" type="button" role="tab">
+            <i class="fas fa-database me-2"></i>Lookup Values
+        </button>
+    </li>
+</ul>
+
+<!-- Tab Content -->
+<div class="tab-content" id="lookupTabContent">
+    <!-- Brands Tab -->
+    <div class="tab-pane fade show active" id="brands" role="tabpanel">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Brand Management</h5>
+                <button type="button" class="btn btn-primary" onclick="showCreateBrandModal()">
+                    <i class="fas fa-plus me-2"></i>Add Brand
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table id="brandsTable" class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Display Order</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Device Categories Tab -->
+    <div class="tab-pane fade" id="device-categories" role="tabpanel">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Device Category Management</h5>
+                <button type="button" class="btn btn-primary" onclick="showCreateDeviceCategoryModal()">
+                    <i class="fas fa-plus me-2"></i>Add Device Category
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table id="deviceCategoriesTable" class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Category Name</th>
+                                <th>Description</th>
+                                <th>Display Order</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Device Models Tab -->
+    <div class="tab-pane fade" id="device-models" role="tabpanel">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Device Model Management</h5>
+                <button type="button" class="btn btn-primary" onclick="showCreateDeviceModelModal()">
+                    <i class="fas fa-plus me-2"></i>Add Device Model
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table id="deviceModelsTable" class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Brand</th>
+                                <th>Category</th>
+                                <th>Model Name</th>
+                                <th>Description</th>
+                                <th>Display Order</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inventory Categories Tab -->
+    <div class="tab-pane fade" id="inventory-categories" role="tabpanel">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Inventory Category Management</h5>
+                <button type="button" class="btn btn-primary" onclick="showCreateInventoryCategoryModal()">
+                    <i class="fas fa-plus me-2"></i>Add Inventory Category
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table id="inventoryCategoriesTable" class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Display Order</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Categories Tab -->
+    <div class="tab-pane fade" id="categories" role="tabpanel">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Categories Management</h5>
+                <button type="button" class="btn btn-primary" onclick="showCreateCategoryModal()">
+                    <i class="fas fa-plus me-2"></i>Add Category
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table id="categoriesTable" class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Parent</th>
+                                <th>Display Order</th>
+                                <th>Status</th>
+                                <th>Sub Categories</th>
+                                <th>Lookup Values</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lookup Values Tab -->
+    <div class="tab-pane fade" id="lookup-values" role="tabpanel">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Lookup Values Management</h5>
+                <button type="button" class="btn btn-primary" onclick="showCreateLookupValueModal()">
+                    <i class="fas fa-plus me-2"></i>Add Lookup Value
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table id="lookupValuesTable" class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Value</th>
+                                <th>Display Order</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Brand Modal -->
+<div class="modal fade" id="brandModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="brandModalTitle">Add Brand</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="brandForm">
+                <div class="modal-body">
+                    <input type="hidden" id="brandId" name="Id" value="">
+                    <div class="mb-3">
+                        <label for="brandName" class="form-label">Brand Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="brandName" name="Name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="brandDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="brandDescription" name="Description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="brandDisplayOrder" class="form-label">Display Order</label>
+                        <input type="number" class="form-control" id="brandDisplayOrder" name="DisplayOrder" value="1" min="1">
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="brandIsActive" name="IsActive" checked>
+                        <label class="form-check-label" for="brandIsActive">Active</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Brand</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Device Category Modal -->
+<div class="modal fade" id="deviceCategoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deviceCategoryModalTitle">Add Device Category</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="deviceCategoryForm">
+                <div class="modal-body">
+                    <input type="hidden" id="deviceCategoryId" name="Id" value="">
+                    <div class="mb-3">
+                        <label for="deviceCategoryName" class="form-label">Category Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="deviceCategoryName" name="Name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="deviceCategoryDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="deviceCategoryDescription" name="Description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="deviceCategoryDisplayOrder" class="form-label">Display Order</label>
+                        <input type="number" class="form-control" id="deviceCategoryDisplayOrder" name="DisplayOrder" value="1" min="1">
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="deviceCategoryIsActive" name="IsActive" checked>
+                        <label class="form-check-label" for="deviceCategoryIsActive">Active</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Device Model Modal -->
+<div class="modal fade" id="deviceModelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deviceModelModalTitle">Add Device Model</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="deviceModelForm">
+                <div class="modal-body">
+                    <input type="hidden" id="deviceModelId" name="Id" value="">
+                    <div class="mb-3">
+                        <label for="deviceModelBrand" class="form-label">Brand <span class="text-danger">*</span></label>
+                        <select class="form-select" id="deviceModelBrand" name="BrandId" required>
+                            <option value="">Select Brand</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="deviceModelCategory" class="form-label">Device Category <span class="text-danger">*</span></label>
+                        <select class="form-select" id="deviceModelCategory" name="DeviceCategoryId" required>
+                            <option value="">Select Device Category</option>
+                        </select>
+                        <div class="form-text">Select the device category for this model</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="deviceModelName" class="form-label">Model Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="deviceModelName" name="Name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="deviceModelDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="deviceModelDescription" name="Description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="deviceModelDisplayOrder" class="form-label">Display Order</label>
+                        <input type="number" class="form-control" id="deviceModelDisplayOrder" name="DisplayOrder" value="1" min="1">
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="deviceModelIsActive" name="IsActive" checked>
+                        <label class="form-check-label" for="deviceModelIsActive">Active</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Model</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Inventory Category Modal -->
+<div class="modal fade" id="inventoryCategoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="inventoryCategoryModalTitle">Add Inventory Category</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="inventoryCategoryForm">
+                <div class="modal-body">
+                    <input type="hidden" id="inventoryCategoryId" value="">
+                    <div class="mb-3">
+                        <label for="inventoryCategoryName" class="form-label">Category Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="inventoryCategoryName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="inventoryCategoryDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="inventoryCategoryDescription" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="inventoryCategoryDisplayOrder" class="form-label">Display Order</label>
+                        <input type="number" class="form-control" id="inventoryCategoryDisplayOrder" value="1" min="1">
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="inventoryCategoryIsActive" checked>
+                        <label class="form-check-label" for="inventoryCategoryIsActive">Active</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Lookup Value Modal -->
+<div class="modal fade" id="lookupValueModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="lookupValueModalTitle">Add Lookup Value</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="lookupValueForm">
+                <div class="modal-body">
+                    <input type="hidden" id="lookupValueId" name="Id" value="">
+                    <div class="mb-3">
+                        <label for="lookupValueCategory" class="form-label">Category <span class="text-danger">*</span></label>
+                        <select class="form-select" id="lookupValueCategory" name="Category" required>
+                            <option value="">Select Category</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="lookupValueCategoryId" class="form-label">Category Relationship</label>
+                        <select class="form-select" id="lookupValueCategoryId" name="CategoryId">
+                            <option value="">Select Category (Optional)</option>
+                        </select>
+                        <div class="form-text">Link this lookup value to a specific category for better organization</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="lookupValueValue" class="form-label">Value <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="lookupValueValue" name="Value" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="lookupValueDisplayOrder" class="form-label">Display Order</label>
+                        <input type="number" class="form-control" id="lookupValueDisplayOrder" name="DisplayOrder" value="1" min="1">
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="lookupValueIsActive" name="IsActive" checked>
+                        <label class="form-check-label" for="lookupValueIsActive">Active</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Value</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Category Modal -->
+<div class="modal fade" id="categoryModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="categoryModalTitle">Add Category</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="categoryForm">
+                <div class="modal-body">
+                    <input type="hidden" id="categoryId" name="Id" value="">
+                    <div class="mb-3">
+                        <label for="categoryName" class="form-label">Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="categoryName" name="Name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="categoryType" class="form-label">Category Type <span class="text-danger">*</span></label>
+                        <select class="form-select" id="categoryType" name="CategoryType" required>
+                            <option value="">Select Type</option>
+                            <option value="Brand">Brand</option>
+                            <option value="Device">Device</option>
+                            <option value="Inventory">Inventory</option>
+                            <option value="Service">Service</option>
+                            <option value="Status">Status</option>
+                            <option value="Condition">Condition</option>
+                            <option value="Priority">Priority</option>
+                            <option value="General">General</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="categoryParent" class="form-label">Parent Category</label>
+                        <select class="form-select" id="categoryParent" name="ParentCategoryId">
+                            <option value="">No Parent (Top Level)</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="categoryDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="categoryDescription" name="Description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="categoryDisplayOrder" class="form-label">Display Order</label>
+                        <input type="number" class="form-control" id="categoryDisplayOrder" name="DisplayOrder" value="1" min="1">
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="categoryIsActive" name="IsActive" checked>
+                        <label class="form-check-label" for="categoryIsActive">Active</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Category</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+let brandsTable, deviceCategoriesTable, deviceModelsTable, inventoryCategoriesTable, lookupValuesTable;
+
+$(document).ready(function() {
+    // Initialize DataTables
+    initializeDataTables();
+    
+    // Load initial data
+    loadBrands();
+    
+    // Tab change handlers
+    $('#lookupTabs button[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+        const target = $(e.target).attr('data-bs-target');
+        switch(target) {
+            case '#brands':
+                loadBrands();
+                break;
+            case '#device-categories':
+                loadDeviceCategories();
+                break;
+            case '#device-models':
+                loadDeviceModels();
+                break;
+            case '#inventory-categories':
+                loadInventoryCategories();
+                break;
+            case '#categories':
+                loadCategories();
+                break;
+            case '#lookup-values':
+                loadLookupValues();
+                break;
+        }
+    });
+    
+    // Form submissions
+    $('#brandForm').submit(function(e) {
+        e.preventDefault();
+        saveBrand();
+    });
+    
+    $('#deviceCategoryForm').submit(function(e) {
+        e.preventDefault();
+        saveDeviceCategory();
+    });
+    
+    $('#deviceModelForm').submit(function(e) {
+        e.preventDefault();
+        saveDeviceModel();
+    });
+    
+    $('#inventoryCategoryForm').submit(function(e) {
+        e.preventDefault();
+        saveInventoryCategory();
+    });
+    
+    $('#lookupValueForm').submit(function(e) {
+        e.preventDefault();
+        saveLookupValue();
+    });
+    
+    $('#categoryForm').submit(function(e) {
+        e.preventDefault();
+        saveCategory();
+    });
+    
+    // Note: Device categories are independent of brands, so no brand change handler needed
+});
+
+function initializeDataTables() {
+    const commonConfig = {
+        responsive: true,
+        pageLength: 25,
+        language: {
+            emptyTable: "No data available"
+        }
+    };
+    
+    brandsTable = $('#brandsTable').DataTable({
+        ...commonConfig,
+        columnDefs: [{ orderable: false, targets: [5] }]
+    });
+    
+    deviceCategoriesTable = $('#deviceCategoriesTable').DataTable({
+        ...commonConfig,
+        columnDefs: [{ orderable: false, targets: [5] }]
+    });
+    
+    deviceModelsTable = $('#deviceModelsTable').DataTable({
+        ...commonConfig,
+        columnDefs: [{ orderable: false, targets: [7] }]
+    });
+    
+    inventoryCategoriesTable = $('#inventoryCategoriesTable').DataTable({
+        ...commonConfig,
+        columnDefs: [{ orderable: false, targets: [5] }]
+    });
+    
+    lookupValuesTable = $('#lookupValuesTable').DataTable({
+        ...commonConfig,
+        columnDefs: [{ orderable: false, targets: [5] }]
+    });
+    
+    categoriesTable = $('#categoriesTable').DataTable({
+        ...commonConfig,
+        columnDefs: [{ orderable: false, targets: [8] }]
+    });
+}
+
+// Brand Management Functions
+function loadBrands() {
+    $.get('@Url.Action("GetBrands", "LookupManagement")', function(response) {
+        if (response.success) {
+            brandsTable.clear();
+            response.data.forEach(function(brand) {
+                const statusBadge = brand.isActive ? 
+                    '<span class="badge bg-success">Active</span>' : 
+                    '<span class="badge bg-secondary">Inactive</span>';
+                
+                const actions = `
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="editBrand(${brand.id})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteBrand(${brand.id})" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                
+                brandsTable.row.add([
+                    brand.name,
+                    brand.description || '-',
+                    brand.displayOrder,
+                    statusBadge,
+                    new Date(brand.createdDate).toLocaleDateString(),
+                    actions
+                ]);
+            });
+            brandsTable.draw();
+        } else {
+            showToast('error', 'Failed to load brands: ' + response.message);
+        }
+    });
+}
+
+function showCreateBrandModal() {
+    $('#brandModalTitle').text('Add Brand');
+    $('#brandForm')[0].reset();
+    $('#brandId').val('');
+    $('#brandIsActive').prop('checked', true);
+    $('#brandModal').modal('show');
+}
+
+function editBrand(id) {
+    $.get('@Url.Action("GetBrands", "LookupManagement")', function(response) {
+        if (response.success) {
+            const brand = response.data.find(b => b.id === id);
+            if (brand) {
+                $('#brandModalTitle').text('Edit Brand');
+                $('#brandId').val(brand.id);
+                $('#brandName').val(brand.name);
+                $('#brandDescription').val(brand.description || '');
+                $('#brandDisplayOrder').val(brand.displayOrder);
+                $('#brandIsActive').prop('checked', brand.isActive);
+                
+                $('#brandModal').modal('show');
+            }
+        }
+    });
+}
+
+function saveBrand() {
+    console.log('saveBrand function called');
+    
+    // Get form values
+    const name = $('#brandName').val();
+    const description = $('#brandDescription').val();
+    const displayOrder = $('#brandDisplayOrder').val();
+    const isActive = $('#brandIsActive').is(':checked');
+    
+    console.log('Form values:', { name, description, displayOrder, isActive });
+    
+    // Validate required fields
+    if (!name || name.trim() === '') {
+        showToast('error', 'Brand name is required');
+        return;
+    }
+    
+    const brandData = {
+        Name: name.trim(),
+        Description: description ? description.trim() : '',
+        DisplayOrder: parseInt(displayOrder) || 1,
+        IsActive: isActive
+    };
+    
+    console.log('Saving brand data:', brandData);
+    
+    const brandId = $('#brandId').val();
+    const url = brandId ? 
+        '@Url.Action("UpdateBrand", "LookupManagement")/' + brandId : 
+        '@Url.Action("CreateBrand", "LookupManagement")';
+    const method = brandId ? 'PUT' : 'POST';
+    
+    console.log('Request details:', { url, method, brandId });
+    
+    $.ajax({
+        url: url,
+        type: method,
+        contentType: 'application/json',
+        data: JSON.stringify(brandData),
+        success: function(response) {
+            console.log('Success response:', response);
+            if (response.success) {
+                $('#brandModal').modal('hide');
+                loadBrands();
+                showToast('success', response.message);
+            } else {
+                showToast('error', response.message);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('AJAX error:', { xhr, status, error });
+            console.error('Response text:', xhr.responseText);
+            showToast('error', 'Error saving brand: ' + (xhr.responseText || error));
+        }
+    });
+}
+
+function deleteBrand(id) {
+    if (confirm('Are you sure you want to delete this brand?')) {
+        $.ajax({
+            url: '@Url.Action("DeleteBrand", "LookupManagement")/' + id,
+            type: 'DELETE',
+            success: function(response) {
+                if (response.success) {
+                    loadBrands();
+                    showToast('success', response.message);
+                } else {
+                    showToast('error', response.message);
+                }
+            },
+            error: function() {
+                showToast('error', 'Error deleting brand');
+            }
+        });
+    }
+}
+
+// Device Category Management Functions
+function loadDeviceCategories() {
+    $.get('@Url.Action("GetDeviceCategories", "LookupManagement")', function(response) {
+        if (response.success) {
+            deviceCategoriesTable.clear();
+            response.data.forEach(function(category) {
+                const statusBadge = category.isActive ? 
+                    '<span class="badge bg-success">Active</span>' : 
+                    '<span class="badge bg-secondary">Inactive</span>';
+                
+                const actions = `
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="editDeviceCategory(${category.id})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteDeviceCategory(${category.id})" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                
+                deviceCategoriesTable.row.add([
+                    category.name,
+                    category.description || '-',
+                    category.displayOrder,
+                    statusBadge,
+                    new Date(category.createdDate).toLocaleDateString(),
+                    actions
+                ]);
+            });
+            deviceCategoriesTable.draw();
+        } else {
+            showToast('error', 'Failed to load device categories: ' + response.message);
+        }
+    });
+}
+
+function showCreateDeviceCategoryModal() {
+    $('#deviceCategoryModalTitle').text('Add Device Category');
+    $('#deviceCategoryForm')[0].reset();
+    $('#deviceCategoryId').val('');
+    $('#deviceCategoryIsActive').prop('checked', true);
+    $('#deviceCategoryModal').modal('show');
+}
+
+function loadBrandsForSelect(selector) {
+    $.get('@Url.Action("GetBrands", "LookupManagement")', function(response) {
+        if (response.success) {
+            const select = $(selector);
+            select.empty().append('<option value="">Select Brand</option>');
+            response.data.filter(b => b.isActive).forEach(function(brand) {
+                select.append(`<option value="${brand.id}">${brand.name}</option>`);
+            });
+        }
+    });
+}
+
+// Device Model Management Functions
+function loadDeviceModels() {
+    $.get('@Url.Action("GetDeviceModels", "LookupManagement")', function(response) {
+        if (response.success) {
+            deviceModelsTable.clear();
+            response.data.forEach(function(model) {
+                const statusBadge = model.isActive ? 
+                    '<span class="badge bg-success">Active</span>' : 
+                    '<span class="badge bg-secondary">Inactive</span>';
+                
+                const actions = `
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="editDeviceModel(${model.id})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteDeviceModel(${model.id})" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                
+                deviceModelsTable.row.add([
+                    model.brandName,
+                    model.deviceCategoryName,
+                    model.name,
+                    model.description || '-',
+                    model.displayOrder,
+                    statusBadge,
+                    new Date(model.createdDate).toLocaleDateString(),
+                    actions
+                ]);
+            });
+            deviceModelsTable.draw();
+        } else {
+            showToast('error', 'Failed to load device models: ' + response.message);
+        }
+    });
+}
+
+function showCreateDeviceModelModal() {
+    $('#deviceModelModalTitle').text('Add Device Model');
+    $('#deviceModelForm')[0].reset();
+    $('#deviceModelId').val('');
+    $('#deviceModelIsActive').prop('checked', true);
+    loadBrandsForSelect('#deviceModelBrand');
+    loadDeviceCategoriesForSelect('#deviceModelCategory');
+    $('#deviceModelModal').modal('show');
+}
+
+// Inventory Category Management Functions
+function loadInventoryCategories() {
+    $.get('@Url.Action("GetInventoryCategories", "LookupManagement")', function(response) {
+        if (response.success) {
+            inventoryCategoriesTable.clear();
+            response.data.forEach(function(category) {
+                const statusBadge = category.isActive ? 
+                    '<span class="badge bg-success">Active</span>' : 
+                    '<span class="badge bg-secondary">Inactive</span>';
+                
+                const actions = `
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="editInventoryCategory(${category.id})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteInventoryCategory(${category.id})" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                
+                inventoryCategoriesTable.row.add([
+                    category.name,
+                    category.description || '-',
+                    category.displayOrder,
+                    statusBadge,
+                    new Date(category.createdDate).toLocaleDateString(),
+                    actions
+                ]);
+            });
+            inventoryCategoriesTable.draw();
+        } else {
+            showToast('error', 'Failed to load inventory categories: ' + response.message);
+        }
+    });
+}
+
+function showCreateInventoryCategoryModal() {
+    $('#inventoryCategoryModalTitle').text('Add Inventory Category');
+    $('#inventoryCategoryForm')[0].reset();
+    $('#inventoryCategoryId').val('');
+    $('#inventoryCategoryIsActive').prop('checked', true);
+    $('#inventoryCategoryModal').modal('show');
+}
+
+// Lookup Values Management Functions
+function loadLookupValues() {
+    $.get('@Url.Action("GetLookupValues", "LookupManagement")', function(response) {
+        if (response.success) {
+            lookupValuesTable.clear();
+            response.data.forEach(function(value) {
+                const statusBadge = value.isActive ? 
+                    '<span class="badge bg-success">Active</span>' : 
+                    '<span class="badge bg-secondary">Inactive</span>';
+                
+                const actions = `
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="editLookupValue(${value.id})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteLookupValue(${value.id})" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                
+                lookupValuesTable.row.add([
+                    value.category,
+                    value.value,
+                    value.displayOrder,
+                    statusBadge,
+                    new Date(value.createdDate).toLocaleDateString(),
+                    actions
+                ]);
+            });
+            lookupValuesTable.draw();
+        } else {
+            showToast('error', 'Failed to load lookup values: ' + response.message);
+        }
+    });
+}
+
+function showCreateLookupValueModal() {
+    $('#lookupValueModalTitle').text('Add Lookup Value');
+    $('#lookupValueForm')[0].reset();
+    $('#lookupValueId').val('');
+    $('#lookupValueIsActive').prop('checked', true);
+    loadLookupCategories();
+    $('#lookupValueModal').modal('show');
+}
+
+// Utility Functions
+function showToast(type, message) {
+    const toast = $(`
+        <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    `);
+    
+    $('body').append(toast);
+    const bsToast = new bootstrap.Toast(toast[0]);
+    bsToast.show();
+    
+    setTimeout(() => toast.remove(), 5000);
+}
+
+// Additional save functions for other entities (simplified for brevity)
+function saveDeviceCategory() {
+    const data = {
+        Name: $('#deviceCategoryName').val(),
+        Description: $('#deviceCategoryDescription').val(),
+        DisplayOrder: parseInt($('#deviceCategoryDisplayOrder').val()),
+        IsActive: $('#deviceCategoryIsActive').is(':checked')
+    };
+    
+    const id = $('#deviceCategoryId').val();
+    const url = id ? 
+        '@Url.Action("UpdateDeviceCategory", "LookupManagement")/' + id : 
+        '@Url.Action("CreateDeviceCategory", "LookupManagement")';
+    const method = id ? 'PUT' : 'POST';
+    
+    $.ajax({
+        url: url,
+        type: method,
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function(response) {
+            if (response.success) {
+                $('#deviceCategoryModal').modal('hide');
+                loadDeviceCategories();
+                showToast('success', response.message);
+            } else {
+                showToast('error', response.message);
+            }
+        },
+        error: function() {
+            showToast('error', 'Error saving device category');
+        }
+    });
+}
+
+function editDeviceCategory(id) {
+    $.get('@Url.Action("GetDeviceCategories", "LookupManagement")', function(response) {
+        if (response.success) {
+            const category = response.data.find(c => c.id === id);
+            if (category) {
+                $('#deviceCategoryModalTitle').text('Edit Device Category');
+                $('#deviceCategoryId').val(category.id);
+                $('#deviceCategoryName').val(category.name);
+                $('#deviceCategoryDescription').val(category.description);
+                $('#deviceCategoryDisplayOrder').val(category.displayOrder);
+                $('#deviceCategoryIsActive').prop('checked', category.isActive);
+                $('#deviceCategoryModal').modal('show');
+            }
+        }
+    }).fail(function() {
+        showToast('error', 'Error loading device category details');
+    });
+}
+
+function deleteDeviceCategory(id) {
+    if (confirm('Are you sure you want to delete this device category?')) {
+        $.ajax({
+            url: '@Url.Action("DeleteDeviceCategory", "LookupManagement")/' + id,
+            type: 'DELETE',
+            success: function(response) {
+                if (response.success) {
+                    loadDeviceCategories();
+                    showToast('success', response.message);
+                } else {
+                    showToast('error', response.message);
+                }
+            },
+            error: function() {
+                showToast('error', 'Error deleting device category');
+            }
+        });
+    }
+}
+
+function saveDeviceModel() {
+    const data = {
+        Name: $('#deviceModelName').val(),
+        Description: $('#deviceModelDescription').val(),
+        BrandId: parseInt($('#deviceModelBrand').val()),
+        DeviceCategoryId: parseInt($('#deviceModelCategory').val()),
+        DisplayOrder: parseInt($('#deviceModelDisplayOrder').val()),
+        IsActive: $('#deviceModelIsActive').is(':checked')
+    };
+    
+    const id = $('#deviceModelId').val();
+    const url = id ? 
+        '@Url.Action("UpdateDeviceModel", "LookupManagement")/' + id : 
+        '@Url.Action("CreateDeviceModel", "LookupManagement")';
+    const method = id ? 'PUT' : 'POST';
+    
+    $.ajax({
+        url: url,
+        type: method,
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function(response) {
+            if (response.success) {
+                $('#deviceModelModal').modal('hide');
+                loadDeviceModels();
+                showToast('success', response.message);
+            } else {
+                showToast('error', response.message);
+            }
+        },
+        error: function() {
+            showToast('error', 'Error saving device model');
+        }
+    });
+}
+
+function editDeviceModel(id) {
+    $.get('@Url.Action("GetDeviceModels", "LookupManagement")', function(response) {
+        if (response.success) {
+            const model = response.data.find(m => m.id === id);
+            if (model) {
+                $('#deviceModelModalTitle').text('Edit Device Model');
+                $('#deviceModelId').val(model.id);
+                $('#deviceModelName').val(model.name);
+                $('#deviceModelDescription').val(model.description);
+                $('#deviceModelDisplayOrder').val(model.displayOrder);
+                $('#deviceModelIsActive').prop('checked', model.isActive);
+                
+                // Load dropdowns and set values
+                loadBrandsForSelect('#deviceModelBrand');
+                loadDeviceCategoriesForSelect('#deviceModelCategory');
+                
+                // Set selected values after dropdowns are loaded
+                setTimeout(function() {
+                    $('#deviceModelBrand').val(model.brandId);
+                    $('#deviceModelCategory').val(model.deviceCategoryId);
+                }, 100);
+                
+                $('#deviceModelModal').modal('show');
+            }
+        }
+    }).fail(function() {
+        showToast('error', 'Error loading device model details');
+    });
+}
+
+function deleteDeviceModel(id) {
+    if (confirm('Are you sure you want to delete this device model?')) {
+        $.ajax({
+            url: '@Url.Action("DeleteDeviceModel", "LookupManagement")/' + id,
+            type: 'DELETE',
+            success: function(response) {
+                if (response.success) {
+                    loadDeviceModels();
+                    showToast('success', response.message);
+                } else {
+                    showToast('error', response.message);
+                }
+            },
+            error: function() {
+                showToast('error', 'Error deleting device model');
+            }
+        });
+    }
+}
+
+function saveInventoryCategory() {
+    const data = {
+        Name: $('#inventoryCategoryName').val(),
+        Description: $('#inventoryCategoryDescription').val(),
+        DisplayOrder: parseInt($('#inventoryCategoryDisplayOrder').val()),
+        IsActive: $('#inventoryCategoryIsActive').is(':checked')
+    };
+    
+    const id = $('#inventoryCategoryId').val();
+    const url = id ? 
+        '@Url.Action("UpdateInventoryCategory", "LookupManagement")/' + id : 
+        '@Url.Action("CreateInventoryCategory", "LookupManagement")';
+    const method = id ? 'PUT' : 'POST';
+    
+    $.ajax({
+        url: url,
+        type: method,
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function(response) {
+            if (response.success) {
+                $('#inventoryCategoryModal').modal('hide');
+                loadInventoryCategories();
+                showToast('success', response.message);
+            } else {
+                showToast('error', response.message);
+            }
+        },
+        error: function() {
+            showToast('error', 'Error saving inventory category');
+        }
+    });
+}
+
+function saveLookupValue() {
+    const categoryId = $('#lookupValueCategoryId').val();
+    console.log('CategoryId from dropdown:', categoryId);
+    
+    const data = {
+        Category: $('#lookupValueCategory').val(),
+        Value: $('#lookupValueValue').val(),
+        CategoryId: categoryId && categoryId !== "" ? parseInt(categoryId) : null,
+        DisplayOrder: parseInt($('#lookupValueDisplayOrder').val()) || 1,
+        IsActive: $('#lookupValueIsActive').is(':checked')
+    };
+    
+    console.log('Final data being sent:', data);
+    
+    const id = $('#lookupValueId').val();
+    const url = id ? 
+        '@Url.Action("UpdateLookupValue", "LookupManagement")/' + id : 
+        '@Url.Action("CreateLookupValue", "LookupManagement")';
+    const method = id ? 'PUT' : 'POST';
+    
+    $.ajax({
+        url: url,
+        type: method,
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function(response) {
+            if (response.success) {
+                $('#lookupValueModal').modal('hide');
+                loadLookupValues();
+                showToast('success', response.message);
+            } else {
+                showToast('error', response.message);
+            }
+        },
+        error: function() {
+            showToast('error', 'Error saving lookup value');
+        }
+    });
+}
+
+function loadLookupCategories() {
+    return $.get('@Url.Action("GetCategories", "LookupManagement")', function(response) {
+        if (response.success) {
+            const $categorySelect = $('#lookupValueCategory');
+            const $categoryIdSelect = $('#lookupValueCategoryId');
+            
+            $categorySelect.empty().append('<option value="">Select Category</option>');
+            $categoryIdSelect.empty().append('<option value="">Select Category (Optional)</option>');
+            
+            response.data.forEach(function(category) {
+                if (category.isActive) {
+                    $categorySelect.append(`<option value="${category.name}">${category.name} (${category.categoryType})</option>`);
+                    $categoryIdSelect.append(`<option value="${category.id}">${category.name} (${category.categoryType})</option>`);
+                }
+            });
+        }
+    }).fail(function() {
+        console.log('Failed to load lookup categories');
+    });
+}
+
+function editLookupValue(id) {
+    $.get('@Url.Action("GetLookupValues", "LookupManagement")', function(response) {
+        if (response.success) {
+            const value = response.data.find(v => v.id === id);
+            if (value) {
+                $('#lookupValueModalTitle').text('Edit Lookup Value');
+                $('#lookupValueId').val(value.id);
+                $('#lookupValueCategory').val(value.category);
+                $('#lookupValueValue').val(value.value);
+                $('#lookupValueDisplayOrder').val(value.displayOrder);
+                $('#lookupValueIsActive').prop('checked', value.isActive);
+                
+                // Load categories first, then set the selected CategoryId
+                loadLookupCategories().then(function() {
+                    // Set the CategoryId value after categories are loaded
+                    if (value.categoryId) {
+                        $('#lookupValueCategoryId').val(value.categoryId);
+                    }
+                });
+                
+                $('#lookupValueModal').modal('show');
+            }
+        }
+    });
+}
+
+function deleteLookupValue(id) {
+    if (confirm('Are you sure you want to delete this lookup value?')) {
+        $.ajax({
+            url: '@Url.Action("DeleteLookupValue", "LookupManagement")/' + id,
+            type: 'DELETE',
+            success: function(response) {
+                if (response.success) {
+                    loadLookupValues();
+                    showToast('success', response.message);
+                } else {
+                    showToast('error', response.message);
+                }
+            },
+            error: function() {
+                showToast('error', 'Error deleting lookup value');
+            }
+        });
+    }
+}
+
+// Category Management Functions
+function loadCategories() {
+    $.get('@Url.Action("GetCategories", "LookupManagement")', function(response) {
+        console.log('Categories response:', response); // Debug log
+        if (response.success) {
+            categoriesTable.clear();
+            response.data.forEach(function(category) {
+                const statusBadge = category.isActive ? 
+                    '<span class="badge bg-success">Active</span>' : 
+                    '<span class="badge bg-secondary">Inactive</span>';
+                
+                const actions = `
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="editCategory(${category.id})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteCategory(${category.id})" title="Delete">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                
+                categoriesTable.row.add([
+                    category.name,
+                    category.categoryType,
+                    category.parentCategoryName || '-',
+                    category.displayOrder,
+                    statusBadge,
+                    category.subCategoriesCount || 0,
+                    category.lookupValuesCount || 0,
+                    new Date(category.createdDate).toLocaleDateString(),
+                    actions
+                ]);
+            });
+            categoriesTable.draw();
+        } else {
+            showToast('error', response.message);
+        }
+    }).fail(function(xhr, status, error) {
+        console.error('Failed to load categories:', xhr.responseText);
+        showToast('error', 'Failed to load categories');
+    });
+}
+
+function showCreateCategoryModal() {
+    $('#categoryModalTitle').text('Add Category');
+    $('#categoryForm')[0].reset();
+    $('#categoryId').val('');
+    $('#categoryIsActive').prop('checked', true);
+    loadParentCategories();
+    $('#categoryModal').modal('show');
+}
+
+function editCategory(id) {
+    $.get('@Url.Action("GetCategories", "LookupManagement")', function(response) {
+        if (response.success) {
+            const category = response.data.find(c => c.id === id);
+            if (category) {
+                $('#categoryModalTitle').text('Edit Category');
+                $('#categoryId').val(category.id);
+                $('#categoryName').val(category.name);
+                $('#categoryType').val(category.categoryType);
+                $('#categoryParent').val(category.parentCategoryId || '');
+                $('#categoryDescription').val(category.description);
+                $('#categoryDisplayOrder').val(category.displayOrder);
+                $('#categoryIsActive').prop('checked', category.isActive);
+                loadParentCategories();
+                $('#categoryModal').modal('show');
+            }
+        }
+    });
+}
+
+function saveCategory() {
+    const data = {
+        Name: $('#categoryName').val(),
+        CategoryType: $('#categoryType').val(),
+        ParentCategoryId: $('#categoryParent').val() ? parseInt($('#categoryParent').val()) : null,
+        Description: $('#categoryDescription').val(),
+        DisplayOrder: parseInt($('#categoryDisplayOrder').val()),
+        IsActive: $('#categoryIsActive').is(':checked')
+    };
+    
+    console.log('Saving category data:', data); // Debug log
+    
+    const id = $('#categoryId').val();
+    const url = id ? 
+        '@Url.Action("UpdateCategory", "LookupManagement")/' + id : 
+        '@Url.Action("CreateCategory", "LookupManagement")';
+    const method = id ? 'PUT' : 'POST';
+    
+    console.log('Request URL:', url, 'Method:', method); // Debug log
+    
+    $.ajax({
+        url: url,
+        type: method,
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function(response) {
+            console.log('Response:', response); // Debug log
+            if (response.success) {
+                $('#categoryModal').modal('hide');
+                loadCategories();
+                showToast('success', response.message);
+            } else {
+                showToast('error', response.message);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('AJAX Error:', xhr.responseText); // Debug log
+            showToast('error', 'Error saving category: ' + error);
+        }
+    });
+}
+
+function deleteCategory(id) {
+    if (confirm('Are you sure you want to delete this category?')) {
+        $.ajax({
+            url: '@Url.Action("DeleteCategory", "LookupManagement")/' + id,
+            type: 'DELETE',
+            success: function(response) {
+                if (response.success) {
+                    loadCategories();
+                    showToast('success', response.message);
+                } else {
+                    showToast('error', response.message);
+                }
+            },
+            error: function() {
+                showToast('error', 'Error deleting category');
+            }
+        });
+    }
+}
+
+function loadParentCategories() {
+    $.get('@Url.Action("GetCategories", "LookupManagement")', function(response) {
+        if (response.success) {
+            const $parentSelect = $('#categoryParent');
+            $parentSelect.empty().append('<option value="">No Parent (Top Level)</option>');
+            
+            response.data.forEach(function(category) {
+                if (category.isActive) {
+                    $parentSelect.append(`<option value="${category.id}">${category.name} (${category.categoryType})</option>`);
+                }
+            });
+        }
+    });
+}
+
+function loadDeviceCategoriesForSelect(selector) {
+    $.get('@Url.Action("GetDeviceCategories", "LookupManagement")', function(response) {
+        if (response.success) {
+            const $select = $(selector);
+            $select.empty().append('<option value="">Select Device Category</option>');
+            
+            response.data.forEach(function(category) {
+                if (category.isActive) {
+                    $select.append(`<option value="${category.id}">${category.name}</option>`);
+                }
+            });
+        }
+    }).fail(function() {
+        console.error('Failed to load device categories');
+        showToast('error', 'Failed to load device categories');
+    });
+}
+</script>
+}
+

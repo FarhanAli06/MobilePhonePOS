@@ -1,0 +1,287 @@
+@model Empire.Application.DTOs.Device.DeviceSelectionDto
+
+<form id="editDeviceForm">
+    <input type="hidden" id="editDeviceId" value="@Model.Id" />
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Brand *</label>
+                <select class="form-select" id="editBrandId" required>
+                    <option value="">Select Brand</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Category *</label>
+                <select class="form-select" id="editDeviceCategoryId" required>
+                    <option value="">Select Category</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Model *</label>
+                <select class="form-select" id="editDeviceModelId" required>
+                    <option value="">Select Model</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">IMEI/Serial Number</label>
+                <input type="text" class="form-control" id="editImeiSerialNumber" value="@Model.IMEISerialNumber">
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Battery Health (%)</label>
+                <input type="number" class="form-control" id="editBatteryHealth" min="0" max="100" value="@Model.BatteryHealthPercentage">
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Network Status</label>
+                <select class="form-select" id="editNetworkStatus">
+                    <option value="Unlocked">Unlocked</option>
+                    <option value="Locked">Locked</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Scratches</label>
+                <select class="form-select" id="editScratches">
+                    <option value="Excellent">Excellent (No Scratches)</option>
+                    <option value="None">None</option>
+                    <option value="Minor">Minor</option>
+                    <option value="Major">Major</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Buying Price</label>
+                <input type="number" class="form-control" id="editBuyingPrice" step="0.01" min="0" value="@Model.BuyingPrice">
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Selling Price</label>
+                <input type="number" class="form-control" id="editSellingPrice" step="0.01" min="0" value="@Model.SellingPrice">
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Year</label>
+                <input type="number" class="form-control" id="editYear" min="2000" max="2099" value="@Model.Year">
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Available for Sale</label>
+                <select class="form-select" id="editIsAvailableForSale">
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-12">
+            <div class="mb-3">
+                <label class="form-label">Notes</label>
+                <textarea class="form-control" id="editNotes" rows="3">@Model.Notes</textarea>
+            </div>
+        </div>
+    </div>
+</form>
+
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+    <button type="button" class="btn btn-primary" onclick="updateDevice()">Update Device</button>
+</div>
+
+<script>
+    // Store original values - we'll need to get IDs from the dropdowns after they load
+    const originalBrand = "@Model.Brand";
+    const originalCategory = "@Model.Category";
+    const originalModel = "@Model.Model";
+    const originalNetworkStatus = "@Model.NetworkStatus";
+    const originalScratches = "@Model.ScratchesCondition";
+    const originalIsAvailable = @Model.IsAvailableForSale.ToString().ToLower();
+
+    // Load dropdowns when modal opens
+    $(document).ready(function() {
+        loadEditBrands();
+        loadEditCategories();
+        
+        // Set network status
+        $('#editNetworkStatus').val(originalNetworkStatus);
+        
+        // Set scratches
+        $('#editScratches').val(originalScratches);
+        
+        // Set availability
+        $('#editIsAvailableForSale').val(originalIsAvailable.toString());
+    });
+
+    function loadEditBrands() {
+        $.ajax({
+            url: '@Url.Action("GetBrands", "Lookup")',
+            type: 'GET',
+            success: function(brands) {
+                const select = $('#editBrandId');
+                select.empty();
+                select.append('<option value="">Select Brand</option>');
+                
+                if (brands && brands.length > 0) {
+                    brands.forEach(function(brand) {
+                        const selected = brand.Name === originalBrand ? 'selected' : '';
+                        select.append('<option value="' + brand.Id + '" ' + selected + '>' + brand.Name + '</option>');
+                    });
+                    
+                    // After brands load, load models
+                    setTimeout(function() {
+                        const brandId = $('#editBrandId').val();
+                        const categoryId = $('#editDeviceCategoryId').val();
+                        if (brandId && categoryId) {
+                            loadEditModels(categoryId, brandId);
+                        }
+                    }, 100);
+                }
+            },
+            error: function() {
+                console.error('Error loading brands');
+            }
+        });
+    }
+
+    function loadEditCategories() {
+        $.ajax({
+            url: '@Url.Action("GetDeviceCategories", "Lookup")',
+            type: 'GET',
+            success: function(categories) {
+                const select = $('#editDeviceCategoryId');
+                select.empty();
+                select.append('<option value="">Select Category</option>');
+                
+                if (categories && categories.length > 0) {
+                    categories.forEach(function(category) {
+                        const selected = category.Name === originalCategory ? 'selected' : '';
+                        select.append('<option value="' + category.Id + '" ' + selected + '>' + category.Name + '</option>');
+                    });
+                    
+                    // After categories load, load models
+                    setTimeout(function() {
+                        const brandId = $('#editBrandId').val();
+                        const categoryId = $('#editDeviceCategoryId').val();
+                        if (brandId && categoryId) {
+                            loadEditModels(categoryId, brandId);
+                        }
+                    }, 100);
+                }
+            },
+            error: function() {
+                console.error('Error loading categories');
+            }
+        });
+    }
+
+    function loadEditModels(categoryId, brandId) {
+        $.ajax({
+            url: '@Url.Action("GetDeviceModels", "Lookup")',
+            type: 'GET',
+            data: { categoryId: categoryId, brandId: brandId },
+            success: function(models) {
+                const modelSelect = $('#editDeviceModelId');
+                modelSelect.empty();
+                modelSelect.append('<option value="">Select Model</option>');
+                
+                if (models && models.length > 0) {
+                    models.forEach(function(model) {
+                        const selected = model.Name === originalModel ? 'selected' : '';
+                        modelSelect.append('<option value="' + model.Id + '" ' + selected + '>' + model.Name + '</option>');
+                    });
+                } else {
+                    modelSelect.append('<option value="" disabled>No models found for this combination</option>');
+                }
+            },
+            error: function() {
+                console.error('Error loading models');
+            }
+        });
+    }
+
+    // Add change handlers for cascading
+    $('#editBrandId').on('change', function() {
+        const brandId = $(this).val();
+        const categoryId = $('#editDeviceCategoryId').val();
+        
+        if (brandId && categoryId) {
+            loadEditModels(categoryId, brandId);
+        } else {
+            $('#editDeviceModelId').empty().append('<option value="">Select Model</option>');
+        }
+    });
+
+    $('#editDeviceCategoryId').on('change', function() {
+        const brandId = $('#editBrandId').val();
+        const categoryId = $(this).val();
+        
+        if (brandId && categoryId) {
+            loadEditModels(categoryId, brandId);
+        } else {
+            $('#editDeviceModelId').empty().append('<option value="">Select Model</option>');
+        }
+    });
+
+    function updateDevice() {
+        const deviceId = $('#editDeviceId').val();
+        const brandId = $('#editBrandId').val();
+        const categoryId = $('#editDeviceCategoryId').val();
+        const modelId = $('#editDeviceModelId').val();
+
+        if (!brandId || !categoryId || !modelId) {
+            alert('Please select Brand, Category, and Model');
+            return;
+        }
+
+        const deviceData = {
+            BrandId: parseInt(brandId),
+            DeviceCategoryId: parseInt(categoryId),
+            DeviceModelId: parseInt(modelId),
+            IMEISerialNumber: $('#editImeiSerialNumber').val(),
+            BatteryHealth: parseInt($('#editBatteryHealth').val()) || null,
+            NetworkStatus: $('#editNetworkStatus').val(),
+            ScratchesCondition: $('#editScratches').val(),
+            BuyingPrice: parseFloat($('#editBuyingPrice').val()) || 0,
+            SellingPrice: parseFloat($('#editSellingPrice').val()) || 0,
+            Year: parseInt($('#editYear').val()) || null,
+            IsAvailableForSale: $('#editIsAvailableForSale').val() === 'true',
+            Notes: $('#editNotes').val()
+        };
+
+        $.ajax({
+            url: '@Url.Action("Edit", "Devices")/' + deviceId,
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(deviceData),
+            success: function(response) {
+                if (response.success) {
+                    $('#editDeviceModal').modal('hide');
+                    location.reload();
+                } else {
+                    alert('Error: ' + response.message);
+                }
+            },
+            error: function(xhr) {
+                console.error('Error updating device:', xhr);
+                let errorMessage = 'Error updating device. Please try again.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                alert(errorMessage);
+            }
+        });
+    }
+</script>
+

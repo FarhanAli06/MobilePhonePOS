@@ -1,0 +1,824 @@
+@{
+    ViewData["Title"] = "Inventory Management";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2><i class="fas fa-boxes me-2"></i>Inventory Management</h2>
+        <p class="text-muted mb-0">Manage inventory items with proper categorization and stock tracking</p>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-primary" onclick="showAddInventoryItemModal()">
+            <i class="fas fa-plus me-2"></i>Add Inventory Item
+        </button>
+        <button type="button" class="btn btn-info" onclick="showLowStockReport()">
+            <i class="fas fa-exclamation-triangle me-2"></i>Low Stock Report
+        </button>
+        <button type="button" class="btn btn-success" onclick="showStockMovements()">
+            <i class="fas fa-exchange-alt me-2"></i>Stock Movements
+        </button>
+        <button type="button" class="btn btn-warning" onclick="testAjaxCall()">
+            <i class="fas fa-bug me-2"></i>Test API Call
+        </button>
+    </div>
+</div>
+
+<!-- Filter Section -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Filter Inventory Items</h5>
+    </div>
+    <div class="card-body">
+        <form id="inventoryFilterForm" class="row g-3">
+            <div class="col-md-2">
+                <label class="form-label">Brand</label>
+                <select class="form-select" id="filterBrand">
+                    <option value="">All Brands</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Device Category</label>
+                <select class="form-select" id="filterDeviceCategory">
+                    <option value="">All Categories</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Device Model</label>
+                <select class="form-select" id="filterDeviceModel">
+                    <option value="">All Models</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Inventory Category</label>
+                <select class="form-select" id="filterInventoryCategory">
+                    <option value="">All Categories</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Stock Status</label>
+                <select class="form-select" id="filterStockStatus">
+                    <option value="">All Status</option>
+                    <option value="in_stock">In Stock</option>
+                    <option value="low_stock">Low Stock</option>
+                    <option value="out_of_stock">Out of Stock</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="button" class="btn btn-outline-primary me-2" onclick="applyFilters()">
+                    <i class="fas fa-filter me-1"></i>Filter
+                </button>
+                <button type="button" class="btn btn-outline-secondary" onclick="clearFilters()">
+                    <i class="fas fa-times me-1"></i>Clear
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Inventory Items Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Inventory Items</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table id="inventoryTable" class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Name</th>
+                        <th>SKU</th>
+                        <th>Brand</th>
+                        <th>Category</th>
+                        <th>Model</th>
+                        <th>Current Stock</th>
+                        <th>Reorder Point</th>
+                        <th>Cost Price</th>
+                        <th>Retail Price</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Data will be loaded via AJAX -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Inventory Item Modal -->
+<div class="modal fade" id="inventoryItemModal" tabindex="-1" aria-labelledby="inventoryItemModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="inventoryItemModalLabel">Add Inventory Item</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="inventoryItemForm">
+                    <input type="hidden" id="inventoryItemId" value="0">
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="itemName" class="form-label">Item Name *</label>
+                            <input type="text" class="form-control" id="itemName" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="itemSku" class="form-label">SKU</label>
+                            <input type="text" class="form-control" id="itemSku" placeholder="Auto-generated if empty">
+                        </div>
+                        
+                        <div class="col-md-12">
+                            <label for="itemDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="itemDescription" rows="2"></textarea>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label for="itemBrand" class="form-label">Brand *</label>
+                            <select class="form-select" id="itemBrand" required>
+                                <option value="">Select Brand</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="itemDeviceCategory" class="form-label">Device Category *</label>
+                            <select class="form-select" id="itemDeviceCategory" required>
+                                <option value="">Select Category</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="itemDeviceModel" class="form-label">Device Model *</label>
+                            <select class="form-select" id="itemDeviceModel" required>
+                                <option value="">Select Model</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="itemInventoryCategory" class="form-label">Inventory Category *</label>
+                            <select class="form-select" id="itemInventoryCategory" required>
+                                <option value="">Select Category</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-3">
+                            <label for="itemCurrentStock" class="form-label">Current Stock</label>
+                            <input type="number" class="form-control" id="itemCurrentStock" min="0" value="0">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="itemReorderPoint" class="form-label">Reorder Point</label>
+                            <input type="number" class="form-control" id="itemReorderPoint" min="0" value="5">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="itemCostPrice" class="form-label">Cost Price</label>
+                            <input type="number" class="form-control" id="itemCostPrice" step="0.01" min="0">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="itemRetailPrice" class="form-label">Retail Price</label>
+                            <input type="number" class="form-control" id="itemRetailPrice" step="0.01" min="0">
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <label for="itemWholesalePrice" class="form-label">Wholesale Price</label>
+                            <input type="number" class="form-control" id="itemWholesalePrice" step="0.01" min="0">
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" id="itemLowStockNotifications" checked>
+                                <label class="form-check-label" for="itemLowStockNotifications">
+                                    Enable Low Stock Notifications
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="itemIsActive" checked>
+                                <label class="form-check-label" for="itemIsActive">
+                                    Active
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-12">
+                            <label for="itemNotes" class="form-label">Notes</label>
+                            <textarea class="form-control" id="itemNotes" rows="2"></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveInventoryItem()">Save Item</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stock Movement Modal -->
+<div class="modal fade" id="stockMovementModal" tabindex="-1" aria-labelledby="stockMovementModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="stockMovementModalLabel">Record Stock Movement</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="stockMovementForm">
+                    <input type="hidden" id="movementInventoryItemId">
+                    
+                    <div class="mb-3">
+                        <label for="movementType" class="form-label">Movement Type *</label>
+                        <select class="form-select" id="movementType" required>
+                            <option value="">Select Type</option>
+                            <option value="IN">Stock In</option>
+                            <option value="OUT">Stock Out</option>
+                            <option value="ADJUSTMENT">Adjustment</option>
+                            <option value="TRANSFER">Transfer</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="movementQuantity" class="form-label">Quantity *</label>
+                        <input type="number" class="form-control" id="movementQuantity" min="1" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="movementUnitCost" class="form-label">Unit Cost</label>
+                        <input type="number" class="form-control" id="movementUnitCost" step="0.01" min="0">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="movementReason" class="form-label">Reason *</label>
+                        <input type="text" class="form-control" id="movementReason" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="movementReference" class="form-label">Reference Number</label>
+                        <input type="text" class="form-control" id="movementReference">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveStockMovement()">Record Movement</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let inventoryTable;
+
+    $(document).ready(function() {
+        // Initialize DataTable with AJAX data loading
+        inventoryTable = $('#inventoryTable').DataTable({
+            ajax: {
+                url: '/Inventories/GetInventoryItems',
+                type: 'GET',
+                dataSrc: function(json) {
+                    console.log('AJAX Response:', json); // Debug log
+                    if (json && json.success) {
+                        return json.data;
+                    } else {
+                        console.error('Error loading inventory data:', json ? json.message : 'No response');
+                        return [];
+                    }
+                },
+                error: function(xhr, error, thrown) {
+                    console.error('AJAX Error:', error, thrown);
+                    console.error('Response:', xhr.responseText);
+                    alert('Error loading inventory data: ' + error + '. Please check console for details.');
+                }
+            },
+            columns: [
+                {
+                    data: 'name',
+                    render: function(data, type, row) {
+                        let html = '<strong>' + data + '</strong>';
+                        if (row.description) {
+                            html += '<br><small class="text-muted">' + row.description + '</small>';
+                        }
+                        return html;
+                    }
+                },
+                { data: 'sku' },
+                { data: 'brandName' },
+                { data: 'inventoryCategoryName' },
+                { data: 'deviceModelName' },
+                {
+                    data: 'currentStock',
+                    render: function(data, type, row) {
+                        const isLowStock = data <= row.reorderPoint;
+                        return '<span class="' + (isLowStock ? 'text-danger fw-bold' : '') + '">' + data + '</span>';
+                    }
+                },
+                { data: 'reorderPoint' },
+                {
+                    data: 'costPrice',
+                    render: function(data) {
+                        return '$' + parseFloat(data).toFixed(2);
+                    }
+                },
+                {
+                    data: 'retailPrice',
+                    render: function(data) {
+                        return '$' + parseFloat(data).toFixed(2);
+                    }
+                },
+                {
+                    data: null,
+                    render: function(data, type, row) {
+                        if (row.currentStock <= 0) {
+                            return '<span class="badge bg-danger">Out of Stock</span>';
+                        } else if (row.currentStock <= row.reorderPoint) {
+                            return '<span class="badge bg-warning">Low Stock</span>';
+                        } else {
+                            return '<span class="badge bg-success">In Stock</span>';
+                        }
+                    }
+                },
+                {
+                    data: null,
+                    orderable: false,
+                    render: function(data, type, row) {
+                        return `
+                            <div class="btn-group btn-group-sm">
+                                <button type="button" class="btn btn-outline-warning" onclick="editInventoryItem(${row.id})" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-info" onclick="showStockMovementModal(${row.id})" title="Stock Movement">
+                                    <i class="fas fa-exchange-alt"></i>
+                                </button>
+                                <button type="button" class="btn btn-outline-danger" onclick="deleteInventoryItem(${row.id})" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
+            ],
+            responsive: true,
+            pageLength: 25,
+            order: [[0, 'asc']],
+            language: {
+                emptyTable: "No inventory items found"
+            },
+            rowCallback: function(row, data) {
+                if (data.currentStock <= data.reorderPoint) {
+                    $(row).addClass('table-warning');
+                }
+            }
+        });
+
+        console.log('DataTable initialized with AJAX data loading');
+
+        // Initialize Select2 for all dropdowns - same as device page
+        safeInitializeSelect2();
+
+        // Load dropdown data - same as device page
+        loadBrands();
+        loadDeviceCategories();
+        loadInventoryCategories();
+        
+        // Setup cascading dropdowns
+        setupCascadingDropdowns();
+    });
+
+    // Use the same safeInitializeSelect2 function as device page
+    function safeInitializeSelect2(selector = '.form-select') {
+        try {
+            if (typeof $.fn.select2 !== 'undefined') {
+                $(selector).each(function() {
+                    if (!$(this).hasClass('select2-hidden-accessible')) {
+                        $(this).select2({
+                            theme: 'bootstrap-5',
+                            width: '100%',
+                            placeholder: $(this).find('option:first').text(),
+                            allowClear: true
+                        });
+                    }
+                });
+            } else {
+                console.warn('Select2 not available, using standard dropdowns');
+            }
+        } catch (error) {
+            console.error('Error initializing Select2:', error);
+        }
+    }
+
+    // Use the same brand loading function as device page
+    function loadBrands() {
+        $.get('@Url.Action("GetBrands", "Lookup")')
+            .done(function(data) {
+                console.log('Loaded brands:', data);
+                $('#filterBrand, #itemBrand').each(function() {
+                    const dropdown = $(this);
+                    const firstOption = dropdown.find('option:first');
+                    dropdown.empty().append(firstOption);
+                    
+                    if (data && Array.isArray(data)) {
+                        data.forEach(function(brand) {
+                            const id = brand.Id || brand.id;
+                            const name = brand.Name || brand.name;
+                            dropdown.append(`<option value="${id}">${name}</option>`);
+                        });
+                    }
+                });
+                
+                safeInitializeSelect2('#filterBrand, #itemBrand');
+                console.log('Loaded', data.length, 'brands successfully');
+            })
+            .fail(function(xhr, status, error) {
+                console.error('Failed to load brands:', error);
+                alert('Failed to load brands. Please refresh the page.');
+            });
+    }
+
+    // Use the same device categories loading function as device page
+    function loadDeviceCategories() {
+        $.get('@Url.Action("GetDeviceCategories", "Lookup")')
+            .done(function(data) {
+                console.log('Device categories response:', data);
+                $('#filterDeviceCategory, #itemDeviceCategory').each(function() {
+                    const dropdown = $(this);
+                    const firstOption = dropdown.find('option:first');
+                    dropdown.empty().append(firstOption);
+                    
+                    if (data && Array.isArray(data)) {
+                        data.forEach(function(category) {
+                            const id = category.Id || category.id;
+                            const name = category.Name || category.name;
+                            dropdown.append(`<option value="${id}">${name}</option>`);
+                        });
+                    }
+                });
+                
+                safeInitializeSelect2('#filterDeviceCategory, #itemDeviceCategory');
+                console.log('Loaded', data.length, 'device categories successfully');
+            })
+            .fail(function(xhr, status, error) {
+                console.error('Failed to load device categories:', error);
+                alert('Failed to load device categories. Please refresh the page.');
+            });
+    }
+
+    // Load inventory categories
+    function loadInventoryCategories() {
+        $.get('@Url.Action("GetInventoryCategories", "Lookup")')
+            .done(function(data) {
+                console.log('Inventory categories response:', data);
+                $('#filterInventoryCategory, #itemInventoryCategory').each(function() {
+                    const dropdown = $(this);
+                    const firstOption = dropdown.find('option:first');
+                    dropdown.empty().append(firstOption);
+                    
+                    if (data && Array.isArray(data)) {
+                        data.forEach(function(category) {
+                            const id = category.Id || category.id;
+                            const name = category.Name || category.name;
+                            dropdown.append(`<option value="${id}">${name}</option>`);
+                        });
+                    }
+                });
+                
+                safeInitializeSelect2('#filterInventoryCategory, #itemInventoryCategory');
+                console.log('Loaded', data.length, 'inventory categories successfully');
+            })
+            .fail(function(xhr, status, error) {
+                console.error('Failed to load inventory categories:', error);
+                alert('Failed to load inventory categories. Please refresh the page.');
+            });
+    }
+
+    // Use the same device models loading function as device page
+    function loadDeviceModels(brandId, categoryId, targetSelector) {
+        if (!brandId || !categoryId) {
+            $(targetSelector).empty().append('<option value="">Select Model</option>').prop('disabled', true);
+            safeInitializeSelect2(targetSelector);
+            return;
+        }
+
+        $.get('@Url.Action("GetDeviceModels", "Lookup")', { brandId: brandId, categoryId: categoryId })
+            .done(function(data) {
+                console.log('Device models response:', data);
+                $(targetSelector).empty().append('<option value="">Select Model</option>').prop('disabled', false);
+                
+                if (data && Array.isArray(data)) {
+                    data.forEach(function(model) {
+                        const id = model.Id || model.id;
+                        const name = model.Name || model.name;
+                        $(targetSelector).append(`<option value="${id}">${name}</option>`);
+                    });
+                }
+                
+                safeInitializeSelect2(targetSelector);
+                console.log('Loaded', data.length, 'device models successfully');
+            })
+            .fail(function(xhr, status, error) {
+                console.error('Failed to load device models:', error);
+                alert('Failed to load device models. Please try again.');
+            });
+    }
+
+    function setupCascadingDropdowns() {
+        // Brand change -> load models for that brand
+        $('#itemBrand, #filterBrand').change(function() {
+            const brandId = $(this).val();
+            const isFilter = $(this).attr('id').includes('filter');
+            const categorySelector = isFilter ? '#filterDeviceCategory' : '#itemDeviceCategory';
+            const modelSelector = isFilter ? '#filterDeviceModel' : '#itemDeviceModel';
+            const categoryId = $(categorySelector).val();
+            
+            if (brandId && categoryId) {
+                loadDeviceModels(brandId, categoryId, modelSelector);
+            } else {
+                $(modelSelector).empty().append('<option value="">Select Model</option>').prop('disabled', true);
+                safeInitializeSelect2(modelSelector);
+            }
+        });
+
+        // Device Category change -> load models for that category
+        $('#itemDeviceCategory, #filterDeviceCategory').change(function() {
+            const categoryId = $(this).val();
+            const isFilter = $(this).attr('id').includes('filter');
+            const brandSelector = isFilter ? '#filterBrand' : '#itemBrand';
+            const modelSelector = isFilter ? '#filterDeviceModel' : '#itemDeviceModel';
+            const brandId = $(brandSelector).val();
+            
+            if (brandId && categoryId) {
+                loadDeviceModels(brandId, categoryId, modelSelector);
+            } else {
+                $(modelSelector).empty().append('<option value="">Select Model</option>').prop('disabled', true);
+                safeInitializeSelect2(modelSelector);
+            }
+        });
+    }
+
+    function showAddInventoryItemModal() {
+        $('#inventoryItemModalLabel').text('Add Inventory Item');
+        $('#inventoryItemId').val('0');
+        $('#inventoryItemForm')[0].reset();
+        $('#itemLowStockNotifications').prop('checked', true);
+        $('#itemIsActive').prop('checked', true);
+        
+        // Reset model dropdown
+        $('#itemDeviceModel').empty().append('<option value="">Select Model</option>').prop('disabled', true);
+        
+        // Reinitialize Select2
+        setTimeout(() => {
+            safeInitializeSelect2();
+        }, 100);
+        
+        $('#inventoryItemModal').modal('show');
+    }
+
+    function showAddInventoryItemModal() {
+        $('#inventoryItemModalLabel').text('Add Inventory Item');
+        $('#inventoryItemId').val('0');
+        $('#inventoryItemForm')[0].reset();
+        $('#itemLowStockNotifications').prop('checked', true);
+        $('#itemIsActive').prop('checked', true);
+        $('#inventoryItemModal').modal('show');
+    }
+
+    function editInventoryItem(id) {
+        $.get('@Url.Action("GetInventoryItem", "Inventories")/' + id)
+            .done(function(response) {
+                if (response.success) {
+                    const item = response.data;
+                    $('#inventoryItemModalLabel').text('Edit Inventory Item');
+                    $('#inventoryItemId').val(item.id);
+                    $('#itemName').val(item.name);
+                    $('#itemSku').val(item.sku);
+                    $('#itemDescription').val(item.description);
+                    $('#itemBrand').val(item.brandId);
+                    $('#itemDeviceCategory').val(item.deviceCategoryId);
+                    $('#itemDeviceModel').val(item.deviceModelId);
+                    $('#itemInventoryCategory').val(item.inventoryCategoryId);
+                    $('#itemCurrentStock').val(item.currentStock);
+                    $('#itemReorderPoint').val(item.reorderPoint);
+                    $('#itemCostPrice').val(item.costPrice);
+                    $('#itemRetailPrice').val(item.retailPrice);
+                    $('#itemWholesalePrice').val(item.wholesalePrice);
+                    $('#itemLowStockNotifications').prop('checked', item.enableLowStockNotifications);
+                    $('#itemIsActive').prop('checked', item.isActive);
+                    $('#itemNotes').val(item.notes);
+                    
+                    // Load models for selected brand and category
+                    if (item.brandId) {
+                        $('#itemBrand').trigger('change');
+                        setTimeout(() => $('#itemDeviceModel').val(item.deviceModelId), 500);
+                    }
+                    
+                    $('#inventoryItemModal').modal('show');
+                } else {
+                    alert('Error loading inventory item: ' + response.message);
+                }
+            })
+            .fail(function() {
+                alert('Error loading inventory item. Please try again.');
+            });
+    }
+
+    function saveInventoryItem() {
+        const id = $('#inventoryItemId').val();
+        const isEdit = id !== '0';
+        
+        // Validate required fields
+        const name = $('#itemName').val().trim();
+        const brandId = parseInt($('#itemBrand').val());
+        const deviceCategoryId = parseInt($('#itemDeviceCategory').val());
+        const deviceModelId = parseInt($('#itemDeviceModel').val());
+        const inventoryCategoryId = parseInt($('#itemInventoryCategory').val());
+        
+        if (!name) {
+            alert('Item name is required');
+            return;
+        }
+        
+        if (!brandId || brandId <= 0) {
+            alert('Please select a brand');
+            return;
+        }
+        
+        if (!deviceCategoryId || deviceCategoryId <= 0) {
+            alert('Please select a device category');
+            return;
+        }
+        
+        if (!deviceModelId || deviceModelId <= 0) {
+            alert('Please select a device model');
+            return;
+        }
+        
+        if (!inventoryCategoryId || inventoryCategoryId <= 0) {
+            alert('Please select an inventory category');
+            return;
+        }
+        
+        const data = {
+            Name: name,
+            SKU: $('#itemSku').val().trim(),
+            Description: $('#itemDescription').val().trim(),
+            BrandId: brandId,
+            DeviceCategoryId: deviceCategoryId,
+            DeviceModelId: deviceModelId,
+            InventoryCategoryId: inventoryCategoryId,
+            CurrentStock: parseInt($('#itemCurrentStock').val()) || 0,
+            ReorderPoint: parseInt($('#itemReorderPoint').val()) || 0,
+            CostPrice: parseFloat($('#itemCostPrice').val()) || 0,
+            RetailPrice: parseFloat($('#itemRetailPrice').val()) || 0,
+            WholesalePrice: parseFloat($('#itemWholesalePrice').val()) || 0,
+            EnableLowStockNotifications: $('#itemLowStockNotifications').is(':checked'),
+            IsActive: $('#itemIsActive').is(':checked'),
+            Notes: $('#itemNotes').val().trim()
+        };
+
+        console.log('Saving inventory item:', data);
+
+        const url = isEdit ? 
+            '@Url.Action("UpdateInventoryItem", "Inventories")/' + id : 
+            '@Url.Action("CreateInventoryItem", "Inventories")';
+        
+        const method = isEdit ? 'PUT' : 'POST';
+
+        $.ajax({
+            url: url,
+            type: method,
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function(response) {
+                console.log('Save response:', response);
+                if (response.success) {
+                    $('#inventoryItemModal').modal('hide');
+                    // Reload the DataTable to show the new/updated item
+                    inventoryTable.ajax.reload();
+                    alert(response.message || (isEdit ? 'Inventory item updated successfully!' : 'Inventory item created successfully!'));
+                } else {
+                    alert('Error: ' + response.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Save error:', error);
+                console.error('Response:', xhr.responseText);
+                
+                // Try to parse error response
+                try {
+                    const errorResponse = JSON.parse(xhr.responseText);
+                    alert('Error: ' + errorResponse.message);
+                } catch (e) {
+                    alert('Error saving inventory item. Please try again.');
+                }
+            }
+        });
+    }
+
+    function deleteInventoryItem(id) {
+        if (confirm('Are you sure you want to delete this inventory item?')) {
+            $.ajax({
+                url: '@Url.Action("DeleteInventoryItem", "Inventories")/' + id,
+                type: 'DELETE',
+                success: function(response) {
+                    if (response.success) {
+                        inventoryTable.ajax.reload();
+                        alert(response.message || 'Inventory item deleted successfully!');
+                    } else {
+                        alert('Error: ' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('Error deleting inventory item. Please try again.');
+                }
+            });
+        }
+    }
+
+    function showStockMovementModal(inventoryItemId) {
+        $('#movementInventoryItemId').val(inventoryItemId);
+        $('#stockMovementForm')[0].reset();
+        $('#stockMovementModal').modal('show');
+    }
+
+    function saveStockMovement() {
+        const data = {
+            InventoryItemId: parseInt($('#movementInventoryItemId').val()),
+            MovementType: $('#movementType').val(),
+            Quantity: parseInt($('#movementQuantity').val()),
+            UnitCost: parseFloat($('#movementUnitCost').val()) || 0,
+            Reason: $('#movementReason').val(),
+            ReferenceNumber: $('#movementReference').val()
+        };
+
+        $.ajax({
+            url: '@Url.Action("RecordStockMovement", "Inventories")',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function(response) {
+                if (response.success) {
+                    $('#stockMovementModal').modal('hide');
+                    $('#inventoryTable').DataTable().ajax.reload();
+                    alert(response.message || 'Stock movement recorded successfully!');
+                } else {
+                    alert('Error: ' + response.message);
+                }
+            },
+            error: function() {
+                alert('Error recording stock movement. Please try again.');
+            }
+        });
+    }
+
+    function applyFilters() {
+        const filters = {
+            brandId: $('#filterBrand').val(),
+            deviceCategoryId: $('#filterDeviceCategory').val(),
+            deviceModelId: $('#filterDeviceModel').val(),
+            inventoryCategoryId: $('#filterInventoryCategory').val(),
+            stockStatus: $('#filterStockStatus').val()
+        };
+
+        // Build query string
+        const queryParams = [];
+        Object.keys(filters).forEach(key => {
+            if (filters[key]) {
+                queryParams.push(`${key}=${encodeURIComponent(filters[key])}`);
+            }
+        });
+
+        const url = '/Inventories/GetInventoryItems' + (queryParams.length > 0 ? '?' + queryParams.join('&') : '');
+        inventoryTable.ajax.url(url).load();
+    }
+
+    function clearFilters() {
+        $('#inventoryFilterForm')[0].reset();
+        inventoryTable.ajax.url('/Inventories/GetInventoryItems').load();
+    }
+
+    function testAjaxCall() {
+        console.log('Testing AJAX call to /Inventories/GetInventoryItems');
+        $.ajax({
+            url: '/Inventories/GetInventoryItems',
+            type: 'GET',
+            success: function(response) {
+                console.log('Test AJAX Success:', response);
+                alert('AJAX call successful! Check console for response. Items found: ' + (response.data ? response.data.length : 'N/A'));
+            },
+            error: function(xhr, error, thrown) {
+                console.error('Test AJAX Error:', error, thrown);
+                console.error('Response Text:', xhr.responseText);
+                console.error('Status:', xhr.status);
+                alert('AJAX call failed: ' + error + ' (Status: ' + xhr.status + ')');
+            }
+        });
+    }
+
+    function showLowStockReport() {
+        // Filter to show only low stock items
+        $('#filterStockStatus').val('low_stock');
+        applyFilters();
+    }
+
+    function showStockMovements() {
+        // This could open a separate modal or page for stock movement history
+        alert('Stock movements report feature coming soon!');
+    }
+</script>
+}
+

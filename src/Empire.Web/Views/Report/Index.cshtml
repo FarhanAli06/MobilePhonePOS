@@ -1,0 +1,408 @@
+@{
+    ViewData["Title"] = "Reports & Analytics";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-chart-bar me-2"></i>Reports & Analytics</h2>
+    <div>
+        <button type="button" class="btn btn-success" onclick="exportReport()">
+            <i class="fas fa-download me-2"></i>Export Report
+        </button>
+        <button type="button" class="btn btn-info" onclick="scheduleReport()">
+            <i class="fas fa-clock me-2"></i>Schedule Report
+        </button>
+    </div>
+</div>
+
+<!-- Report Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Report Filters</h5>
+        <form id="reportFilterForm" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Date Range</label>
+                <select class="form-select" id="dateRange" onchange="handleDateRangeChange()">
+                    <option value="today">Today</option>
+                    <option value="yesterday">Yesterday</option>
+                    <option value="this-week">This Week</option>
+                    <option value="last-week">Last Week</option>
+                    <option value="this-month" selected>This Month</option>
+                    <option value="last-month">Last Month</option>
+                    <option value="this-year">This Year</option>
+                    <option value="custom">Custom Range</option>
+                </select>
+            </div>
+            <div class="col-md-3" id="customDateRange" style="display: none;">
+                <label class="form-label">From Date</label>
+                <input type="date" class="form-control" id="fromDate">
+            </div>
+            <div class="col-md-3" id="customDateRangeTo" style="display: none;">
+                <label class="form-label">To Date</label>
+                <input type="date" class="form-control" id="toDate">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Report Type</label>
+                <select class="form-select" id="reportType">
+                    <option value="overview">Overview</option>
+                    <option value="sales">Sales Report</option>
+                    <option value="repairs">Repairs Report</option>
+                    <option value="inventory">Inventory Report</option>
+                    <option value="customers">Customer Report</option>
+                    <option value="financial">Financial Report</option>
+                </select>
+            </div>
+            <div class="col-12">
+                <button type="button" class="btn btn-primary" onclick="generateReport()">
+                    <i class="fas fa-chart-line me-2"></i>Generate Report
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="resetFilters()">
+                    <i class="fas fa-refresh me-2"></i>Reset
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Quick Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">$12,450</h4>
+                        <p class="card-text">Total Sales</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-dollar-sign fa-2x"></i>
+                    </div>
+                </div>
+                <small>+15% from last month</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">89</h4>
+                        <p class="card-text">Repairs Completed</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-tools fa-2x"></i>
+                    </div>
+                </div>
+                <small>+8% from last month</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">156</h4>
+                        <p class="card-text">New Customers</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-2x"></i>
+                    </div>
+                </div>
+                <small>+22% from last month</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="card-title">23</h4>
+                        <p class="card-text">Low Stock Items</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-exclamation-triangle fa-2x"></i>
+                    </div>
+                </div>
+                <small>Needs attention</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Sales & Revenue Trend</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="salesChart" height="100"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Repair Status Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="repairStatusChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Reports -->
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Top Selling Items</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Quantity</th>
+                            <th>Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>iPhone Screen Repair</td>
+                            <td>45</td>
+                            <td>$4,500</td>
+                        </tr>
+                        <tr>
+                            <td>Samsung Battery Replacement</td>
+                            <td>32</td>
+                            <td>$2,400</td>
+                        </tr>
+                        <tr>
+                            <td>Phone Cases</td>
+                            <td>78</td>
+                            <td>$1,950</td>
+                        </tr>
+                        <tr>
+                            <td>Screen Protectors</td>
+                            <td>156</td>
+                            <td>$1,560</td>
+                        </tr>
+                        <tr>
+                            <td>Charging Cables</td>
+                            <td>89</td>
+                            <td>$890</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Recent Activities</h5>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-success"></div>
+                        <div class="timeline-content">
+                            <h6 class="timeline-title">Repair Completed</h6>
+                            <p class="timeline-text">iPhone 12 screen repair for John Doe</p>
+                            <small class="text-muted">2 hours ago</small>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-primary"></div>
+                        <div class="timeline-content">
+                            <h6 class="timeline-title">New Sale</h6>
+                            <p class="timeline-text">Sold phone case and screen protector</p>
+                            <small class="text-muted">4 hours ago</small>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-warning"></div>
+                        <div class="timeline-content">
+                            <h6 class="timeline-title">Low Stock Alert</h6>
+                            <p class="timeline-text">iPhone 13 batteries running low</p>
+                            <small class="text-muted">6 hours ago</small>
+                        </div>
+                    </div>
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-info"></div>
+                        <div class="timeline-content">
+                            <h6 class="timeline-title">New Customer</h6>
+                            <p class="timeline-text">Jane Smith registered</p>
+                            <small class="text-muted">1 day ago</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        function handleDateRangeChange() {
+            const dateRange = document.getElementById('dateRange').value;
+            const customDateRange = document.getElementById('customDateRange');
+            const customDateRangeTo = document.getElementById('customDateRangeTo');
+            
+            if (dateRange === 'custom') {
+                customDateRange.style.display = 'block';
+                customDateRangeTo.style.display = 'block';
+            } else {
+                customDateRange.style.display = 'none';
+                customDateRangeTo.style.display = 'none';
+            }
+        }
+
+        function generateReport() {
+            const reportType = document.getElementById('reportType').value;
+            const dateRange = document.getElementById('dateRange').value;
+            console.log('Generating report:', reportType, dateRange);
+            
+            // Update charts and data based on filters
+            updateCharts();
+        }
+
+        function resetFilters() {
+            document.getElementById('reportFilterForm').reset();
+            document.getElementById('dateRange').value = 'this-month';
+            handleDateRangeChange();
+        }
+
+        function exportReport() {
+            console.log('Exporting report...');
+        }
+
+        function scheduleReport() {
+            console.log('Opening schedule report dialog...');
+        }
+
+        function updateCharts() {
+            // Update sales chart
+            updateSalesChart();
+            updateRepairStatusChart();
+        }
+
+        function updateSalesChart() {
+            const ctx = document.getElementById('salesChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Sales',
+                        data: [12000, 15000, 13000, 17000, 16000, 18000],
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                        tension: 0.1
+                    }, {
+                        label: 'Repairs',
+                        data: [8000, 9000, 7500, 11000, 10500, 12000],
+                        borderColor: 'rgb(255, 99, 132)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateRepairStatusChart() {
+            const ctx = document.getElementById('repairStatusChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Completed', 'In Progress', 'Pending'],
+                    datasets: [{
+                        data: [65, 25, 10],
+                        backgroundColor: [
+                            'rgb(40, 167, 69)',
+                            'rgb(255, 193, 7)',
+                            'rgb(220, 53, 69)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Initialize charts on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCharts();
+        });
+    </script>
+    
+    <style>
+        .timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .timeline-marker {
+            position: absolute;
+            left: -35px;
+            top: 5px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+        
+        .timeline-item:not(:last-child)::before {
+            content: '';
+            position: absolute;
+            left: -30px;
+            top: 17px;
+            width: 2px;
+            height: calc(100% + 5px);
+            background-color: #dee2e6;
+        }
+        
+        .timeline-title {
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        
+        .timeline-text {
+            margin-bottom: 5px;
+            font-size: 13px;
+            color: #6c757d;
+        }
+    </style>
+}
+

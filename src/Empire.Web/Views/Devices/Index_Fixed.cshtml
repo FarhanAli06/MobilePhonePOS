@@ -1,0 +1,608 @@
+@model IEnumerable<Empire.Application.DTOs.Device.DeviceSelectionDto>
+@{
+    ViewData["Title"] = "Device Management";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-mobile-alt me-2"></i>Device Management</h2>
+    <div>
+        <button type="button" class="btn btn-primary" onclick="showCreateDeviceModal()">
+            <i class="fas fa-plus me-2"></i>Add New Device
+        </button>
+        <button type="button" class="btn btn-success" onclick="showAvailableDevices()">
+            <i class="fas fa-check-circle me-2"></i>Available for Sale
+        </button>
+        <button type="button" class="btn btn-info" onclick="showSoldDevices()">
+            <i class="fas fa-history me-2"></i>Sold Devices
+        </button>
+    </div>
+</div>
+
+<!-- Filter Section -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Filter Devices</h5>
+        <form id="deviceFilterForm" class="row g-3">
+            <div class="col-md-2">
+                <label class="form-label">Device Type</label>
+                <select class="form-select" id="filterDeviceType">
+                    <option value="">All Types</option>
+                    <option value="0">Phone</option>
+                    <option value="1">Laptop</option>
+                    <option value="2">Part</option>
+                    <option value="3">Accessories</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Brand</label>
+                <input type="text" class="form-control" id="filterBrand" placeholder="Enter brand">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Model</label>
+                <input type="text" class="form-control" id="filterModel" placeholder="Enter model">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Status</label>
+                <select class="form-select" id="filterStatus">
+                    <option value="">All Status</option>
+                    <option value="available">Available for Sale</option>
+                    <option value="sold">Sold</option>
+                    <option value="not-for-sale">Not for Sale</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Network Status</label>
+                <select class="form-select" id="filterNetworkStatus">
+                    <option value="">All</option>
+                    <option value="Unlocked">Unlocked</option>
+                    <option value="Locked">Locked</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Condition</label>
+                <select class="form-select" id="filterCondition">
+                    <option value="">All Conditions</option>
+                    <option value="None">No Scratches</option>
+                    <option value="Minor">Minor Scratches</option>
+                    <option value="Major">Major Scratches</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Search</label>
+                <input type="text" class="form-control" id="filterSearch" placeholder="Search IMEI, notes, etc.">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid gap-2 d-md-flex">
+                    <button type="button" class="btn btn-primary" onclick="applyFilters()">
+                        <i class="fas fa-search me-2"></i>Filter
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="clearFilters()">
+                        <i class="fas fa-refresh me-2"></i>Clear
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Devices Table -->
+<div class="card">
+    <div class="card-body">
+        <table id="devicesTable" class="table table-striped table-hover">
+            <thead>
+                <tr>
+                    <th>Device</th>
+                    <th>IMEI/Serial</th>
+                    <th>Condition</th>
+                    <th>Prices</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="devicesTableBody">
+                @foreach (var device in Model)
+                {
+                    <tr data-device-id="@device.Id">
+                        <td>
+                            <div class="fw-bold">@device.DisplayName</div>
+                            <small class="text-muted">@device.DeviceType</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary">@(device.IMEISerialNumber ?? "N/A")</span>
+                        </td>
+                        <td>
+                            <div>
+                                <small>Battery: @(device.BatteryHealthPercentage ?? 0)%</small><br>
+                                <small>Scratches: @device.ScratchesCondition</small><br>
+                                <small>Network: @device.NetworkStatus</small>
+                            </div>
+                        </td>
+                        <td>
+                            <div>
+                                <small>Buy: $@(device.BuyingPrice?.ToString("F2") ?? "0.00")</small><br>
+                                <small>Sell: $@(device.SellingPrice?.ToString("F2") ?? "0.00")</small>
+                            </div>
+                        </td>
+                        <td class="status-cell">
+                            @if (device.IsSold)
+                            {
+                                <span class="badge bg-success">Sold</span>
+                                @if (device.SoldDate.HasValue)
+                                {
+                                    <br>
+                        
+                                    <small class="text-muted">@device.SoldDate.Value.ToString("MM/dd/yyyy")</small>
+                                }
+                            }
+                            else if (device.IsAvailableForSale)
+                            {
+                                <span class="badge bg-primary">Available</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning">Not for Sale</span>
+                            }
+                        </td>
+                        <td>
+                            <small>@device.CreatedDate.ToString("MM/dd/yyyy")</small>
+                        </td>
+                        <td class="actions-cell">
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="viewDevice(@device.Id)" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-warning" onclick="editDevice(@device.Id)" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                @if (!device.IsSold)
+                                {
+                                    <button type="button" class="btn btn-sm @(device.IsAvailableForSale ? "btn-outline-secondary" : "btn-outline-success")"
+                                            onclick="toggleAvailableForSale(@device.Id)"
+                                            title="@(device.IsAvailableForSale ? "Mark as Not for Sale" : "Mark as Available for Sale")">
+                                        <i class="fas @(device.IsAvailableForSale ? "fa-times" : "fa-check")"></i>
+                                    </button>
+                                }
+                                @if (!device.IsSold && device.IsAvailableForSale)
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-success" onclick="markAsSold(@device.Id)" title="Mark as Sold">
+                                        <i class="fas fa-dollar-sign"></i>
+                                    </button>
+                                }
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteDevice(@device.Id)" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Create Device Modal -->
+<div class="modal fade" id="createDeviceModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add New Device</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createDeviceForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Device Type *</label>
+                                <select class="form-select" id="deviceType" required>
+                                    <option value="">Select Device Type</option>
+                                    <option value="0">Phone</option>
+                                    <option value="1">Laptop</option>
+                                    <option value="2">Part</option>
+                                    <option value="3">Accessories</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Brand *</label>
+                                <input type="text" class="form-control" id="brand" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Model *</label>
+                                <input type="text" class="form-control" id="model" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">IMEI/Serial Number</label>
+                                <input type="text" class="form-control" id="imeiSerialNumber">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Battery Health (%)</label>
+                                <input type="number" class="form-control" id="batteryHealth" min="0" max="100">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Network Status</label>
+                                <select class="form-select" id="networkStatus">
+                                    <option value="Unlocked">Unlocked</option>
+                                    <option value="Locked">Locked</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Scratches</label>
+                                <select class="form-select" id="scratches">
+                                    <option value="None">None</option>
+                                    <option value="Minor">Minor</option>
+                                    <option value="Major">Major</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Buying Price</label>
+                                <input type="number" class="form-control" id="buyingPrice" step="0.01" min="0">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Selling Price</label>
+                                <input type="number" class="form-control" id="sellingPrice" step="0.01" min="0">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Source</label>
+                                <input type="text" class="form-control" id="source" placeholder="Where did you buy this device?">
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="mb-3">
+                                <label class="form-label">Notes</label>
+                                <textarea class="form-control" id="notes" rows="3" placeholder="Any additional notes about the device condition or issues"></textarea>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="isAvailableForSale" checked>
+                                <label class="form-check-label" for="isAvailableForSale">
+                                    Available for Sale
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="createDevice()">
+                    <i class="fas fa-plus me-2"></i>Add Device
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Device Modal -->
+<div class="modal fade" id="editDeviceModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Device</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="editDeviceModalBody">
+                <!-- Content will be loaded dynamically -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mark as Sold Modal -->
+<div class="modal fade" id="markAsSoldModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Mark Device as Sold</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="markAsSoldForm">
+                    <input type="hidden" id="soldDeviceId">
+                    <div class="mb-3">
+                        <label class="form-label">Customer ID</label>
+                        <input type="number" class="form-control" id="soldCustomerId" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Sale Price</label>
+                        <input type="number" class="form-control" id="soldSalePrice" step="0.01" min="0">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" onclick="confirmMarkAsSold()">
+                    <i class="fas fa-dollar-sign me-2"></i>Mark as Sold
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Page specific scripts -->
+<script>
+    let devicesTable;
+
+    $(document).ready(function() {
+        devicesTable = $('#devicesTable').DataTable({
+            responsive: true,
+            pageLength: 25,
+            order: [[5, 'desc']], // Sort by created date
+            columnDefs: [
+                { orderable: false, targets: [6] } // Disable sorting on actions column
+            ]
+        });
+    });
+
+    function showCreateDeviceModal() {
+        $('#createDeviceModal').modal('show');
+    }
+
+    function createDevice() {
+        const formData = {
+            DeviceType: parseInt($('#deviceType').val()),
+            Brand: $('#brand').val(),
+            Category: $('#brand').val(), // Using brand as category for now
+            Model: $('#model').val(),
+            ModelNumber: '',
+            Year: null,
+            IMEISerialNumber: $('#imeiSerialNumber').val(),
+            BatteryHealthPercentage: $('#batteryHealth').val() ? parseInt($('#batteryHealth').val()) : null,
+            NetworkStatus: $('#networkStatus').val(),
+            ScratchesCondition: $('#scratches').val(),
+            BuyingPrice: $('#buyingPrice').val() ? parseFloat($('#buyingPrice').val()) : null,
+            SellingPrice: $('#sellingPrice').val() ? parseFloat($('#sellingPrice').val()) : null,
+            Source: $('#source').val(),
+            Notes: $('#notes').val(),
+            IsAvailableForSale: $('#isAvailableForSale').is(':checked')
+        };
+
+        $.ajax({
+            url: '@Url.Action("Create", "Devices")',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(formData),
+            success: function(response) {
+                if (response.success) {
+                    $('#createDeviceModal').modal('hide');
+                    location.reload(); // Reload to show new device
+                } else {
+                    alert('Error: ' + response.message);
+                }
+            },
+            error: function() {
+                alert('Error creating device');
+            }
+        });
+    }
+
+    function editDevice(id) {
+        $.ajax({
+            url: '@Url.Action("Edit", "Devices")/' + id,
+            type: 'GET',
+            success: function(response) {
+                if (response.success === false) {
+                    alert('Error: ' + response.message);
+                } else {
+                    $('#editDeviceModalBody').html(response);
+                    $('#editDeviceModal').modal('show');
+                }
+            },
+            error: function() {
+                alert('Error loading device details');
+            }
+        });
+    }
+
+    function viewDevice(id) {
+        // For now, just show an alert with device ID
+        // This can be expanded to show a detailed view modal
+        alert('View device details for ID: ' + id);
+    }
+
+    function deleteDevice(id) {
+        if (confirm('Are you sure you want to delete this device?')) {
+            $.ajax({
+                url: '@Url.Action("Delete", "Devices")/' + id,
+                type: 'POST',
+                success: function(response) {
+                    if (response.success) {
+                        // Remove the row from the table
+                        $('tr[data-device-id="' + id + '"]').remove();
+                    } else {
+                        alert('Error: ' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('Error deleting device');
+                }
+            });
+        }
+    }
+
+    function toggleAvailableForSale(id) {
+        $.ajax({
+            url: '@Url.Action("ToggleAvailableForSale", "Devices")/' + id,
+            type: 'POST',
+            success: function(response) {
+                if (response.success) {
+                    // Update the status cell and actions
+                    location.reload(); // For now, just reload
+                } else {
+                    alert('Error: ' + response.message);
+                }
+            },
+            error: function() {
+                alert('Error updating device status');
+            }
+        });
+    }
+
+    function markAsSold(id) {
+        $('#soldDeviceId').val(id);
+        $('#markAsSoldModal').modal('show');
+    }
+
+    function confirmMarkAsSold() {
+        const deviceId = $('#soldDeviceId').val();
+        const customerId = $('#soldCustomerId').val();
+        const salePrice = $('#soldSalePrice').val();
+
+        if (!customerId) {
+            alert('Please enter a customer ID');
+            return;
+        }
+
+        const requestData = {
+            CustomerId: parseInt(customerId),
+            SalePrice: salePrice ? parseFloat(salePrice) : null
+        };
+
+        $.ajax({
+            url: '@Url.Action("MarkAsSold", "Devices")/' + deviceId,
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(requestData),
+            success: function(response) {
+                if (response.success) {
+                    $('#markAsSoldModal').modal('hide');
+                    location.reload(); // Reload to update status
+                } else {
+                    alert('Error: ' + response.message);
+                }
+            },
+            error: function() {
+                alert('Error marking device as sold');
+            }
+        });
+    }
+
+    function showAvailableDevices() {
+        $('#filterStatus').val('available');
+        applyFilters();
+    }
+
+    function showSoldDevices() {
+        $('#filterStatus').val('sold');
+        applyFilters();
+    }
+
+    function applyFilters() {
+        const filterData = {
+            DeviceType: $('#filterDeviceType').val() ? parseInt($('#filterDeviceType').val()) : null,
+            Brand: $('#filterBrand').val(),
+            Model: $('#filterModel').val(),
+            NetworkStatus: $('#filterNetworkStatus').val(),
+            ScratchesCondition: $('#filterCondition').val(),
+            SearchTerm: $('#filterSearch').val()
+        };
+
+        const status = $('#filterStatus').val();
+        if (status === 'available') {
+            filterData.IsAvailableForSale = true;
+            filterData.IsSold = false;
+        } else if (status === 'sold') {
+            filterData.IsSold = true;
+        } else if (status === 'not-for-sale') {
+            filterData.IsAvailableForSale = false;
+            filterData.IsSold = false;
+        }
+
+        $.ajax({
+            url: '@Url.Action("Filter", "Devices")',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(filterData),
+            success: function(response) {
+                if (response.success) {
+                    updateDevicesTable(response.devices);
+                } else {
+                    alert('Error: ' + response.message);
+                }
+            },
+            error: function() {
+                alert('Error applying filters');
+            }
+        });
+    }
+
+    function updateDevicesTable(devices) {
+        // Clear existing table data
+        devicesTable.clear();
+
+        // Add new data
+        devices.forEach(function(device) {
+            const statusBadge = device.isSold ?
+                '<span class="badge bg-success">Sold</span>' :
+                (device.isAvailableForSale ?
+                    '<span class="badge bg-primary">Available</span>' :
+                    '<span class="badge bg-warning">Not for Sale</span>');
+
+            const actions = generateActionButtons(device);
+
+            devicesTable.row.add([
+                '<div class="fw-bold">' + device.displayName + '</div><small class="text-muted">' + device.deviceType + '</small>',
+                '<span class="badge bg-secondary">' + (device.imeiSerialNumber || 'N/A') + '</span>',
+                '<div><small>Battery: ' + (device.batteryHealthPercentage || 0) + '%</small><br>' +
+                '<small>Scratches: ' + device.scratchesCondition + '</small><br>' +
+                '<small>Network: ' + device.networkStatus + '</small></div>',
+                '<div><small>Buy: $' + (device.buyingPrice ? device.buyingPrice.toFixed(2) : '0.00') + '</small><br>' +
+                '<small>Sell: $' + (device.sellingPrice ? device.sellingPrice.toFixed(2) : '0.00') + '</small></div>',
+                statusBadge,
+                '<small>' + new Date(device.createdDate).toLocaleDateString() + '</small>',
+                actions
+            ]);
+        });
+
+        // Redraw the table
+        devicesTable.draw();
+    }
+
+    function generateActionButtons(device) {
+        let buttons = '<div class="btn-group" role="group">';
+        buttons += '<button type="button" class="btn btn-sm btn-outline-primary" onclick="viewDevice(' + device.id + ')" title="View Details"><i class="fas fa-eye"></i></button>';
+        buttons += '<button type="button" class="btn btn-sm btn-outline-warning" onclick="editDevice(' + device.id + ')" title="Edit"><i class="fas fa-edit"></i></button>';
+
+        if (!device.isSold) {
+            const toggleClass = device.isAvailableForSale ? 'btn-outline-secondary' : 'btn-outline-success';
+            const toggleIcon = device.isAvailableForSale ? 'fa-times' : 'fa-check';
+            const toggleTitle = device.isAvailableForSale ? 'Mark as Not for Sale' : 'Mark as Available for Sale';
+            buttons += '<button type="button" class="btn btn-sm ' + toggleClass + '" onclick="toggleAvailableForSale(' + device.id + ')" title="' + toggleTitle + '"><i class="fas ' + toggleIcon + '"></i></button>';
+
+            if (device.isAvailableForSale) {
+                buttons += '<button type="button" class="btn btn-sm btn-outline-success" onclick="markAsSold(' + device.id + ')" title="Mark as Sold"><i class="fas fa-dollar-sign"></i></button>';
+            }
+        }
+
+        buttons += '<button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteDevice(' + device.id + ')" title="Delete"><i class="fas fa-trash"></i></button>';
+        buttons += '</div>';
+
+        return buttons;
+    }
+
+    function clearFilters() {
+        $('#deviceFilterForm')[0].reset();
+        location.reload();
+    }
+</script>
+
