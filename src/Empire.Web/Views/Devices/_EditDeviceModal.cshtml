@@ -102,9 +102,9 @@
 
 <script>
     // Store original values - we'll need to get IDs from the dropdowns after they load
-    const originalBrand = "@Model.Brand";
-    const originalCategory = "@Model.Category";
-    const originalModel = "@Model.Model";
+    const originalBrandId = @Model.BrandId;
+    const originalCategoryId = @Model.DeviceCategoryId;
+    const originalModelId = @Model.DeviceModelId;
     const originalNetworkStatus = "@Model.NetworkStatus";
     const originalScratches = "@Model.ScratchesCondition";
     const originalIsAvailable = @Model.IsAvailableForSale.ToString().ToLower();
@@ -135,7 +135,7 @@
                 
                 if (brands && brands.length > 0) {
                     brands.forEach(function(brand) {
-                        const selected = brand.Name === originalBrand ? 'selected' : '';
+                        const selected = brand.Id === originalBrandId ? 'selected' : '';
                         select.append('<option value="' + brand.Id + '" ' + selected + '>' + brand.Name + '</option>');
                     });
                     
@@ -166,7 +166,7 @@
                 
                 if (categories && categories.length > 0) {
                     categories.forEach(function(category) {
-                        const selected = category.Name === originalCategory ? 'selected' : '';
+                        const selected = category.Id === originalCategoryId ? 'selected' : '';
                         select.append('<option value="' + category.Id + '" ' + selected + '>' + category.Name + '</option>');
                     });
                     
@@ -198,7 +198,7 @@
                 
                 if (models && models.length > 0) {
                     models.forEach(function(model) {
-                        const selected = model.Name === originalModel ? 'selected' : '';
+                        const selected = model.Id === originalModelId ? 'selected' : '';
                         modelSelect.append('<option value="' + model.Id + '" ' + selected + '>' + model.Name + '</option>');
                     });
                 } else {

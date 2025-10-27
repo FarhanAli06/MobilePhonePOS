@@ -227,6 +227,9 @@ public class DeviceService : IDeviceService
         {
             Id = device.Id,
             ShopId = device.ShopId,
+            BrandId = device.BrandId,
+            DeviceCategoryId = device.DeviceCategoryId,
+            DeviceModelId = device.DeviceModelId,
             Brand = device.Brand?.Name ?? "",
             Category = device.DeviceCategory?.Name ?? "",
             Model = device.DeviceModel?.Name ?? "",

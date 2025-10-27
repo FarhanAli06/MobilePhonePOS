@@ -1,4 +1,4 @@
-@model IEnumerable<Empire.Application.DTOs.Device.DeviceSelectionDto>
+﻿@model IEnumerable<Empire.Application.DTOs.Device.DeviceSelectionDto>
 @{
     ViewData["Title"] = "Device Management";
 }
@@ -8,16 +8,19 @@
         .no-print {
             display: none !important;
         }
+
         .card {
             border: none !important;
             box-shadow: none !important;
         }
+
         .table {
             font-size: 10px;
         }
-        .table th, .table td {
-            padding: 4px !important;
-        }
+
+            .table th, .table td {
+                padding: 4px !important;
+            }
     }
 </style>
 
@@ -145,7 +148,9 @@
                             <strong>$@(device.SellingPrice?.ToString("F2") ?? "0.00")</strong>
                             @if (device.BuyingPrice.HasValue)
                             {
-                                <br><small class="text-muted">Buy: $@device.BuyingPrice.Value.ToString("F2")</small>
+                                <br>
+                        
+                                <small class="text-muted">Buy: $@device.BuyingPrice.Value.ToString("F2")</small>
                             }
                         </td>
                         <td>
@@ -194,6 +199,18 @@
                                 <button type="button" class="btn btn-sm btn-outline-warning" onclick="editDevice(@device.Id)" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary print-device-btn"
+                                        data-device-id="@device.Id"
+                                        data-brand="@device.Brand"
+                                        data-model="@device.Model"
+                                        data-imei="@device.IMEISerialNumber"
+                                        data-network-status="@device.NetworkStatus"
+                                        data-battery="@device.BatteryHealthPercentage"
+                                        data-scratches="@device.ScratchesCondition"
+                                        data-selling-price="@device.SellingPrice?.ToString("F2")"
+                                        data-created-date="@device.CreatedDate.ToString("MM/dd/yyyy")">
+                                    <i class="fas fa-print"></i>
+                                </button>
                                 @if (!device.IsSold)
                                 {
                                     <button type="button" class="btn btn-sm @(device.IsAvailableForSale ? "btn-outline-secondary" : "btn-outline-success")"
@@ -217,6 +234,62 @@
                 }
             </tbody>
         </table>
+    </div>
+</div>
+
+<!-- Hidden Print Template for Dymo LabelWriter 550 -->
+<div id="printTemplate" style="display: none;">
+    <div class="dymo-label">
+        <!-- Header Section -->
+        <div class="label-header">
+            <div class="contact-info">
+                <span class="company-name home" style="font-weight:bold">EMPIRE PHONE REPAIR - </span>
+                <span class="phone">📞 <span id="printShopPhone" style="font-weight:bold"></span></span>
+            </div>
+        </div>
+
+        <!-- Device Information -->
+        <div class="info-section">
+            <div class="info-row">
+                <span class="label" style="font-weight:bold">DEVICE:</span>
+                <span class="value" id="printDeviceInfo" style="font-weight:bold"></span>
+            </div>
+            <div class="info-row">
+                <span class="label" style="font-weight:bold">IMEI:</span>
+                <span class="value" id="printIMEI" style="font-weight:bold"></span>
+            </div>
+            <div class="info-row">
+                <span class="label" style="font-weight:bold">NETWORK:</span>
+                <span class="value" id="printNetworkStatus" style="font-weight:bold"></span>
+            </div>
+        </div>
+
+        <!-- Condition Section -->
+        <div class="condition-section">
+            <div class="info-row">
+                <span class="label" style="font-weight:bold">CONDITION:</span>
+                <span class="value" id="printCondition" style="font-weight:bold"></span>
+            </div>
+        </div>
+
+        <!-- Pricing & Date Section -->
+        <div class="pricing-section">
+            <div class="info-row">
+                <span class="label" style="font-weight:bold">PRICE:</span>
+                <span class="value" id="printSellPrice" style="font-weight:bold"></span>
+            </div>
+            <div class="info-row">
+                <span class="label" style="font-weight:bold">CREATED:</span>
+                <span class="value" id="printCreatedDate" style="font-weight:bold"></span>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="label-footer">
+            <div class="dates">
+                <!-- Empty footer for spacing -->
+            </div>
+        </div>
     </div>
 </div>
 
@@ -382,212 +455,408 @@
     </div>
 </div>
 
-<!-- Page specific scripts -->
-<script>
-    let devicesTable;
+@section Scripts {
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 
-    $(document).ready(function() {
-        devicesTable = $('#devicesTable').DataTable({
-            responsive: true,
-            pageLength: 25,
-            order: [[7, 'desc']], // Sort by created date (column index 7)
-            columnDefs: [
-                { orderable: false, targets: [8] } // Disable sorting on actions column
-            ]
-        });
-    });
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
-    function printDevices() {
-        window.print();
-    }
+    <style>
+        /* Dymo LabelWriter 550 Specific Styles */
+        /* Label dimensions: 2.4" x 4" (61mm x 102mm) */
 
-    function showCreateDeviceModal() {
-        // Reset form
-        $('#createDeviceForm')[0].reset();
-        // Load brands first
-        loadBrands();
-        // Load categories
-        loadCategories();
-        // Show modal
-        $('#createDeviceModal').modal('show');
-    }
-
-    function loadBrands() {
-        $.ajax({
-            url: '@Url.Action("GetBrands", "Lookup")',
-            type: 'GET',
-            success: function(brands) {
-                const brandSelect = $('#brandId');
-                brandSelect.empty();
-                brandSelect.append('<option value="">Select Brand</option>');
-                
-                if (brands && brands.length > 0) {
-                    brands.forEach(function(brand) {
-                        brandSelect.append('<option value="' + brand.id + '">' + brand.name + '</option>');
-                    });
-                }
-            },
-            error: function() {
-                console.error('Error loading brands');
-                alert('Error loading brands. Please try again.');
-            }
-        });
-    }
-
-    function loadCategories() {
-        $.ajax({
-            url: '@Url.Action("GetDeviceCategories", "Lookup")',
-            type: 'GET',
-            success: function(categories) {
-                const categorySelect = $('#deviceCategoryId');
-                categorySelect.empty();
-                categorySelect.append('<option value="">Select Category</option>');
-                
-                if (categories && categories.length > 0) {
-                    categories.forEach(function(category) {
-                        categorySelect.append('<option value="' + category.id + '">' + category.name + '</option>');
-                    });
-                }
-            },
-            error: function() {
-                console.error('Error loading categories');
-                alert('Error loading categories. Please try again.');
-            }
-        });
-    }
-
-    function onBrandChange() {
-        const brandId = $('#brandId').val();
-        const categoryId = $('#deviceCategoryId').val();
-        
-        if (brandId && categoryId) {
-            loadModels(categoryId, brandId);
-        } else {
-            // Clear models if brand is cleared
-            const modelSelect = $('#deviceModelId');
-            modelSelect.empty();
-            modelSelect.append('<option value="">Select Model</option>');
+        #printTemplate {
+            font-weight: bold;
         }
-    }
 
-    function onCategoryChange() {
-        const brandId = $('#brandId').val();
-        const categoryId = $('#deviceCategoryId').val();
-        
-        if (brandId && categoryId) {
-            loadModels(categoryId, brandId);
-        } else {
-            // Clear models if category is cleared
-            const modelSelect = $('#deviceModelId');
-            modelSelect.empty();
-            modelSelect.append('<option value="">Select Model</option>');
+        .dymo-label {
+            width: 2.4in;
+            height: 4in;
+            padding-left: 4in;
+            font-family: 'Arial', sans-serif;
+            font-size: 18pt;
+            line-height: 1.2;
+            background: white;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
         }
-    }
 
-    function loadModels(categoryId, brandId) {
-        $.ajax({
-            url: '@Url.Action("GetDeviceModels", "Lookup")',
-            type: 'GET',
-            data: { categoryId: categoryId, brandId: brandId },
-            success: function(models) {
+        /* Header Section */
+        .label-header {
+            border-bottom: 2px solid #000;
+            padding-bottom: 0.08in;
+            margin-bottom: 0.1in;
+        }
+
+        .company-name {
+            font-weight: 900;
+            font-size: 14pt;
+            text-align: center;
+            margin-bottom: 0.04in;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #2c3e50;
+        }
+
+        .contact-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 9pt;
+        }
+
+            .contact-info .phone {
+                font-weight: 700;
+                color: #2c3e50;
+            }
+
+            .contact-info .repair-no {
+                font-weight: 700;
+                color: #e74c3c;
+            }
+
+        /* Information Sections */
+        .info-section, .condition-section, .pricing-section, .status-section {
+            margin-bottom: 0.1in;
+        }
+
+        .info-row {
+            display: flex;
+            margin-bottom: 0.06in;
+            min-height: 0.2in;
+            align-items: flex-start;
+        }
+
+            .info-row .label {
+                font-weight: bold;
+                min-width: 0.8in;
+                text-transform: uppercase;
+                font-size: 9pt;
+                margin-right: 0.08in;
+                color: #2c3e50;
+            }
+
+            .info-row .value {
+                flex: 1;
+                word-break: break-word;
+                overflow-wrap: break-word;
+                font-weight: 400;
+                font-size: 11pt;
+                color: #34495e;
+                font-weight: bold;
+            }
+
+        /* Condition Section */
+        .condition-section {
+            border-top: 1px dashed #95a5a6;
+            border-bottom: 1px dashed #95a5a6;
+            padding: 0.08in 0;
+        }
+
+        /* Pricing Section */
+        .pricing-section {
+            border-top: 1px dashed #95a5a6;
+            border-bottom: 1px dashed #95a5a6;
+            padding: 0.08in 0;
+        }
+
+        /* Status Section */
+        .status-section {
+            border-top: 2px solid #000;
+            padding-top: 0.08in;
+            margin-top: 0.1in;
+        }
+
+        /* Footer Section */
+        .label-footer {
+            margin-top: auto;
+            border-top: 1px solid #bdc3c7;
+            padding-top: 0.08in;
+            font-size: 8pt;
+            color: #7f8c8d;
+            text-align: center;
+        }
+
+        /* Enhanced bold styling for all labels */
+        .label, .contact-info .phone, .contact-info .repair-no {
+            font-weight: 800 !important;
+        }
+
+        /* Print Specific Styles */
+        @@media print {
+            body {
+                background: white !important;
+            }
+
+                body * {
+                    visibility: hidden;
+                }
+
+            .dymo-label,
+            .dymo-label * {
+                visibility: visible;
+            }
+
+            .dymo-label {
+                position: absolute;
+                padding-left: 30pt !important;
+                top: 0;
+                width: 2.4in;
+                height: 4in;
+                margin: 0;
+                padding: 0.12in;
+                box-shadow: none;
+                border: none;
+                font-size: 18pt;
+                font-weight: bold;
+            }
+            /* Hide unnecessary elements in print */
+            .no-print {
+                display: none !important;
+            }
+        }
+
+        /* Screen preview styles */
+        @@media screen {
+            .dymo-label {
+                margin: 20px auto;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            }
+        }
+    </style>
+
+    <script>
+        // Store shop phone for print function
+        var shopPhone = '@ViewBag.ShopPhone';
+
+        let devicesTable;
+
+        $(document).ready(function() {
+            devicesTable = $('#devicesTable').DataTable({
+                responsive: true,
+                pageLength: 25,
+                order: [[7, 'desc']], // Sort by created date (column index 7)
+                columnDefs: [
+                    { orderable: false, targets: [8] } // Disable sorting on actions column
+                ]
+            });
+
+            // Initialize device print buttons
+            initializeDevicePrintButtons();
+        });
+
+        function printDevices() {
+            window.print();
+        }
+
+        function showCreateDeviceModal() {
+            // Reset form
+            $('#createDeviceForm')[0].reset();
+            // Load brands first
+            loadBrands();
+            // Load categories
+            loadCategories();
+            // Show modal
+            $('#createDeviceModal').modal('show');
+        }
+
+        function loadBrands() {
+            $.ajax({
+                url: '@Url.Action("GetBrands", "Lookup")',
+                type: 'GET',
+                success: function(brands) {
+                    const brandSelect = $('#brandId');
+                    brandSelect.empty();
+                    brandSelect.append('<option value="">Select Brand</option>');
+
+                    if (brands && brands.length > 0) {
+                        brands.forEach(function(brand) {
+                            brandSelect.append('<option value="' + brand.id + '">' + brand.name + '</option>');
+                        });
+                    }
+                },
+                error: function() {
+                    console.error('Error loading brands');
+                    alert('Error loading brands. Please try again.');
+                }
+            });
+        }
+
+        function loadCategories() {
+            $.ajax({
+                url: '@Url.Action("GetDeviceCategories", "Lookup")',
+                type: 'GET',
+                success: function(categories) {
+                    const categorySelect = $('#deviceCategoryId');
+                    categorySelect.empty();
+                    categorySelect.append('<option value="">Select Category</option>');
+
+                    if (categories && categories.length > 0) {
+                        categories.forEach(function(category) {
+                            categorySelect.append('<option value="' + category.id + '">' + category.name + '</option>');
+                        });
+                    }
+                },
+                error: function() {
+                    console.error('Error loading categories');
+                    alert('Error loading categories. Please try again.');
+                }
+            });
+        }
+
+        function onBrandChange() {
+            const brandId = $('#brandId').val();
+            const categoryId = $('#deviceCategoryId').val();
+
+            if (brandId && categoryId) {
+                loadModels(categoryId, brandId);
+            } else {
+                // Clear models if brand is cleared
                 const modelSelect = $('#deviceModelId');
                 modelSelect.empty();
                 modelSelect.append('<option value="">Select Model</option>');
-                
-                if (models && models.length > 0) {
-                    models.forEach(function(model) {
-                        modelSelect.append('<option value="' + model.id + '">' + model.name + '</option>');
-                    });
-                } else {
-                    modelSelect.append('<option value="" disabled>No models found for this combination</option>');
-                }
-            },
-            error: function() {
-                console.error('Error loading models');
-                alert('Error loading models. Please try again.');
             }
-        });
-    }
-
-    function createDevice() {
-        // Validate required fields
-        const brandId = $('#brandId').val();
-        const categoryId = $('#deviceCategoryId').val();
-        const modelId = $('#deviceModelId').val();
-
-        if (!brandId || !categoryId || !modelId) {
-            alert('Please select Brand, Category, and Model');
-            return;
         }
 
-        const formData = {
-            BrandId: parseInt(brandId),
-            DeviceCategoryId: parseInt(categoryId),
-            DeviceModelId: parseInt(modelId),
-            IMEISerialNumber: $('#imeiSerialNumber').val() || '',
-            BatteryHealthPercentage: $('#batteryHealth').val() ? parseInt($('#batteryHealth').val()) : null,
-            NetworkStatus: $('#networkStatus').val() || 'Unlocked',
-            ScratchesCondition: $('#scratches').val() || 'Excellent',
-            BuyingPrice: $('#buyingPrice').val() ? parseFloat($('#buyingPrice').val()) : null,
-            SellingPrice: $('#sellingPrice').val() ? parseFloat($('#sellingPrice').val()) : null,
-            Source: $('#source').val() || '',
-            Notes: $('#notes').val() || '',
-            IsAvailableForSale: $('#isAvailableForSale').is(':checked')
-        };
+        function onCategoryChange() {
+            const brandId = $('#brandId').val();
+            const categoryId = $('#deviceCategoryId').val();
 
-        $.ajax({
-            url: '@Url.Action("Create", "Devices")',
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify(formData),
-            success: function(response) {
-                if (response.success) {
-                    $('#createDeviceModal').modal('hide');
-                    location.reload(); // Reload to show new device
-                } else {
-                    alert('Error: ' + response.message);
-                }
-            },
-            error: function(xhr) {
-                console.error('Error creating device:', xhr);
-                let errorMessage = 'Error creating device';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    errorMessage = xhr.responseJSON.message;
-                }
-                alert(errorMessage);
+            if (brandId && categoryId) {
+                loadModels(categoryId, brandId);
+            } else {
+                // Clear models if category is cleared
+                const modelSelect = $('#deviceModelId');
+                modelSelect.empty();
+                modelSelect.append('<option value="">Select Model</option>');
             }
-        });
-    }
+        }
 
-    function editDevice(id) {
-        $.ajax({
-            url: '@Url.Action("Edit", "Devices")/' + id,
-            type: 'GET',
-            success: function(response) {
-                if (response.success === false) {
-                    alert('Error: ' + response.message);
-                } else {
-                    $('#editDeviceModalBody').html(response);
-                    $('#editDeviceModal').modal('show');
-                }
-            },
-            error: function(xhr) {
-                console.error('Error loading device for edit:', xhr);
-                alert('Error loading device details. Please try again.');
-            }
-        });
-    }
-
-    function viewDevice(id) {
-        // For now, just show an alert with device ID
-        // This can be expanded to show a detailed view modal
-        alert('View device details for ID: ' + id);
-    }
-
-    function deleteDevice(id) {
-        if (confirm('Are you sure you want to delete this device?')) {
+        function loadModels(categoryId, brandId) {
             $.ajax({
-                url: '@Url.Action("Delete", "Devices")/' + id,
+                url: '@Url.Action("GetDeviceModels", "Lookup")',
+                type: 'GET',
+                data: { categoryId: categoryId, brandId: brandId },
+                success: function(models) {
+                    const modelSelect = $('#deviceModelId');
+                    modelSelect.empty();
+                    modelSelect.append('<option value="">Select Model</option>');
+
+                    if (models && models.length > 0) {
+                        models.forEach(function(model) {
+                            modelSelect.append('<option value="' + model.id + '">' + model.name + '</option>');
+                        });
+                    } else {
+                        modelSelect.append('<option value="" disabled>No models found for this combination</option>');
+                    }
+                },
+                error: function() {
+                    console.error('Error loading models');
+                    alert('Error loading models. Please try again.');
+                }
+            });
+        }
+
+        function createDevice() {
+            // Validate required fields
+            const brandId = $('#brandId').val();
+            const categoryId = $('#deviceCategoryId').val();
+            const modelId = $('#deviceModelId').val();
+
+            if (!brandId || !categoryId || !modelId) {
+                alert('Please select Brand, Category, and Model');
+                return;
+            }
+
+            const formData = {
+                BrandId: parseInt(brandId),
+                DeviceCategoryId: parseInt(categoryId),
+                DeviceModelId: parseInt(modelId),
+                IMEISerialNumber: $('#imeiSerialNumber').val() || '',
+                BatteryHealthPercentage: $('#batteryHealth').val() ? parseInt($('#batteryHealth').val()) : null,
+                NetworkStatus: $('#networkStatus').val() || 'Unlocked',
+                ScratchesCondition: $('#scratches').val() || 'Excellent',
+                BuyingPrice: $('#buyingPrice').val() ? parseFloat($('#buyingPrice').val()) : null,
+                SellingPrice: $('#sellingPrice').val() ? parseFloat($('#sellingPrice').val()) : null,
+                Source: $('#source').val() || '',
+                Notes: $('#notes').val() || '',
+                IsAvailableForSale: $('#isAvailableForSale').is(':checked')
+            };
+
+            $.ajax({
+                url: '@Url.Action("Create", "Devices")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                success: function(response) {
+                    if (response.success) {
+                        $('#createDeviceModal').modal('hide');
+                        location.reload(); // Reload to show new device
+                    } else {
+                        alert('Error: ' + response.message);
+                    }
+                },
+                error: function(xhr) {
+                    console.error('Error creating device:', xhr);
+                    let errorMessage = 'Error creating device';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    }
+                    alert(errorMessage);
+                }
+            });
+        }
+
+        function editDevice(id) {
+            $.ajax({
+                url: '@Url.Action("Edit", "Devices")/' + id,
+                type: 'GET',
+                success: function(response) {
+                    if (response.success === false) {
+                        alert('Error: ' + response.message);
+                    } else {
+                        $('#editDeviceModalBody').html(response);
+                        $('#editDeviceModal').modal('show');
+                    }
+                },
+                error: function(xhr) {
+                    console.error('Error loading device for edit:', xhr);
+                    alert('Error loading device details. Please try again.');
+                }
+            });
+        }
+
+        function viewDevice(id) {
+            // For now, just show an alert with device ID
+            // This can be expanded to show a detailed view modal
+            alert('View device details for ID: ' + id);
+        }
+
+        function deleteDevice(id) {
+            if (confirm('Are you sure you want to delete this device?')) {
+                $.ajax({
+                    url: '@Url.Action("Delete", "Devices")/' + id,
+                    type: 'POST',
+                    success: function(response) {
+                        if (response.success) {
+                            location.reload();
+                        } else {
+                            alert('Error: ' + response.message);
+                        }
+                    },
+                    error: function() {
+                        alert('Error deleting device');
+                    }
+                });
+            }
+        }
+
+        function toggleAvailableForSale(id) {
+            $.ajax({
+                url: '@Url.Action("ToggleAvailableForSale", "Devices")/' + id,
                 type: 'POST',
                 success: function(response) {
                     if (response.success) {
@@ -597,221 +866,278 @@
                     }
                 },
                 error: function() {
-                    alert('Error deleting device');
+                    alert('Error updating device status');
                 }
             });
         }
-    }
 
-    function toggleAvailableForSale(id) {
-        $.ajax({
-            url: '@Url.Action("ToggleAvailableForSale", "Devices")/' + id,
-            type: 'POST',
-            success: function(response) {
-                if (response.success) {
-                    location.reload();
-                } else {
-                    alert('Error: ' + response.message);
-                }
-            },
-            error: function() {
-                alert('Error updating device status');
-            }
-        });
-    }
-
-    function markAsSold(id) {
-        $('#soldDeviceId').val(id);
-        $('#soldSalePrice').val('');
-        // Load customers for the dropdown
-        loadCustomersForSale();
-        $('#markAsSoldModal').modal('show');
-    }
-
-    function loadCustomersForSale() {
-        $.ajax({
-            url: '@Url.Action("GetCustomersForSelection", "Customers")',
-            type: 'GET',
-            success: function(response) {
-                const customerSelect = $('#soldCustomerId');
-                customerSelect.empty();
-                customerSelect.append('<option value="">Select Customer</option>');
-                
-                if (response.success && response.customers && response.customers.length > 0) {
-                    response.customers.forEach(function(customer) {
-                        const displayText = customer.name + (customer.phone ? ' - ' + customer.phone : '');
-                        customerSelect.append('<option value="' + customer.id + '">' + displayText + '</option>');
-                    });
-                } else {
-                    customerSelect.append('<option value="" disabled>No customers found</option>');
-                }
-            },
-            error: function() {
-                console.error('Error loading customers');
-                alert('Error loading customers. Please try again.');
-            }
-        });
-    }
-
-    function confirmMarkAsSold() {
-        const deviceId = $('#soldDeviceId').val();
-        const customerId = $('#soldCustomerId').val();
-        const salePrice = $('#soldSalePrice').val();
-
-        if (!customerId) {
-            alert('Please select a customer');
-            return;
+        function markAsSold(id) {
+            $('#soldDeviceId').val(id);
+            $('#soldSalePrice').val('');
+            // Load customers for the dropdown
+            loadCustomersForSale();
+            $('#markAsSoldModal').modal('show');
         }
 
-        $.ajax({
-            url: '@Url.Action("MarkAsSold", "Devices")/' + deviceId,
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({
-                CustomerId: parseInt(customerId),
-                SalePrice: salePrice ? parseFloat(salePrice) : null
-            }),
-            success: function(response) {
-                if (response.success) {
-                    $('#markAsSoldModal').modal('hide');
-                    location.reload();
-                } else {
-                    alert('Error: ' + response.message);
+        function loadCustomersForSale() {
+            $.ajax({
+                url: '@Url.Action("GetCustomersForSelection", "Customers")',
+                type: 'GET',
+                success: function(response) {
+                    const customerSelect = $('#soldCustomerId');
+                    customerSelect.empty();
+                    customerSelect.append('<option value="">Select Customer</option>');
+
+                    if (response.success && response.customers && response.customers.length > 0) {
+                        response.customers.forEach(function(customer) {
+                            const displayText = customer.name + (customer.phone ? ' - ' + customer.phone : '');
+                            customerSelect.append('<option value="' + customer.id + '">' + displayText + '</option>');
+                        });
+                    } else {
+                        customerSelect.append('<option value="" disabled>No customers found</option>');
+                    }
+                },
+                error: function() {
+                    console.error('Error loading customers');
+                    alert('Error loading customers. Please try again.');
                 }
-            },
-            error: function() {
-                alert('Error marking device as sold');
-            }
-        });
-    }
-
-    function showAvailableDevices() {
-        $('#filterStatus').val('available');
-        applyFilters();
-    }
-
-    function showSoldDevices() {
-        $('#filterStatus').val('sold');
-        applyFilters();
-    }
-
-    function applyFilters() {
-        const filterData = {
-            DeviceType: $('#filterDeviceType').val() ? parseInt($('#filterDeviceType').val()) : null,
-            Brand: $('#filterBrand').val() || null,
-            Model: $('#filterModel').val() || null,
-            NetworkStatus: $('#filterNetworkStatus').val() || null,
-            ScratchesCondition: $('#filterCondition').val() || null,
-            SearchTerm: $('#filterSearch').val() || null
-        };
-
-        const status = $('#filterStatus').val();
-        if (status === 'available') {
-            filterData.IsAvailableForSale = true;
-            filterData.IsSold = false;
-        } else if (status === 'sold') {
-            filterData.IsSold = true;
-            filterData.IsAvailableForSale = null;
-        } else if (status === 'not-for-sale') {
-            filterData.IsAvailableForSale = false;
-            filterData.IsSold = false;
+            });
         }
 
-        $.ajax({
-            url: '@Url.Action("Filter", "Devices")',
-            type: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify(filterData),
-            success: function(response) {
-                if (response.success) {
-                    updateDevicesTable(response.devices);
-                } else {
-                    alert('Error: ' + response.message);
+        function confirmMarkAsSold() {
+            const deviceId = $('#soldDeviceId').val();
+            const customerId = $('#soldCustomerId').val();
+            const salePrice = $('#soldSalePrice').val();
+
+            if (!customerId) {
+                alert('Please select a customer');
+                return;
+            }
+
+            $.ajax({
+                url: '@Url.Action("MarkAsSold", "Devices")/' + deviceId,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({
+                    CustomerId: parseInt(customerId),
+                    SalePrice: salePrice ? parseFloat(salePrice) : null
+                }),
+                success: function(response) {
+                    if (response.success) {
+                        $('#markAsSoldModal').modal('hide');
+                        location.reload();
+                    } else {
+                        alert('Error: ' + response.message);
+                    }
+                },
+                error: function() {
+                    alert('Error marking device as sold');
                 }
-            },
-            error: function(xhr, status, error) {
-                console.error('Filter error:', xhr.responseText);
-                alert('Error applying filters. Please try again.');
-            }
-        });
-    }
-
-    function updateDevicesTable(devices) {
-        // Clear existing table data
-        devicesTable.clear();
-
-        // Add new data
-        devices.forEach(function(device) {
-            const deviceDetails = '<div class="fw-bold">' + (device.brand || device.Brand) + ' ' + (device.model || device.Model) + '</div>' +
-                '<small class="text-muted">' + (device.deviceType || device.DeviceType) + ((device.year || device.Year) ? ' (' + (device.year || device.Year) + ')' : '') + '</small>';
-
-            const imei = '<span class="badge bg-secondary">' + (device.imeiSerialNumber || device.IMEISerialNumber || 'N/A') + '</span>';
-
-            const networkStatus = '<span class="badge ' + ((device.networkStatus || device.NetworkStatus) === 'Unlocked' ? 'bg-success' : 'bg-warning') + '">' +
-                (device.networkStatus || device.NetworkStatus) + '</span>';
-
-            const sellingPrice = '<strong>$' + ((device.sellingPrice || device.SellingPrice) ? (device.sellingPrice || device.SellingPrice).toFixed(2) : '0.00') + '</strong>' +
-                ((device.buyingPrice || device.BuyingPrice) ? '<br><small class="text-muted">Buy: $' + (device.buyingPrice || device.BuyingPrice).toFixed(2) + '</small>' : '');
-
-            const condition = '<div><small>Battery: ' + (device.batteryHealthPercentage || device.BatteryHealthPercentage || 0) + '%</small><br>' +
-                '<small>Scratches: ' + (device.scratchesCondition || device.ScratchesCondition) + '</small></div>';
-
-            const statusBadge = (device.isSold || device.IsSold) ?
-                '<span class="badge bg-success">Sold</span>' + ((device.soldDate || device.SoldDate) ? '<br><small class="text-muted">' + new Date(device.soldDate || device.SoldDate).toLocaleDateString() + '</small>' : '') :
-                ((device.isAvailableForSale || device.IsAvailableForSale) ?
-                    '<span class="badge bg-primary">Available</span>' :
-                    '<span class="badge bg-warning">Not for Sale</span>');
-
-            const soldTo = ((device.isSold || device.IsSold) && (device.soldToCustomerName || device.SoldToCustomerName)) ? 
-                '<span>' + (device.soldToCustomerName || device.SoldToCustomerName) + '</span>' : 
-                '<span class="text-muted">-</span>';
-
-            const createdDate = '<small>' + new Date(device.createdDate || device.CreatedDate).toLocaleDateString() + '</small>';
-
-            const actions = generateActionButtons(device);
-
-            devicesTable.row.add([
-                deviceDetails,
-                imei,
-                networkStatus,
-                sellingPrice,
-                condition,
-                statusBadge,
-                soldTo,
-                createdDate,
-                actions
-            ]);
-        });
-
-        // Redraw the table
-        devicesTable.draw();
-    }
-
-    function generateActionButtons(device) {
-        let buttons = '<div class="btn-group" role="group">';
-        buttons += '<button type="button" class="btn btn-sm btn-outline-primary" onclick="viewDevice(' + (device.id || device.Id) + ')" title="View Details"><i class="fas fa-eye"></i></button>';
-        buttons += '<button type="button" class="btn btn-sm btn-outline-warning" onclick="editDevice(' + (device.id || device.Id) + ')" title="Edit"><i class="fas fa-edit"></i></button>';
-
-        if (!(device.isSold || device.IsSold)) {
-            const toggleClass = (device.isAvailableForSale || device.IsAvailableForSale) ? 'btn-outline-secondary' : 'btn-outline-success';
-            const toggleIcon = (device.isAvailableForSale || device.IsAvailableForSale) ? 'fa-times' : 'fa-check';
-            const toggleTitle = (device.isAvailableForSale || device.IsAvailableForSale) ? 'Mark as Not for Sale' : 'Mark as Available for Sale';
-            buttons += '<button type="button" class="btn btn-sm ' + toggleClass + '" onclick="toggleAvailableForSale(' + (device.id || device.Id) + ')" title="' + toggleTitle + '"><i class="fas ' + toggleIcon + '"></i></button>';
-
-            if (device.isAvailableForSale || device.IsAvailableForSale) {
-                buttons += '<button type="button" class="btn btn-sm btn-outline-success" onclick="markAsSold(' + (device.id || device.Id) + ')" title="Mark as Sold"><i class="fas fa-dollar-sign"></i></button>';
-            }
+            });
         }
 
-        buttons += '<button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteDevice(' + (device.id || device.Id) + ')" title="Delete"><i class="fas fa-trash"></i></button>';
-        buttons += '</div>';
+        function showAvailableDevices() {
+            $('#filterStatus').val('available');
+            applyFilters();
+        }
 
-        return buttons;
-    }
+        function showSoldDevices() {
+            $('#filterStatus').val('sold');
+            applyFilters();
+        }
 
-    function clearFilters() {
-        $('#deviceFilterForm')[0].reset();
-        location.reload();
-    }
-</script>
+        function applyFilters() {
+            const filterData = {
+                DeviceType: $('#filterDeviceType').val() ? parseInt($('#filterDeviceType').val()) : null,
+                Brand: $('#filterBrand').val() || null,
+                Model: $('#filterModel').val() || null,
+                NetworkStatus: $('#filterNetworkStatus').val() || null,
+                ScratchesCondition: $('#filterCondition').val() || null,
+                SearchTerm: $('#filterSearch').val() || null
+            };
 
+            const status = $('#filterStatus').val();
+            if (status === 'available') {
+                filterData.IsAvailableForSale = true;
+                filterData.IsSold = false;
+            } else if (status === 'sold') {
+                filterData.IsSold = true;
+                filterData.IsAvailableForSale = null;
+            } else if (status === 'not-for-sale') {
+                filterData.IsAvailableForSale = false;
+                filterData.IsSold = false;
+            }
+
+            $.ajax({
+                url: '@Url.Action("Filter", "Devices")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(filterData),
+                success: function(response) {
+                    if (response.success) {
+                        updateDevicesTable(response.devices);
+                    } else {
+                        alert('Error: ' + response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Filter error:', xhr.responseText);
+                    alert('Error applying filters. Please try again.');
+                }
+            });
+        }
+
+        function updateDevicesTable(devices) {
+            // Clear existing table data
+            devicesTable.clear();
+
+            // Add new data
+            devices.forEach(function(device) {
+                const deviceDetails = '<div class="fw-bold">' + (device.brand || device.Brand) + ' ' + (device.model || device.Model) + '</div>' +
+                    '<small class="text-muted">' + (device.deviceType || device.DeviceType) + ((device.year || device.Year) ? ' (' + (device.year || device.Year) + ')' : '') + '</small>';
+
+                const imei = '<span class="badge bg-secondary">' + (device.imeiSerialNumber || device.IMEISerialNumber || 'N/A') + '</span>';
+
+                const networkStatus = '<span class="badge ' + ((device.networkStatus || device.NetworkStatus) === 'Unlocked' ? 'bg-success' : 'bg-warning') + '">' +
+                    (device.networkStatus || device.NetworkStatus) + '</span>';
+
+                const sellingPrice = '<strong>$' + ((device.sellingPrice || device.SellingPrice) ? (device.sellingPrice || device.SellingPrice).toFixed(2) : '0.00') + '</strong>' +
+                    ((device.buyingPrice || device.BuyingPrice) ? '<br><small class="text-muted">Buy: $' + (device.buyingPrice || device.BuyingPrice).toFixed(2) + '</small>' : '');
+
+                const condition = '<div><small>Battery: ' + (device.batteryHealthPercentage || device.BatteryHealthPercentage || 0) + '%</small><br>' +
+                    '<small>Scratches: ' + (device.scratchesCondition || device.ScratchesCondition) + '</small></div>';
+
+                const statusBadge = (device.isSold || device.IsSold) ?
+                    '<span class="badge bg-success">Sold</span>' + ((device.soldDate || device.SoldDate) ? '<br><small class="text-muted">' + new Date(device.soldDate || device.SoldDate).toLocaleDateString() + '</small>' : '') :
+                    ((device.isAvailableForSale || device.IsAvailableForSale) ?
+                        '<span class="badge bg-primary">Available</span>' :
+                        '<span class="badge bg-warning">Not for Sale</span>');
+
+                const soldTo = ((device.isSold || device.IsSold) && (device.soldToCustomerName || device.SoldToCustomerName)) ?
+                    '<span>' + (device.soldToCustomerName || device.SoldToCustomerName) + '</span>' :
+                    '<span class="text-muted">-</span>';
+
+                const createdDate = '<small>' + new Date(device.createdDate || device.CreatedDate).toLocaleDateString() + '</small>';
+
+                const actions = generateActionButtons(device);
+
+                devicesTable.row.add([
+                    deviceDetails,
+                    imei,
+                    networkStatus,
+                    sellingPrice,
+                    condition,
+                    statusBadge,
+                    soldTo,
+                    createdDate,
+                    actions
+                ]);
+            });
+
+            // Redraw the table
+            devicesTable.draw();
+        }
+
+        function generateActionButtons(device) {
+            let buttons = '<div class="btn-group" role="group">';
+            buttons += '<button type="button" class="btn btn-sm btn-outline-primary" onclick="viewDevice(' + (device.id || device.Id) + ')" title="View Details"><i class="fas fa-eye"></i></button>';
+            buttons += '<button type="button" class="btn btn-sm btn-outline-warning" onclick="editDevice(' + (device.id || device.Id) + ')" title="Edit"><i class="fas fa-edit"></i></button>';
+            buttons += '<button type="button" class="btn btn-sm btn-outline-secondary print-device-btn" ' +
+                'data-device-id="' + (device.id || device.Id) + '" ' +
+                'data-brand="' + (device.brand || device.Brand) + '" ' +
+                'data-model="' + (device.model || device.Model) + '" ' +
+                'data-imei="' + (device.imeiSerialNumber || device.IMEISerialNumber || '') + '" ' +
+                'data-network-status="' + (device.networkStatus || device.NetworkStatus) + '" ' +
+                'data-battery="' + (device.batteryHealthPercentage || device.BatteryHealthPercentage || '') + '" ' +
+                'data-scratches="' + (device.scratchesCondition || device.ScratchesCondition) + '" ' +
+                'data-selling-price="' + ((device.sellingPrice || device.SellingPrice) ? (device.sellingPrice || device.SellingPrice).toFixed(2) : '0.00') + '" ' +
+                'data-created-date="' + new Date(device.createdDate || device.CreatedDate).toLocaleDateString() + '" ' +
+                'title="Print"><i class="fas fa-print"></i></button>';
+
+            if (!(device.isSold || device.IsSold)) {
+                const toggleClass = (device.isAvailableForSale || device.IsAvailableForSale) ? 'btn-outline-secondary' : 'btn-outline-success';
+                const toggleIcon = (device.isAvailableForSale || device.IsAvailableForSale) ? 'fa-times' : 'fa-check';
+                const toggleTitle = (device.isAvailableForSale || device.IsAvailableForSale) ? 'Mark as Not for Sale' : 'Mark as Available for Sale';
+                buttons += '<button type="button" class="btn btn-sm ' + toggleClass + '" onclick="toggleAvailableForSale(' + (device.id || device.Id) + ')" title="' + toggleTitle + '"><i class="fas ' + toggleIcon + '"></i></button>';
+
+                if (device.isAvailableForSale || device.IsAvailableForSale) {
+                    buttons += '<button type="button" class="btn btn-sm btn-outline-success" onclick="markAsSold(' + (device.id || device.Id) + ')" title="Mark as Sold"><i class="fas fa-dollar-sign"></i></button>';
+                }
+            }
+
+            buttons += '<button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteDevice(' + (device.id || device.Id) + ')" title="Delete"><i class="fas fa-trash"></i></button>';
+            buttons += '</div>';
+
+            return buttons;
+        }
+
+        function clearFilters() {
+            $('#deviceFilterForm')[0].reset();
+            location.reload();
+        }
+
+        // DEVICE PRINT FUNCTION - Same method as repair page
+        function initializeDevicePrintButtons() {
+            $('.print-device-btn').click(function() {
+                var $btn = $(this);
+
+                // Get all device data from button attributes
+                var deviceData = {
+                    brand: $btn.data('brand'),
+                    model: $btn.data('model'),
+                    imei: $btn.data('imei'),
+                    networkStatus: $btn.data('network-status'),
+                    battery: $btn.data('battery'),
+                    scratches: $btn.data('scratches'),
+                    sellingPrice: $btn.data('selling-price'),
+                    createdDate: $btn.data('created-date')
+                };
+
+                // Update the hidden print template with current data
+                document.getElementById('printShopPhone').textContent = shopPhone;
+
+                // Device detail: Brand + Model
+                document.getElementById('printDeviceInfo').textContent = deviceData.brand + ' ' + deviceData.model;
+
+                // IMEI
+                document.getElementById('printIMEI').textContent = deviceData.imei || 'N/A';
+
+                // Network Status
+                document.getElementById('printNetworkStatus').textContent = deviceData.networkStatus || 'N/A';
+
+                // Condition: Battery + Scratches
+                var conditionText = '';
+                if (deviceData.battery) {
+                    conditionText += 'Battery: ' + deviceData.battery + '%';
+                }
+                if (deviceData.scratches) {
+                    if (conditionText) conditionText += ' | ';
+                    conditionText += 'Scratches: ' + deviceData.scratches;
+                }
+                document.getElementById('printCondition').textContent = conditionText || 'N/A';
+
+                // Selling Price
+                document.getElementById('printSellPrice').textContent = deviceData.sellingPrice ? '$' + deviceData.sellingPrice : '$0.00';
+
+                // Created Date
+                document.getElementById('printCreatedDate').textContent = deviceData.createdDate || 'N/A';
+
+                // Get the print content from hidden div
+                const printContent = document.getElementById('printTemplate').innerHTML;
+                const originalContent = document.body.innerHTML;
+
+                // Replace body content with print content
+                document.body.innerHTML = printContent;
+
+                // Trigger print
+                window.print();
+
+                // Restore original content
+                document.body.innerHTML = originalContent;
+
+                // Re-initialize events since we replaced the entire body
+                initializeDevicePrintButtons();
+            });
+        }
+    </script>
+}

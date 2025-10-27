@@ -1,4 +1,4 @@
-@model RepairIndexViewModel
+﻿@model RepairIndexViewModel
 @{
     ViewData["Title"] = "Repairs";
 }
@@ -49,24 +49,24 @@
             <div class="row">
                 <div class="col-md-2 mb-3">
                     <label for="searchTerm" class="form-label">Search</label>
-                    <input type="text" class="form-control" id="searchTerm" name="searchTerm" 
+                    <input type="text" class="form-control" id="searchTerm" name="searchTerm"
                            value="@Model.SearchTerm" placeholder="Search repairs...">
                 </div>
-                
+
                 <div class="col-md-2 mb-3">
                     <label for="brandFilter" class="form-label">Brand</label>
                     <select id="brandFilter" name="brandId" class="form-select">
                         <option value="">All Brands</option>
                     </select>
                 </div>
-                
+
                 <div class="col-md-2 mb-3">
                     <label for="deviceCategoryFilter" class="form-label">Device Category</label>
                     <select id="deviceCategoryFilter" name="deviceCategoryId" class="form-select">
                         <option value="">All Categories</option>
                     </select>
                 </div>
-                
+
                 <div class="col-md-1 mb-3">
                     <label for="status" class="form-label">Status</label>
                     <select class="form-select" id="status" name="status">
@@ -76,7 +76,7 @@
                         <option value="Done" selected="@(Model.Status == "Done")">Done</option>
                     </select>
                 </div>
-                
+
                 <div class="col-md-1 mb-3">
                     <label for="paymentStatus" class="form-label">Payment</label>
                     <select class="form-select" id="paymentStatus" name="paymentStatus">
@@ -85,19 +85,19 @@
                         <option value="Unpaid" selected="@(Model.PaymentStatus == "Unpaid")">Unpaid</option>
                     </select>
                 </div>
-                
+
                 <div class="col-md-2 mb-3">
                     <label for="startDate" class="form-label">Start Date</label>
-                    <input type="date" class="form-control" id="startDate" name="startDate" 
+                    <input type="date" class="form-control" id="startDate" name="startDate"
                            value="@Model.StartDate?.ToString("yyyy-MM-dd")">
                 </div>
-                
+
                 <div class="col-md-2 mb-3">
                     <label for="endDate" class="form-label">End Date</label>
-                    <input type="date" class="form-control" id="endDate" name="endDate" 
+                    <input type="date" class="form-control" id="endDate" name="endDate"
                            value="@Model.EndDate?.ToString("yyyy-MM-dd")">
                 </div>
-                
+
                 <div class="col-md-1 mb-3 d-flex align-items-end">
                     <button type="submit" class="btn btn-outline-primary w-100">
                         <i class="fas fa-search"></i>
@@ -159,31 +159,31 @@
                                     <div class="text-muted">@repair.CreatedByUser | @repair.CreatedDate.ToString("MM/dd/yyyy HH:mm")</div>
                                 </td>
                                 <td>
-                                @switch (repair.Status)
-                                {
-                                    case "Diagnose":
-                                        <span class="badge bg-info">Diagnose</span>
-                                        break;
-                                    case "WaitingForParts":
-                                        <span class="badge bg-warning">Waiting for Parts</span>
-                                        break;
-                                    case "InProgress":
-                                        <span class="badge bg-primary">In Progress</span>
-                                        break;
-                                    case "Completed":
-                                    case "Complete":
-                                        <span class="badge bg-success">Complete</span>
-                                        break;
-                                    case "PickedUp":
-                                        <span class="badge bg-success">Picked Up</span>
-                                        break;
-                                    case "Done":
-                                        <span class="badge bg-success">Picked Up</span>
-                                        break;
-                                    default:
-                                        <span class="badge bg-secondary">@repair.Status</span>
-                                        break;
-                                }
+                                    @switch (repair.Status)
+                                    {
+                                        case "Diagnose":
+                                            <span class="badge bg-info">Diagnose</span>
+                                            break;
+                                        case "WaitingForParts":
+                                            <span class="badge bg-warning">Waiting for Parts</span>
+                                            break;
+                                        case "InProgress":
+                                            <span class="badge bg-primary">In Progress</span>
+                                            break;
+                                        case "Completed":
+                                        case "Complete":
+                                            <span class="badge bg-success">Complete</span>
+                                            break;
+                                        case "PickedUp":
+                                            <span class="badge bg-success">Picked Up</span>
+                                            break;
+                                        case "Done":
+                                            <span class="badge bg-success">Picked Up</span>
+                                            break;
+                                        default:
+                                            <span class="badge bg-secondary">@repair.Status</span>
+                                            break;
+                                    }
                                 </td>
                                 <td>
                                     @if (repair.PaymentStatus == "Paid")
@@ -198,23 +198,29 @@
                                 <td class="fw-semibold">$@repair.Cost.ToString("F2")</td>
                                 <td>
                                     <div class="btn-group" role="group">
-                                        <a asp-action="Edit" asp-route-id="@repair.Id" 
+                                        <a asp-action="Edit" asp-route-id="@repair.Id"
                                            class="btn btn-sm btn-outline-primary">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary print-repair-btn" 
-                                                data-repair-id="@repair.Id"
+                                        <button type="button" class="btn btn-sm btn-outline-secondary print-repair-btn"
                                                 data-repair-number="@repair.RepairNumber"
                                                 data-customer-name="@repair.CustomerName"
-                                                data-device-name="@repair.DeviceBrand @repair.DeviceModel"
+                                                data-customer-phone="@repair.CustomerPhone"
+                                                data-device-brand="@repair.DeviceBrand"
+                                                data-device-model="@repair.DeviceModel"
+                                                data-device-category="@repair.DeviceCategory"
                                                 data-issue="@repair.Issue"
+                                                data-description="@repair.Description"
                                                 data-created-by="@repair.CreatedByUser"
-                                                data-created-date="@repair.CreatedDate.ToString("MM/dd/yyyy HH:mm")">
+                                                data-created-date="@repair.CreatedDate.ToString("MM/dd/yyyy")"
+                                                data-status="@repair.Status"
+                                                data-payment-status="@repair.PaymentStatus"
+                                                data-cost="@repair.Cost.ToString("F2")">
                                             <i class="fas fa-print"></i>
                                         </button>
                                         @if (Context.Session.GetString("UserRole") == "Manager")
                                         {
-                                            <form asp-action="Delete" asp-route-id="@repair.Id" method="post" 
+                                            <form asp-action="Delete" asp-route-id="@repair.Id" method="post"
                                                   class="d-inline" onsubmit="return confirm('Are you sure you want to delete this repair?')">
                                                 <button type="submit" class="btn btn-sm btn-outline-danger">
                                                     <i class="fas fa-trash"></i>
@@ -244,179 +250,390 @@
     </div>
 </div>
 
+<!-- Hidden Print Template for Dymo LabelWriter 550 -->
+<div id="printTemplate" style="display: none;">
+    <div class="dymo-label" >
+        <!-- Header Section -->
+        <div class="label-header" >
+            <div class="company-name"></div>
+            <div class="contact-info">
+                <span class="company-name home" style="font-weight:bold">EMPIRE PHONE REPAIR - </span>
+                <span class="phone">📞 <span id="printShopPhone" style="font-weight:bold"></span> - </span>
+                <span id="printCreatedDate" style="font-weight:bold"></span>
+            </div>           
+        </div>
+
+        <!-- Customer & Device Info -->
+        <div class="info-section">
+            <div class="info-row">
+                <span class="label" style="font-weight:bold">CUSTOMER:</span>
+                <span class="value customer-name" id="printCustomerName" style="font-weight:bold"></span>
+            </div>
+            <div class="info-row">
+                <span class="label" style="font-weight:bold">PHONE:</span>
+                <span class="value" id="printCustomerPhone" style="font-weight:bold"></span>
+            </div>
+            <div class="info-row">
+                <span class="label" style="font-weight:bold">DEVICE:</span>
+                <span class="value" id="printDeviceInfo" style="font-weight:bold"></span>
+            </div>
+        </div>
+
+        <!-- Issue Section -->
+        <div class="issue-section">
+            <div class="info-row">
+                <span class="label" style="font-weight:bold">ISSUE:</span>
+                <span class="value" id="printIssue" style="font-weight:bold"></span>
+            </div>
+        </div>
+
+        <!-- Status & Payment -->
+        <div class="status-section">
+            <div class="status-payment-row">
+                <div class="status-box">
+                    <span class="label" style="font-weight:bold">STATUS:</span>
+                    <span class="value status-badge" id="printStatus" style="font-weight:bold"></span>
+                </div>
+                <div class="payment-box">
+                    <span class="label" style="font-weight:bold">PAYMENT:</span>
+                    <span class="value payment-badge" id="printPaymentStatus" style="font-weight:bold"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="label-footer">
+            <div class="dates">
+                
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <!-- Select2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
-    
+
     <!-- Select2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    
+
+    <style>
+        /* Dymo LabelWriter 550 Specific Styles */
+        /* Label dimensions: 2.4" x 4" (61mm x 102mm) */
+
+        #printTemplate{font-weight: bold;}
+        .dymo-label {
+            width: 2.4in;
+            height: 4in;
+            padding-left: 4in;
+            font-family: 'Arial', sans-serif;
+            font-size: 18pt;
+            line-height: 1.2;
+            background: white;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header Section */
+        .label-header {
+            border-bottom: 2px solid #000;
+            padding-bottom: 0.08in;
+            margin-bottom: 0.1in;
+        }
+
+        .company-name {
+            font-weight: 900;
+            font-size: 14pt;
+            text-align: center;
+            margin-bottom: 0.04in;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #2c3e50;
+        }
+
+        .contact-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 9pt;
+        }
+
+            .contact-info .phone {
+                font-weight: 700;
+                color: #2c3e50;
+            }
+
+            .contact-info .repair-no {
+                font-weight: 700;
+                color: #e74c3c;
+            }
+
+        /* Information Sections */
+        .info-section, .issue-section, .status-section {
+            margin-bottom: 0.1in;
+        }
+
+        .info-row {
+            display: flex;
+            margin-bottom: 0.06in;
+            min-height: 0.2in;
+            align-items: flex-start;
+        }
+
+            .info-row .label {
+                font-weight: bold;
+                min-width: 0.8in;
+                text-transform: uppercase;
+                font-size: 9pt;
+                margin-right: 0.08in;
+                color: #2c3e50;
+            }
+
+            .info-row .value {
+                flex: 1;
+                word-break: break-word;
+                overflow-wrap: break-word;
+                font-weight: 400;
+                font-size: 11pt;
+                color: #34495e;
+                font-weight: bold;
+            }
+
+                /* Specific style for customer name to ensure it's normal weight */
+                .info-row .value.customer-name {
+                    font-weight: 400 !important;
+                }
+
+        /* Issue Section */
+        .issue-section {
+            border-top: 1px dashed #95a5a6;
+            border-bottom: 1px dashed #95a5a6;
+            padding: 0.08in 0;
+        }
+
+        /* Status & Payment Section */
+        .status-section {
+            border-top: 2px solid #000;
+            padding-top: 0.08in;
+            margin-top: 0.1in;
+        }
+
+        .status-payment-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 0.1in;
+        }
+
+        .status-box, .payment-box {
+            text-align: center;
+            flex: 1;
+            padding: 0.06in;
+        }
+
+            .status-box .label, .payment-box .label {
+                display: block;
+                font-weight: 800;
+                font-size: 8pt;
+                text-transform: uppercase;
+                margin-bottom: 0.04in;
+                color: #2c3e50;
+            }
+
+        .status-badge, .payment-badge {
+            display: block;
+            padding: 0.06in 0.08in;
+            border-radius: 0.04in;
+            font-size: 9pt;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-badge {
+            background: #3498db;
+            color: white;
+        }
+
+        .payment-badge.paid {
+            background: #27ae60;
+            color: white;
+        }
+
+        .payment-badge.unpaid {
+            background: #e74c3c;
+            color: white;
+        }
+
+        /* Footer Section */
+        .label-footer {
+            margin-top: auto;
+            border-top: 1px solid #bdc3c7;
+            padding-top: 0.08in;
+            font-size: 8pt;
+            color: #7f8c8d;
+            text-align: center;
+        }
+
+        /* Enhanced bold styling for all labels */
+        .label, .status-box .label, .payment-box .label,
+        .contact-info .phone, .contact-info .repair-no {
+            font-weight: 800 !important;
+        }
+
+        /* Print Specific Styles */
+        @@media print {
+            body {
+               
+                background: white !important;
+            }
+
+                body * {
+                    visibility: hidden;
+                }
+
+            .dymo-label,
+            .dymo-label * {
+                visibility: visible;
+            }
+
+            .dymo-label {
+                position: absolute;
+                padding-left: 30pt !important;
+                top: 0;
+                width: 2.4in;
+                height: 4in;
+                margin: 0;
+                padding: 0.12in;
+                box-shadow: none;
+                border: none;
+                font-size:18pt;
+                font-weight:bold;
+            }
+            /* Hide unnecessary elements in print */
+            .no-print {
+                display: none !important;
+            }
+        }
+
+        /* Screen preview styles */
+        @@media screen {
+            .dymo-label {
+                margin: 20px auto;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            }
+        }
+    </style>
+
     <script>
+        // Store shop phone for print function
+        var shopPhone = '@ViewBag.ShopPhone';
+
         $(document).ready(function() {
             // Initialize Select2 for filter dropdowns
             $('#brandFilter, #deviceCategoryFilter').select2({
                 theme: 'bootstrap-5',
                 allowClear: true
             });
-            
+
             // Load filter data
             loadBrands();
             loadDeviceCategories();
+
+            // Initialize print buttons
+            initializePrintButtons();
         });
-        
+
         function loadBrands() {
             var url = '@Url.Action("GetBrands", "Repairs")';
             $.get(url, function(response) {
                 if (response.success) {
                     const brandSelect = $('#brandFilter');
-                    const currentValue = brandSelect.data('current-value') || '';
-                    
                     brandSelect.empty().append('<option value="">All Brands</option>');
-                    
+
                     response.data.forEach(function(brand) {
-                        const selected = brand.id == currentValue ? 'selected' : '';
-                        brandSelect.append('<option value="' + brand.id + '" ' + selected + '>' + brand.name + '</option>');
+                        brandSelect.append('<option value="' + brand.id + '">' + brand.name + '</option>');
                     });
-                    
-                    console.log('Loaded ' + response.data.length + ' brands for filter');
-                } else {
-                    console.error('Failed to load brands:', response.message);
                 }
-            }).fail(function(xhr, status, error) {
-                console.error('Error loading brands:', error);
             });
         }
-        
+
         function loadDeviceCategories() {
             var url = '@Url.Action("GetDeviceCategories", "Repairs")';
             $.get(url, function(response) {
                 if (response.success) {
                     const categorySelect = $('#deviceCategoryFilter');
-                    const currentValue = categorySelect.data('current-value') || '';
-                    
                     categorySelect.empty().append('<option value="">All Categories</option>');
-                    
+
                     response.data.forEach(function(category) {
-                        const selected = category.id == currentValue ? 'selected' : '';
-                        categorySelect.append('<option value="' + category.id + '" ' + selected + '>' + category.name + '</option>');
+                        categorySelect.append('<option value="' + category.id + '">' + category.name + '</option>');
                     });
-                    
-                    console.log('Loaded ' + response.data.length + ' device categories for filter');
-                } else {
-                    console.error('Failed to load device categories:', response.message);
                 }
-            }).fail(function(xhr, status, error) {
-                console.error('Error loading device categories:', error);
             });
         }
-        
-        // Print Repair Function - Robust implementation
+
+        // PRINT FUNCTION FOR DYMO LABEL
         function initializePrintButtons() {
-            $('.print-repair-btn').off('click').on('click', function(e) {
-                e.preventDefault();
-                
-                try {
-                    var btn = $(this);
-                    
-                    // Get data from button attributes with fallbacks
-                    var repairNumber = btn.attr('data-repair-number') || 'N/A';
-                    var customerName = btn.attr('data-customer-name') || 'N/A';
-                    var deviceName = btn.attr('data-device-name') || 'N/A';
-                    var issue = btn.attr('data-issue') || 'N/A';
-                    var createdBy = btn.attr('data-created-by') || 'Unknown';
-                    var createdDate = btn.attr('data-created-date') || '';
-                    
-                    // Escape HTML special characters to prevent XSS and formatting issues
-                    function escapeHtml(text) {
-                        if (!text) return '';
-                        var div = document.createElement('div');
-                        div.textContent = text;
-                        return div.innerHTML;
-                    }
-                    
-                    // Escape all values
-                    repairNumber = escapeHtml(repairNumber);
-                    customerName = escapeHtml(customerName);
-                    deviceName = escapeHtml(deviceName);
-                    issue = escapeHtml(issue);
-                    createdBy = escapeHtml(createdBy);
-                    createdDate = escapeHtml(createdDate);
-                    
-                    // Open print window
-                    var printWindow = window.open('', '_blank', 'width=800,height=600');
-                    
-                    if (!printWindow) {
-                        alert('Please allow popups for this site to use the print function.');
-                        return;
-                    }
-                    
-                    // Build HTML content using string concatenation (no template literals)
-                    var html = '<!DOCTYPE html>';
-                    html += '<html>';
-                    html += '<head>';
-                    html += '<meta charset="UTF-8">';
-                    html += '<title>Repair Details - ' + repairNumber + '</title>';
-                    html += '<style>';
-                    html += 'body { font-family: Arial, sans-serif; padding: 40px; margin: 0; }';
-                    html += 'h1 { color: #333; border-bottom: 2px solid #667eea; padding-bottom: 10px; margin-bottom: 10px; font-size: 24px; }';
-                    html += '.header-info { font-size: 16px; color: #666; margin-bottom: 30px; font-weight: normal; }';
-                    html += '.detail { margin: 30px 0; }';
-                    html += '.label { font-weight: bold; color: #444; margin-bottom: 8px; font-size: 20px; text-transform: uppercase; letter-spacing: 0.5px; }';
-                    html += '.value { color: #333; font-size: 34px; line-height: 1.2; font-weight: bold; word-wrap: break-word; }';
-                    html += '.print-btn { padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 20px; }';
-                    html += '.print-btn:hover { background: #5568d3; }';
-                    html += '</style>';
-                    html += '</head>';
-                    html += '<body>';
-                    html += '<h1>Repair Details - ' + repairNumber + '</h1>';
-                    
-                    // Only show created by info if we have a date
-                    if (createdDate) {
-                        html += '<div class="header-info">Created by: ' + createdBy + ' | ' + createdDate + '</div>';
-                    }
-                    
-                    html += '<div class="detail">';
-                    html += '<div class="label">Customer Name:</div>';
-                    html += '<div class="value">' + customerName + '</div>';
-                    html += '</div>';
-                    
-                    html += '<div class="detail">';
-                    html += '<div class="label">Device:</div>';
-                    html += '<div class="value">' + deviceName + '</div>';
-                    html += '</div>';
-                    
-                    html += '<div class="detail">';
-                    html += '<div class="label">Issue:</div>';
-                    html += '<div class="value">' + issue + '</div>';
-                    html += '</div>';
-                    
-                    html += '<button class="print-btn" onclick="window.print();">Print</button>';
-                    html += '</body>';
-                    html += '</html>';
-                    
-                    // Write content to print window
-                    printWindow.document.open();
-                    printWindow.document.write(html);
-                    printWindow.document.close();
-                    
-                    // Focus the print window
-                    printWindow.focus();
-                    
-                    console.log('Print window opened successfully for repair:', repairNumber);
-                    
-                } catch (error) {
-                    console.error('Error opening print window:', error);
-                    alert('An error occurred while opening the print window. Please try again.');
+            $('.print-repair-btn').click(function() {
+                var $btn = $(this);
+
+                // Get all repair data from button attributes
+                var repairData = {
+                    number: $btn.data('repair-number'),
+                    customerName: $btn.data('customer-name'),
+                    customerPhone: $btn.data('customer-phone'),
+                    deviceBrand: $btn.data('device-brand'),
+                    deviceModel: $btn.data('device-model'),
+                    deviceCategory: $btn.data('device-category'),
+                    issue: $btn.data('issue'),
+                    description: $btn.data('description'),
+                    createdBy: $btn.data('created-by'),
+                    createdDate: $btn.data('created-date'),
+                    status: $btn.data('status'),
+                    paymentStatus: $btn.data('payment-status'),
+                    cost: $btn.data('cost')
+                };
+
+                // Update the hidden print template with current data
+                document.getElementById('printShopPhone').textContent = shopPhone;
+                document.getElementById('printCustomerName').textContent = repairData.customerName;
+                document.getElementById('printCustomerPhone').textContent = repairData.customerPhone || 'N/A';
+
+                // Build device info string
+                var deviceInfo = repairData.deviceBrand + ' ' + repairData.deviceModel;
+                if (repairData.deviceCategory) {
+                    deviceInfo += ' (' + repairData.deviceCategory + ')';
                 }
+                document.getElementById('printDeviceInfo').textContent = deviceInfo;
+
+                document.getElementById('printIssue').textContent = repairData.issue;
+                document.getElementById('printCreatedDate').textContent = repairData.createdDate;
+
+                // Set status with appropriate styling
+                var statusElement = document.getElementById('printStatus');
+                statusElement.textContent = repairData.status;
+
+                // Set payment status with appropriate styling
+                var paymentElement = document.getElementById('printPaymentStatus');
+                paymentElement.textContent = repairData.paymentStatus;
+                paymentElement.className = 'payment-badge ' + repairData.paymentStatus.toLowerCase();
+
+                // Get the print content from hidden div
+                const printContent = document.getElementById('printTemplate').innerHTML;
+                const originalContent = document.body.innerHTML;
+
+                // Replace body content with print content
+                document.body.innerHTML = printContent;
+
+                // Trigger print
+                window.print();
+
+                // Restore original content
+                document.body.innerHTML = originalContent;
+
+                // Re-initialize events since we replaced the entire body
+                initializePrintButtons();
             });
         }
-        
-        // Initialize print buttons when document is ready
-        $(document).ready(function() {
-            initializePrintButtons();
-            console.log('Print buttons initialized');
-        });
     </script>
 }
-

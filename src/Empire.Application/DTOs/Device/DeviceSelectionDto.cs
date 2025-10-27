@@ -7,6 +7,9 @@ public class DeviceSelectionDto
 {
     public int Id { get; set; }
     public int ShopId { get; set; }
+    public int BrandId { get; set; }
+    public int DeviceCategoryId { get; set; }
+    public int DeviceModelId { get; set; }
     public string Brand { get; set; } = string.Empty;
     public string Category { get; set; } = string.Empty;
     public string Model { get; set; } = string.Empty;

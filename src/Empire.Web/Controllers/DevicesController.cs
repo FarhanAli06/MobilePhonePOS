@@ -30,6 +30,10 @@ public class DevicesController : Controller
             }
 
             var devices = await _deviceService.GetDevicesByShopAsync(currentShopId);
+            
+            // Get shop info for print
+            var shop = await _shopService.GetShopByIdAsync(currentShopId);
+            ViewBag.ShopPhone = shop?.Phone ?? "N/A";
             ViewBag.CurrentShopId = currentShopId;
             ViewBag.PageTitle = "Device Management";
             

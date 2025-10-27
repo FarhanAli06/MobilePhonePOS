@@ -51,6 +51,12 @@ public class RepairsController : Controller
 
             var repairs = await _repairService.GetRepairsAsync(filter);
 
+            // Get shop info for print
+            using var scope = _serviceProvider.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<EmpireDbContext>();
+            var shop = await dbContext.Shops.FindAsync(currentShopId);
+            ViewBag.ShopPhone = shop?.Phone ?? "N/A";
+
             var model = new RepairIndexViewModel
             {
                 Repairs = repairs,
