@@ -133,7 +133,7 @@
                 {
                     <tr data-device-id="@device.Id">
                         <td>
-                            <div class="fw-bold">@device.Brand @device.Model</div>
+                            <div class="fw-bold">@device.Brand @device.Model @(!string.IsNullOrEmpty(device.ModelNumber) ? $"({device.ModelNumber})" : "")</div>
                             <small class="text-muted">@device.DeviceType @(device.Year.HasValue ? $"({device.Year})" : "")</small>
                         </td>
                         <td>
@@ -993,7 +993,9 @@
 
             // Add new data
             devices.forEach(function(device) {
-                const deviceDetails = '<div class="fw-bold">' + (device.brand || device.Brand) + ' ' + (device.model || device.Model) + '</div>' +
+                const modelNumber = device.modelNumber || device.ModelNumber || '';
+                const modelDisplay = (device.model || device.Model) + (modelNumber ? ' (' + modelNumber + ')' : '');
+                const deviceDetails = '<div class="fw-bold">' + (device.brand || device.Brand) + ' ' + modelDisplay + '</div>' +
                     '<small class="text-muted">' + (device.deviceType || device.DeviceType) + ((device.year || device.Year) ? ' (' + (device.year || device.Year) + ')' : '') + '</small>';
 
                 const imei = '<span class="badge bg-secondary">' + (device.imeiSerialNumber || device.IMEISerialNumber || 'N/A') + '</span>';

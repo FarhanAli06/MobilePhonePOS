@@ -73,7 +73,9 @@
                         <option value="">All Status</option>
                         <option value="InProgress" selected="@(Model.Status == "InProgress")">In Progress</option>
                         <option value="Complete" selected="@(Model.Status == "Complete")">Complete</option>
-                        <option value="Done" selected="@(Model.Status == "Done")">Done</option>
+                        <option value="PickedUp" selected="@(Model.Status == "PickedUp")">Picked Up</option>
+                        <option value="WaitingForParts" selected="@(Model.Status == "WaitingForParts")">Waiting for Parts</option>
+                        <option value="Diagnose" selected="@(Model.Status == "Diagnose")">Diagnose</option>
                     </select>
                 </div>
 
@@ -119,7 +121,7 @@
         @if (Model.Repairs.Any())
         {
             <div class="table-responsive">
-                <table class="table table-hover">
+                <table id="repairsTable" class="table table-hover table-striped">
                     <thead>
                         <tr>
                             <th>Customer</th>
@@ -135,7 +137,7 @@
                     <tbody>
                         @foreach (var repair in Model.Repairs)
                         {
-                            <tr>
+                            <tr data-status="@repair.Status">
                                 <td>
                                     <div>@repair.CustomerName</div>
                                     <small class="text-muted">@repair.CustomerPhone</small>
@@ -528,8 +530,40 @@
     <script>
         // Store shop phone for print function
         var shopPhone = '@ViewBag.ShopPhone';
+        let repairsTable;
 
         $(document).ready(function() {
+            // Initialize DataTable for repairs table
+            repairsTable = $('#repairsTable').DataTable({
+                responsive: true,
+                pageLength: 25,
+                order: [[3, 'desc']], // Sort by Repair Details/Created Date (column index 3)
+                columnDefs: [
+                    { orderable: false, targets: [7] } // Disable sorting on actions column
+                ]
+            });
+
+            // Hide PickedUp records by default
+            $.fn.dataTable.ext.search.push(
+                function(settings, data, dataIndex) {
+                    // Get the row element
+                    var row = repairsTable.row(dataIndex).node();
+                    var status = $(row).data('status');
+                    
+                    // If there's an active filter from the filter form, don't apply this default filter
+                    var statusFilter = $('#status').val();
+                    if (statusFilter !== '') {
+                        return true; // Show all records when filter is active
+                    }
+                    
+                    // Hide PickedUp records by default
+                    return status !== 'PickedUp';
+                }
+            );
+            
+            // Apply the filter
+            repairsTable.draw();
+
             // Initialize Select2 for filter dropdowns
             $('#brandFilter, #deviceCategoryFilter').select2({
                 theme: 'bootstrap-5',
@@ -542,6 +576,11 @@
 
             // Initialize print buttons
             initializePrintButtons();
+
+            // Add change event handler for status filter to redraw table
+            $('#status').on('change', function() {
+                repairsTable.draw();
+            });
         });
 
         function loadBrands() {

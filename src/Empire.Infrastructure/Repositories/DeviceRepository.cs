@@ -41,6 +41,7 @@ public class DeviceRepository : Repository<Device>, IDeviceRepository
         return await _dbSet
             .Where(d => d.ShopId == shopId && !d.IsDeleted)
             .Include(d => d.SoldToCustomer)
+            .Include(b => b.DeviceModel)
             .OrderByDescending(d => d.CreatedDate)
             .ToListAsync();
     }

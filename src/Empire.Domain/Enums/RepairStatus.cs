@@ -4,6 +4,8 @@ public enum RepairStatus
 {
     InProgress = 1,
     Complete = 2,
-    Done = 3
+    PickedUp = 3,
+    WaitingForParts = 4,
+    Diagnose = 5
 }
 

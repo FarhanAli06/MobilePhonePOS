@@ -86,6 +86,17 @@
                 </select>
             </div>
         </div>
+        @if (Model.IsSold)
+        {
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">Sold To Customer</label>
+                    <select class="form-select" id="editSoldToCustomerId">
+                        <option value="">Select Customer</option>
+                    </select>
+                </div>
+            </div>
+        }
         <div class="col-12">
             <div class="mb-3">
                 <label class="form-label">Notes</label>
@@ -101,13 +112,16 @@
 </div>
 
 <script>
+(function() {
     // Store original values - we'll need to get IDs from the dropdowns after they load
-    const originalBrandId = @Model.BrandId;
-    const originalCategoryId = @Model.DeviceCategoryId;
-    const originalModelId = @Model.DeviceModelId;
-    const originalNetworkStatus = "@Model.NetworkStatus";
-    const originalScratches = "@Model.ScratchesCondition";
-    const originalIsAvailable = @Model.IsAvailableForSale.ToString().ToLower();
+    var originalBrandId = @Model.BrandId;
+    var originalCategoryId = @Model.DeviceCategoryId;
+    var originalModelId = @Model.DeviceModelId;
+    var originalNetworkStatus = "@Model.NetworkStatus";
+    var originalScratches = "@Model.ScratchesCondition";
+    var originalIsAvailable = @Model.IsAvailableForSale.ToString().ToLower();
+    var isSold = @Model.IsSold.ToString().ToLower();
+    var originalCustomerId = @(Model.SoldToCustomerId.HasValue ? Model.SoldToCustomerId.Value.ToString() : "null");
 
     // Load dropdowns when modal opens
     $(document).ready(function() {
@@ -122,6 +136,11 @@
         
         // Set availability
         $('#editIsAvailableForSale').val(originalIsAvailable.toString());
+        
+        // Load customers if device is sold
+        if (isSold) {
+            loadEditCustomers();
+        }
     });
 
     function loadEditBrands() {
@@ -129,20 +148,22 @@
             url: '@Url.Action("GetBrands", "Lookup")',
             type: 'GET',
             success: function(brands) {
-                const select = $('#editBrandId');
+                var select = $('#editBrandId');
                 select.empty();
                 select.append('<option value="">Select Brand</option>');
                 
                 if (brands && brands.length > 0) {
                     brands.forEach(function(brand) {
-                        const selected = brand.Id === originalBrandId ? 'selected' : '';
-                        select.append('<option value="' + brand.Id + '" ' + selected + '>' + brand.Name + '</option>');
+                        var brandId = brand.id || brand.Id;
+                        var brandName = brand.name || brand.Name;
+                        var selected = brandId === originalBrandId ? 'selected' : '';
+                        select.append('<option value="' + brandId + '" ' + selected + '>' + brandName + '</option>');
                     });
                     
                     // After brands load, load models
                     setTimeout(function() {
-                        const brandId = $('#editBrandId').val();
-                        const categoryId = $('#editDeviceCategoryId').val();
+                        var brandId = $('#editBrandId').val();
+                        var categoryId = $('#editDeviceCategoryId').val();
                         if (brandId && categoryId) {
                             loadEditModels(categoryId, brandId);
                         }
@@ -160,20 +181,22 @@
             url: '@Url.Action("GetDeviceCategories", "Lookup")',
             type: 'GET',
             success: function(categories) {
-                const select = $('#editDeviceCategoryId');
+                var select = $('#editDeviceCategoryId');
                 select.empty();
                 select.append('<option value="">Select Category</option>');
                 
                 if (categories && categories.length > 0) {
                     categories.forEach(function(category) {
-                        const selected = category.Id === originalCategoryId ? 'selected' : '';
-                        select.append('<option value="' + category.Id + '" ' + selected + '>' + category.Name + '</option>');
+                        var categoryId = category.id || category.Id;
+                        var categoryName = category.name || category.Name;
+                        var selected = categoryId === originalCategoryId ? 'selected' : '';
+                        select.append('<option value="' + categoryId + '" ' + selected + '>' + categoryName + '</option>');
                     });
                     
                     // After categories load, load models
                     setTimeout(function() {
-                        const brandId = $('#editBrandId').val();
-                        const categoryId = $('#editDeviceCategoryId').val();
+                        var brandId = $('#editBrandId').val();
+                        var categoryId = $('#editDeviceCategoryId').val();
                         if (brandId && categoryId) {
                             loadEditModels(categoryId, brandId);
                         }
@@ -192,14 +215,18 @@
             type: 'GET',
             data: { categoryId: categoryId, brandId: brandId },
             success: function(models) {
-                const modelSelect = $('#editDeviceModelId');
+                var modelSelect = $('#editDeviceModelId');
                 modelSelect.empty();
                 modelSelect.append('<option value="">Select Model</option>');
                 
                 if (models && models.length > 0) {
                     models.forEach(function(model) {
-                        const selected = model.Id === originalModelId ? 'selected' : '';
-                        modelSelect.append('<option value="' + model.Id + '" ' + selected + '>' + model.Name + '</option>');
+                        var modelId = model.id || model.Id;
+                        var modelName = model.name || model.Name;
+                        var modelNumber = model.modelNumber || model.ModelNumber || '';
+                        var displayText = modelNumber ? modelName + ' (' + modelNumber + ')' : modelName;
+                        var selected = modelId === originalModelId ? 'selected' : '';
+                        modelSelect.append('<option value="' + modelId + '" ' + selected + '>' + displayText + '</option>');
                     });
                 } else {
                     modelSelect.append('<option value="" disabled>No models found for this combination</option>');
@@ -213,8 +240,8 @@
 
     // Add change handlers for cascading
     $('#editBrandId').on('change', function() {
-        const brandId = $(this).val();
-        const categoryId = $('#editDeviceCategoryId').val();
+        var brandId = $(this).val();
+        var categoryId = $('#editDeviceCategoryId').val();
         
         if (brandId && categoryId) {
             loadEditModels(categoryId, brandId);
@@ -224,8 +251,8 @@
     });
 
     $('#editDeviceCategoryId').on('change', function() {
-        const brandId = $('#editBrandId').val();
-        const categoryId = $(this).val();
+        var brandId = $('#editBrandId').val();
+        var categoryId = $(this).val();
         
         if (brandId && categoryId) {
             loadEditModels(categoryId, brandId);
@@ -234,18 +261,45 @@
         }
     });
 
+    function loadEditCustomers() {
+        $.ajax({
+            url: '@Url.Action("GetCustomersForSelection", "Customers")',
+            type: 'GET',
+            success: function(response) {
+                var select = $('#editSoldToCustomerId');
+                select.empty();
+                select.append('<option value="">Select Customer</option>');
+                
+                if (response.success && response.customers && response.customers.length > 0) {
+                    response.customers.forEach(function(customer) {
+                        var customerId = customer.id || customer.Id;
+                        var customerName = customer.name || customer.Name;
+                        var selected = customerId === originalCustomerId ? 'selected' : '';
+                        select.append('<option value="' + customerId + '" ' + selected + '>' + customerName + '</option>');
+                    });
+                } else {
+                    console.log('No customers found or error in response');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error loading customers:', error);
+                console.error('Response:', xhr.responseText);
+            }
+        });
+    }
+
     function updateDevice() {
-        const deviceId = $('#editDeviceId').val();
-        const brandId = $('#editBrandId').val();
-        const categoryId = $('#editDeviceCategoryId').val();
-        const modelId = $('#editDeviceModelId').val();
+        var deviceId = $('#editDeviceId').val();
+        var brandId = $('#editBrandId').val();
+        var categoryId = $('#editDeviceCategoryId').val();
+        var modelId = $('#editDeviceModelId').val();
 
         if (!brandId || !categoryId || !modelId) {
             alert('Please select Brand, Category, and Model');
             return;
         }
 
-        const deviceData = {
+        var deviceData = {
             BrandId: parseInt(brandId),
             DeviceCategoryId: parseInt(categoryId),
             DeviceModelId: parseInt(modelId),
@@ -259,6 +313,14 @@
             IsAvailableForSale: $('#editIsAvailableForSale').val() === 'true',
             Notes: $('#editNotes').val()
         };
+        
+        // Add customer ID if device is sold
+        if (isSold && $('#editSoldToCustomerId').length > 0) {
+            var customerId = $('#editSoldToCustomerId').val();
+            if (customerId) {
+                deviceData.SoldToCustomerId = parseInt(customerId);
+            }
+        }
 
         $.ajax({
             url: '@Url.Action("Edit", "Devices")/' + deviceId,
@@ -275,7 +337,7 @@
             },
             error: function(xhr) {
                 console.error('Error updating device:', xhr);
-                let errorMessage = 'Error updating device. Please try again.';
+                var errorMessage = 'Error updating device. Please try again.';
                 if (xhr.responseJSON && xhr.responseJSON.message) {
                     errorMessage = xhr.responseJSON.message;
                 }
@@ -283,5 +345,9 @@
             }
         });
     }
+    
+    // Make updateDevice available globally for onclick handler
+    window.updateDevice = updateDevice;
+})();
 </script>
 
