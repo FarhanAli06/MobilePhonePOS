@@ -242,9 +242,9 @@
     <div class="dymo-label">
         <!-- Header Section -->
         <div class="label-header">
-            <div class="contact-info">
-                <span class="company-name home" style="font-weight:bold">EMPIRE PHONE REPAIR - </span>
-                <span class="phone">📞 <span id="printShopPhone" style="font-weight:bold"></span></span>
+            <div class="contact-info" style="font-size:20px; font-weight:bold">
+                <span class="company-name home">EMPIRE PHONE REPAIR - </span>
+                <span class="phone">📞 <span id="printShopPhone"></span></span>
             </div>
         </div>
 
@@ -252,7 +252,7 @@
         <div class="info-section">
             <div class="info-row">
                 <span class="label" style="font-weight:bold">DEVICE:</span>
-                <span class="value" id="printDeviceInfo" style="font-weight:bold"></span>
+                <span class="value" id="printDeviceInfo" style="font-size:44px; font-weight:bold"></span>
             </div>
             <div class="info-row">
                 <span class="label" style="font-weight:bold">IMEI:</span>
@@ -276,11 +276,7 @@
         <div class="pricing-section">
             <div class="info-row">
                 <span class="label" style="font-weight:bold">PRICE:</span>
-                <span class="value" id="printSellPrice" style="font-weight:bold"></span>
-            </div>
-            <div class="info-row">
-                <span class="label" style="font-weight:bold">CREATED:</span>
-                <span class="value" id="printCreatedDate" style="font-weight:bold"></span>
+                <span class="value" id="printSellPrice" style="font-size:44px; font-weight:bold"></span>
             </div>
         </div>
 
@@ -1120,9 +1116,6 @@
 
                 // Selling Price
                 document.getElementById('printSellPrice').textContent = deviceData.sellingPrice ? '$' + deviceData.sellingPrice : '$0.00';
-
-                // Created Date
-                document.getElementById('printCreatedDate').textContent = deviceData.createdDate || 'N/A';
 
                 // Get the print content from hidden div
                 const printContent = document.getElementById('printTemplate').innerHTML;

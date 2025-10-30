@@ -289,10 +289,16 @@
     }
 
     function updateDevice() {
+        debugger;
         var deviceId = $('#editDeviceId').val();
         var brandId = $('#editBrandId').val();
         var categoryId = $('#editDeviceCategoryId').val();
         var modelId = $('#editDeviceModelId').val();
+
+
+        var brandText = $('#editBrandId option:selected').text();
+        var categoryText = $('#editDeviceCategoryId option:selected').text();
+        var modelText = $('#editDeviceModelId option:selected').text();
 
         if (!brandId || !categoryId || !modelId) {
             alert('Please select Brand, Category, and Model');
@@ -300,11 +306,11 @@
         }
 
         var deviceData = {
-            BrandId: parseInt(brandId),
-            DeviceCategoryId: parseInt(categoryId),
-            DeviceModelId: parseInt(modelId),
+            BrandId: brandText,
+            DeviceCategoryId: categoryText,
+            DeviceModelId: modelText,
             IMEISerialNumber: $('#editImeiSerialNumber').val(),
-            BatteryHealth: parseInt($('#editBatteryHealth').val()) || null,
+            BatteryHealthPercentage: parseInt($('#editBatteryHealth').val()) || null,
             NetworkStatus: $('#editNetworkStatus').val(),
             ScratchesCondition: $('#editScratches').val(),
             BuyingPrice: parseFloat($('#editBuyingPrice').val()) || 0,

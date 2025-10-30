@@ -139,7 +139,7 @@ public class DevicesController : Controller
         }
     }
 
-    [HttpPost]
+    [HttpPost("Edit/{id}")]
     public async Task<IActionResult> Edit(int id, [FromBody] UpdateDeviceRequest request)
     {
         try
