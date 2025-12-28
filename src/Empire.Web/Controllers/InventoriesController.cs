@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Empire.Web.Controllers;
 
+[SessionAuthorizeWithShop]
 [Route("Inventories")]
 public class InventoriesController : Controller
 {
@@ -33,14 +34,6 @@ public class InventoriesController : Controller
             }
 
             var currentShopId = GetCurrentShopId();
-            if (currentShopId == 0)
-            {
-                // Set a default shop ID of 1 for now to bypass the shop selection issue
-                HttpContext.Session.SetInt32("CurrentShopId", 1);
-                HttpContext.Session.SetString("CurrentShopName", "Default Shop");
-                currentShopId = 1;
-            }
-
             ViewBag.CurrentShopId = currentShopId;
             ViewBag.PageTitle = "Inventory Management";
             
@@ -63,13 +56,7 @@ public class InventoriesController : Controller
     {
         try
         {
-            // For testing - bypass authentication temporarily
             var currentShopId = GetCurrentShopId();
-            if (currentShopId == 0)
-            {
-                // Set default shop ID for testing
-                currentShopId = 1;
-            }
 
             var query = _context.InventoryItems
                 .Include(i => i.Brand)
@@ -206,9 +193,9 @@ public class InventoriesController : Controller
             }
 
             // Validate required fields
-            if (string.IsNullOrWhiteSpace(request.Name))
+            if (request.ItemId <= 0)
             {
-                return Json(new { success = false, message = "Item name is required" });
+                return Json(new { success = false, message = "Item type is required" });
             }
 
             if (request.BrandId <= 0 || request.DeviceCategoryId <= 0 || 
@@ -235,14 +222,15 @@ public class InventoriesController : Controller
             var inventoryItem = new InventoryItem
             {
                 ShopId = currentShopId,
-                Name = request.Name.Trim(),
+                ItemId = request.ItemId,
+                Name = request.Name?.Trim() ?? string.Empty,
                 SKU = request.SKU.Trim(),
                 Description = request.Description?.Trim() ?? string.Empty,
                 BrandId = request.BrandId,
                 DeviceCategoryId = request.DeviceCategoryId,
                 DeviceModelId = request.DeviceModelId,
                 InventoryCategoryId = request.InventoryCategoryId,
-                CurrentStock = request.CurrentStock,
+                CurrentStock = request.CurrentStock, // Initial stock quantity
                 ReorderPoint = request.ReorderPoint,
                 CostPrice = request.CostPrice,
                 RetailPrice = request.RetailPrice,
@@ -257,14 +245,40 @@ public class InventoriesController : Controller
             _context.InventoryItems.Add(inventoryItem);
             await _context.SaveChangesAsync();
 
-            // Record initial stock if any
+            // If initial stock was provided, create a stock IN transaction for audit trail
             if (request.CurrentStock > 0)
             {
-                await RecordStockMovementInternal(inventoryItem.Id, "IN", request.CurrentStock, 
-                    "Initial stock", "INITIAL", request.CostPrice);
+                var currentUserId = GetCurrentUserId();
+                if (currentUserId == 0)
+                {
+                    // Fallback to first user if session is invalid
+                    var firstUser = await _context.Users.FirstOrDefaultAsync();
+                    currentUserId = firstUser?.Id ?? 1;
+                }
+                
+                var transaction = new InventoryTransaction
+                {
+                    InventoryItemId = inventoryItem.Id,
+                    TransactionType = "IN",
+                    Quantity = request.CurrentStock,
+                    Reason = "Initial stock",
+                    UnitCost = request.CostPrice,
+                    TotalCost = request.CostPrice * request.CurrentStock,
+                    TransactionDate = DateTime.UtcNow,
+                    CreatedByUserId = currentUserId,
+                    Notes = "Initial stock when creating inventory item",
+                    CreatedDate = DateTime.UtcNow
+                };
+                
+                _context.InventoryTransactions.Add(transaction);
+                await _context.SaveChangesAsync();
             }
 
-            return Json(new { success = true, message = "Inventory item created successfully" });
+            var stockMessage = request.CurrentStock > 0 
+                ? $"Inventory item created with initial stock of {request.CurrentStock}."
+                : "Inventory item created. Use Stock Movements to add stock.";
+            
+            return Json(new { success = true, message = stockMessage });
         }
         catch (Exception ex)
         {
@@ -287,9 +301,9 @@ public class InventoriesController : Controller
             }
 
             // Validate required fields
-            if (string.IsNullOrWhiteSpace(request.Name))
+            if (request.ItemId <= 0)
             {
-                return Json(new { success = false, message = "Item name is required" });
+                return Json(new { success = false, message = "Item type is required" });
             }
 
             // Check for duplicate SKU (excluding current item)
@@ -305,7 +319,8 @@ public class InventoriesController : Controller
             }
 
             // Update properties
-            item.Name = request.Name.Trim();
+            item.ItemId = request.ItemId;
+            item.Name = request.Name?.Trim() ?? string.Empty;
             item.SKU = request.SKU?.Trim() ?? string.Empty;
             item.Description = request.Description?.Trim() ?? string.Empty;
             item.BrandId = request.BrandId;
@@ -442,7 +457,7 @@ public class InventoriesController : Controller
             Reason = reason ?? string.Empty,
             ReferenceNumber = referenceNumber ?? string.Empty,
             MovementDate = DateTime.UtcNow,
-            CreatedBy = currentUserId,
+            CreatedByUserId = currentUserId,
             CreatedDate = DateTime.UtcNow
         };
 
@@ -485,20 +500,44 @@ public class InventoriesController : Controller
         return sku;
     }
 
+    [HttpGet]
+    [Route("GetItemNames")]
+    public async Task<IActionResult> GetItemNames()
+    {
+        try
+        {
+            var itemNames = await _context.InventoryItems
+                .Where(i => !i.IsDeleted)
+                .Select(i => i.Name)
+                .Distinct()
+                .OrderBy(n => n)
+                .ToListAsync();
+
+            return Json(itemNames);
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = ex.Message });
+        }
+    }
+
     private int GetCurrentShopId()
     {
-        return HttpContext.Session.GetInt32("CurrentShopId") ?? 0;
+        var shopIdString = HttpContext.Session.GetString("CurrentShopId");
+        return int.TryParse(shopIdString, out var shopId) ? shopId : 0;
     }
 
     private int GetCurrentUserId()
     {
-        return HttpContext.Session.GetInt32("UserId") ?? 0;
+        var userIdString = HttpContext.Session.GetString("UserId");
+        return int.TryParse(userIdString, out int userId) ? userId : 0;
     }
 }
 
 // Request models
 public class CreateInventoryItemRequest
 {
+    public int ItemId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string SKU { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
@@ -506,7 +545,7 @@ public class CreateInventoryItemRequest
     public int DeviceCategoryId { get; set; }
     public int DeviceModelId { get; set; }
     public int InventoryCategoryId { get; set; }
-    public int CurrentStock { get; set; }
+    public int CurrentStock { get; set; } = 0; // Initial stock quantity
     public int ReorderPoint { get; set; } = 5;
     public decimal CostPrice { get; set; }
     public decimal RetailPrice { get; set; }
@@ -518,6 +557,7 @@ public class CreateInventoryItemRequest
 
 public class UpdateInventoryItemRequest
 {
+    public int ItemId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string SKU { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;

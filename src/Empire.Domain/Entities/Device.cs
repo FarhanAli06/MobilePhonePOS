@@ -21,6 +21,9 @@ public class Device : BaseEntity
     [MaxLength(50)]
     public string IMEISerialNumber { get; set; } = string.Empty;
     
+    [MaxLength(20)]
+    public string? GB { get; set; }
+    
     public int? BatteryHealthPercentage { get; set; }
     
     [MaxLength(20)]
@@ -44,14 +47,17 @@ public class Device : BaseEntity
     public bool IsSold { get; set; } = false;
     
     public DateTime? SoldDate { get; set; }
-    
-    public int? SoldToCustomerId { get; set; }
+       public int? SoldToCustomerId { get; set; }
     
     // Navigation properties
     public virtual Shop Shop { get; set; } = null!;
     public virtual Brand Brand { get; set; } = null!;
     public virtual DeviceCategory DeviceCategory { get; set; } = null!;
     public virtual DeviceModel DeviceModel { get; set; } = null!;
+    
+    public int? CompanyId { get; set; }
+    public virtual Company? Company { get; set; }
+
     public virtual Customer? SoldToCustomer { get; set; }
     public virtual ICollection<Repair> Repairs { get; set; } = new List<Repair>();
 }

@@ -45,18 +45,6 @@
                         </div>
                     </div>
                     
-                    <div class="mb-3">
-                        <label asp-for="Issue" class="form-label"></label>
-                        <input asp-for="Issue" class="form-control" list="issueList">
-                        <datalist id="issueList">
-                            <option value="Screen replacement" />
-                            <option value="Battery replacement" />
-                            <option value="Charging port replacement" />
-                            <option value="Back glass" />
-                            <option value="Phone service" />
-                        </datalist>
-                        <span asp-validation-for="Issue" class="text-danger"></span>
-                    </div>                    
                     <!-- Device Category and Model Selection -->
                     <div class="row">
                         <div class="col-md-6 mb-3">
@@ -78,6 +66,24 @@
                         <label asp-for="Description" class="form-label"></label>
                         <textarea asp-for="Description" class="form-control" rows="3"></textarea>
                         <span asp-validation-for="Description" class="text-danger"></span>
+                    </div>
+                    
+                    <!-- Inventory Parts Selection -->
+                    <div class="mb-3">
+                        <label for="InventoryParts" class="form-label">
+                            <i class="fas fa-box me-1"></i>
+                            Parts Used in Repair
+                        </label>
+                        <select id="InventoryParts" name="InventoryParts" class="form-control" multiple size="6" style="height: 150px;">
+                            <!-- Options loaded dynamically -->
+                        </select>
+                        <small class="form-text text-muted">
+                            Hold Ctrl (Windows) or Cmd (Mac) to select multiple parts. Parts will be loaded based on Brand/Category/Model.
+                        </small>
+                        <div id="partsStockAlert" class="alert alert-info mt-2" style="display: none;">
+                            <i class="fas fa-info-circle me-1"></i>
+                            <span id="partsStockMessage"></span>
+                        </div>
                     </div>
                     
                     <div class="mb-3">
@@ -314,29 +320,119 @@
             });
         }
         
+        function loadInventoryParts() {
+            const brandId = $('#BrandId').val();
+            const categoryId = $('#DeviceCategoryId').val();
+            const modelId = $('#DeviceModelId').val();
+            const partsSelect = $('#InventoryParts');
+            const stockAlert = $('#partsStockAlert');
+            const stockMessage = $('#partsStockMessage');
+            
+            // Clear previous parts
+            partsSelect.empty();
+            stockAlert.hide();
+            
+            if (!brandId || !categoryId) {
+                return;
+            }
+            
+            const url = '@Url.Action("GetInventoryParts", "Repairs")';
+            $.get(url, { brandId: brandId, categoryId: categoryId, modelId: modelId }, function(response) {
+                if (response.success && response.data.length > 0) {
+                    let inStockCount = 0;
+                    let outOfStockCount = 0;
+                    
+                    response.data.forEach(function(part) {
+                        const option = $('<option></option>');
+                        option.val(part.id);
+                        
+                        if (part.inStock) {
+                            option.text(part.name + ' - $' + part.price.toFixed(2) + ' (Stock: ' + part.quantity + ')');
+                            option.css('color', 'green');
+                            inStockCount++;
+                        } else {
+                            option.text(part.name + ' - OUT OF STOCK');
+                            option.prop('disabled', true);
+                            option.css('color', 'red');
+                            outOfStockCount++;
+                        }
+                        
+                        partsSelect.append(option);
+                    });
+                    
+                    // Show stock status
+                    if (outOfStockCount > 0) {
+                        stockAlert.removeClass('alert-info alert-success').addClass('alert-warning');
+                        stockMessage.text(outOfStockCount + ' item(s) out of stock');
+                        stockAlert.show();
+                    } else if (inStockCount > 0) {
+                        stockAlert.removeClass('alert-warning alert-info').addClass('alert-success');
+                        stockMessage.text('All parts in stock');
+                        stockAlert.show();
+                    }
+                    
+                    // Load currently selected parts for this repair
+                    loadCurrentRepairParts();
+                    
+                    console.log('Loaded ' + response.data.length + ' inventory parts');
+                } else {
+                    stockAlert.removeClass('alert-warning alert-success').addClass('alert-info');
+                    stockMessage.text('No inventory parts match the selected brand/category/model');
+                    stockAlert.show();
+                }
+            }).fail(function(xhr, status, error) {
+                console.error('Error loading inventory parts:', error);
+            });
+        }
+        
+        function loadCurrentRepairParts() {
+            const repairId = '@Model.Id';
+            const url = '@Url.Action("GetRepairParts", "Repairs")';
+            
+            $.get(url, { repairId: repairId }, function(response) {
+                if (response.success && response.data.length > 0) {
+                    const partsSelect = $('#InventoryParts');
+                    const selectedIds = response.data.map(p => p.inventoryItemId.toString());
+                    partsSelect.val(selectedIds);
+                    console.log('Pre-selected ' + selectedIds.length + ' parts for repair');
+                }
+            }).fail(function(xhr, status, error) {
+                console.error('Error loading current repair parts:', error);
+            });
+        }
+        
         function setupCascadingDropdowns() {
-            // Brand change -> load models
+            // Brand change -> load models and parts
             $('#BrandId').change(function() {
                 const brandId = $(this).val();
                 const categoryId = $('#DeviceCategoryId').val();
                 if (brandId && categoryId) {
                     loadDeviceModels(categoryId, brandId);
+                    loadInventoryParts();
                 } else {
                     // Clear models if brand is cleared
                     $('#DeviceModelId').empty().append('<option value="">Select Model</option>');
+                    $('#InventoryParts').empty();
                 }
             });
             
-            // Category change -> load models
+            // Category change -> load models and parts
             $('#DeviceCategoryId').change(function() {
                 const categoryId = $(this).val();
                 const brandId = $('#BrandId').val();
                 if (categoryId && brandId) {
                     loadDeviceModels(categoryId, brandId);
+                    loadInventoryParts();
                 } else {
                     // Clear models if category is cleared
                     $('#DeviceModelId').empty().append('<option value="">Select Model</option>');
+                    $('#InventoryParts').empty();
                 }
+            });
+            
+            // Model change -> load parts
+            $('#DeviceModelId').change(function() {
+                loadInventoryParts();
             });
         }
     </script>

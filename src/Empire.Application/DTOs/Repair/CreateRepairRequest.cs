@@ -17,10 +17,6 @@ public class CreateRepairRequest
     
     public int? DeviceModelId { get; set; }
     
-    [Required]
-    [MaxLength(100)]
-    public string Issue { get; set; } = string.Empty;
-    
     [MaxLength(500)]
     public string Description { get; set; } = string.Empty;
     
@@ -31,5 +27,7 @@ public class CreateRepairRequest
     public decimal Cost { get; set; }
     
     public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Unpaid; // New field
+    
+    public int? CompanyId { get; set; }
 }
 

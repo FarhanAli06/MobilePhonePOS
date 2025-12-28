@@ -19,6 +19,9 @@ public class CreateDeviceRequest
     [MaxLength(50)]
     public string IMEISerialNumber { get; set; } = string.Empty;
     
+    [MaxLength(20)]
+    public string? GB { get; set; }
+    
     [Range(0, 100)]
     public int? BatteryHealthPercentage { get; set; }
     

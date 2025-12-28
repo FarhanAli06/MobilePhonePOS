@@ -27,16 +27,13 @@
 <div class="d-flex justify-content-between align-items-center mb-4 no-print">
     <h2><i class="fas fa-mobile-alt me-2"></i>Device Management</h2>
     <div>
-        <button type="button" class="btn btn-secondary" onclick="printDevices()">
-            <i class="fas fa-print me-2"></i>Print
-        </button>
-        <button type="button" class="btn btn-primary" onclick="showCreateDeviceModal()">
+        <button type="button" class="btn btn-primary" id="addDeviceBtn">
             <i class="fas fa-plus me-2"></i>Add New Device
         </button>
-        <button type="button" class="btn btn-success" onclick="showAvailableDevices()">
+        <button type="button" class="btn btn-success" id="availableDevicesBtn">
             <i class="fas fa-check-circle me-2"></i>Available for Sale
         </button>
-        <button type="button" class="btn btn-info" onclick="showSoldDevices()">
+        <button type="button" class="btn btn-info" id="soldDevicesBtn">
             <i class="fas fa-history me-2"></i>Sold Devices
         </button>
     </div>
@@ -92,17 +89,23 @@
                     <option value="Major">Major Scratches</option>
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
+                <label class="form-label">Company</label>
+                <select class="form-select" id="filterCompany" style="width: 100%;">
+                    <option value="">All Companies</option>
+                </select>
+            </div>
+            <div class="col-md-2">
                 <label class="form-label">Search</label>
                 <input type="text" class="form-control" id="filterSearch" placeholder="Search IMEI, notes, etc.">
             </div>
-            <div class="col-md-3">
+            <div class="col-md-2">
                 <label class="form-label">&nbsp;</label>
                 <div class="d-grid gap-2 d-md-flex">
-                    <button type="button" class="btn btn-primary" onclick="applyFilters()">
+                    <button type="button" class="btn btn-primary" id="applyFiltersBtn">
                         <i class="fas fa-search me-2"></i>Filter
                     </button>
-                    <button type="button" class="btn btn-secondary" onclick="clearFilters()">
+                    <button type="button" class="btn btn-secondary" id="clearFiltersBtn">
                         <i class="fas fa-refresh me-2"></i>Clear
                     </button>
                 </div>
@@ -119,9 +122,11 @@
                 <tr>
                     <th>Device Details</th>
                     <th>IMEI/Serial</th>
+                    <th>GB</th>
                     <th>Network Status</th>
                     <th>Selling Price</th>
                     <th>Condition</th>
+                    <th>Notes</th>
                     <th>Status</th>
                     <th>Sold To</th>
                     <th>Created</th>
@@ -138,6 +143,9 @@
                         </td>
                         <td>
                             <span class="badge bg-secondary">@(device.IMEISerialNumber ?? "N/A")</span>
+                        </td>
+                        <td>
+                            <span class="badge bg-info">@(device.GB ?? "N/A")</span>
                         </td>
                         <td>
                             <span class="badge @(device.NetworkStatus == "Unlocked" ? "bg-success" : "bg-warning")">
@@ -158,6 +166,9 @@
                                 <small>Battery: @(device.BatteryHealthPercentage ?? 0)%</small><br>
                                 <small>Scratches: @device.ScratchesCondition</small>
                             </div>
+                        </td>
+                        <td>
+                            <small>@(string.IsNullOrEmpty(device.Notes) ? "-" : device.Notes)</small>
                         </td>
                         <td class="status-cell">
                             @if (device.IsSold)
@@ -191,14 +202,26 @@
                         <td>
                             <small>@device.CreatedDate.ToString("MM/dd/yyyy")</small>
                         </td>
-                        <td class="actions-cell no-print">
-                            <div class="btn-group" role="group">
-                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="viewDevice(@device.Id)" title="View Details">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-warning" onclick="editDevice(@device.Id)" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </button>
+	                        <td class="actions-cell no-print">
+	                            <div class="btn-group" role="group">
+	                                @if (!device.IsSold && device.IsAvailableForSale)
+	                                {
+	                                    <button type="button" class="btn btn-sm btn-success add-to-cart-btn"
+	                                            data-id="@device.Id"
+	                                            data-brand="@device.Brand"
+	                                            data-model="@device.Model"
+	                                            data-price="@device.SellingPrice?.ToString("F2")"
+	                                            data-imei="@device.IMEISerialNumber"
+	                                            title="Add to POS Cart">
+	                                        <i class="fas fa-cart-plus"></i>
+	                                    </button>
+	                                }
+	                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="viewDevice(@device.Id)" title="View Details">
+	                                    <i class="fas fa-eye"></i>
+	                                </button>
+	                                <button type="button" class="btn btn-sm btn-outline-warning" onclick="editDevice(@device.Id)" title="Edit">
+	                                    <i class="fas fa-edit"></i>
+	                                </button>
                                 <button type="button" class="btn btn-sm btn-outline-secondary print-device-btn"
                                         data-device-id="@device.Id"
                                         data-brand="@device.Brand"
@@ -208,28 +231,29 @@
                                         data-battery="@device.BatteryHealthPercentage"
                                         data-scratches="@device.ScratchesCondition"
                                         data-selling-price="@device.SellingPrice?.ToString("F2")"
+                                        data-notes="@device.Notes"
                                         data-created-date="@device.CreatedDate.ToString("MM/dd/yyyy")">
-                                    <i class="fas fa-print"></i>
-                                </button>
-                                @if (!device.IsSold)
-                                {
-                                    <button type="button" class="btn btn-sm @(device.IsAvailableForSale ? "btn-outline-secondary" : "btn-outline-success")"
-                                            onclick="toggleAvailableForSale(@device.Id)"
-                                            title="@(device.IsAvailableForSale ? "Mark as Not for Sale" : "Mark as Available for Sale")">
-                                        <i class="fas @(device.IsAvailableForSale ? "fa-times" : "fa-check")"></i>
-                                    </button>
-                                }
-                                @if (!device.IsSold && device.IsAvailableForSale)
-                                {
-                                    <button type="button" class="btn btn-sm btn-outline-success" onclick="markAsSold(@device.Id)" title="Mark as Sold">
-                                        <i class="fas fa-dollar-sign"></i>
-                                    </button>
-                                }
-                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteDevice(@device.Id)" title="Delete">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                        </td>
+	                                    <i class="fas fa-print"></i>
+	                                </button>
+	                                @if (!device.IsSold)
+	                                {
+	                                    <button type="button" class="btn btn-sm @(device.IsAvailableForSale ? "btn-outline-secondary" : "btn-outline-success")"
+	                                            onclick="toggleAvailableForSale(@device.Id)"
+	                                            title="@(device.IsAvailableForSale ? "Mark as Not for Sale" : "Mark as Available for Sale")">
+	                                        <i class="fas @(device.IsAvailableForSale ? "fa-times" : "fa-check")"></i>
+	                                    </button>
+	                                }
+	                                @if (!device.IsSold && device.IsAvailableForSale)
+	                                {
+	                                    <button type="button" class="btn btn-sm btn-outline-success" onclick="markAsSold(@device.Id)" title="Mark as Sold">
+	                                        <i class="fas fa-dollar-sign"></i>
+	                                    </button>
+	                                }
+	                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteDevice(@device.Id)" title="Delete">
+	                                    <i class="fas fa-trash"></i>
+	                                </button>
+	                            </div>
+	                        </td>
                     </tr>
                 }
             </tbody>
@@ -242,9 +266,9 @@
     <div class="dymo-label">
         <!-- Header Section -->
         <div class="label-header">
-            <div class="contact-info" style="font-size:20px; font-weight:bold">
-                <span class="company-name home">EMPIRE PHONE REPAIR - </span>
-                <span class="phone">📞 <span id="printShopPhone"></span></span>
+            <div class="contact-info">
+                <span class="company-name home" style="font-weight:bold">EMPIRE PHONE REPAIR - </span>
+                <span class="phone">📞 <span id="printShopPhone" style="font-weight:bold"></span></span>
             </div>
         </div>
 
@@ -252,7 +276,7 @@
         <div class="info-section">
             <div class="info-row">
                 <span class="label" style="font-weight:bold">DEVICE:</span>
-                <span class="value" id="printDeviceInfo" style="font-size:44px; font-weight:bold"></span>
+                <span class="value" id="printDeviceInfo" style="font-weight:bold"></span>
             </div>
             <div class="info-row">
                 <span class="label" style="font-weight:bold">IMEI:</span>
@@ -276,7 +300,19 @@
         <div class="pricing-section">
             <div class="info-row">
                 <span class="label" style="font-weight:bold">PRICE:</span>
-                <span class="value" id="printSellPrice" style="font-size:44px; font-weight:bold"></span>
+                <span class="value" id="printSellPrice" style="font-weight:bold"></span>
+            </div>
+            <div class="info-row">
+                <span class="label" style="font-weight:bold">CREATED:</span>
+                <span class="value" id="printCreatedDate" style="font-weight:bold"></span>
+            </div>
+        </div>
+
+        <!-- Notes Section -->
+        <div class="notes-section">
+            <div class="info-row">
+                <span class="label" style="font-weight:bold">NOTES:</span>
+                <span class="value" id="printNotes" style="font-weight:bold"></span>
             </div>
         </div>
 
@@ -332,6 +368,12 @@
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
+                                <label class="form-label">GB</label>
+                                <input type="text" class="form-control" id="gb" placeholder="e.g., 64GB, 128GB, 256GB">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
                                 <label class="form-label">Battery Health (%)</label>
                                 <input type="number" class="form-control" id="batteryHealth" min="0" max="100">
                             </div>
@@ -374,6 +416,14 @@
                                 <input type="text" class="form-control" id="source" placeholder="Where did you buy this device?">
                             </div>
                         </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Company</label>
+                                <select class="form-select" id="companyId">
+                                    <option value="">Select Company (Optional)</option>
+                                </select>
+                            </div>
+                        </div>
                         <div class="col-12">
                             <div class="mb-3">
                                 <label class="form-label">Notes</label>
@@ -402,11 +452,11 @@
 </div>
 
 <!-- Edit Device Modal -->
-<div class="modal fade" id="editDeviceModal" tabindex="-1">
+<div class="modal fade" id="editDeviceModal" tabindex="-1" aria-labelledby="editDeviceModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Edit Device</h5>
+                <h5 class="modal-title" id="editDeviceModalLabel">Edit Device</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="editDeviceModalBody">
@@ -455,9 +505,19 @@
     <!-- Select2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+    
+    <!-- DataTables Buttons CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
 
     <!-- Select2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    
+    <!-- DataTables Buttons JS -->
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
     <style>
         /* Dymo LabelWriter 550 Specific Styles */
@@ -631,17 +691,73 @@
         let devicesTable;
 
         $(document).ready(function() {
+            // Initialize Select2 for company dropdown
+            $('#filterCompany').select2({
+                theme: 'bootstrap-5',
+                allowClear: true,
+                placeholder: 'Select a company',
+                minimumInputLength: 0
+            });
+            
+            // Load companies
+            loadDeviceCompanies();
+
             devicesTable = $('#devicesTable').DataTable({
+                dom: 'Bfrtip',
+                buttons: [
+                    {
+                        extend: 'excel',
+                        text: '<i class="fas fa-file-excel"></i> Export to Excel',
+                        className: 'btn btn-success btn-sm',
+                        exportOptions: {
+                            columns: ':not(:last-child)' // Exclude Actions column
+                        }
+                    },
+                    {
+                        extend: 'print',
+                        text: '<i class="fas fa-print"></i> Print Report',
+                        className: 'btn btn-info btn-sm',
+                        exportOptions: {
+                            columns: ':not(:last-child)' // Exclude Actions column
+                        },
+                        customize: function(win) {
+                            $(win.document.body).find('h1').text('Devices Report');
+                            $(win.document.body).prepend(
+                                '<div style="text-align:center;margin-bottom:20px;">' +
+                                '<p><strong>Generated:</strong> ' + new Date().toLocaleString() + '</p>' +
+                                '</div>'
+                            );
+                        }
+                    }
+                ],
                 responsive: true,
                 pageLength: 25,
-                order: [[7, 'desc']], // Sort by created date (column index 7)
+                order: [[9, 'desc']], // Sort by created date (column index 9 now with Notes)
                 columnDefs: [
-                    { orderable: false, targets: [8] } // Disable sorting on actions column
-                ]
+                    { orderable: false, targets: [10] } // Disable sorting on actions column
+                ],
+                language: {
+                    search: "Search devices:",
+                    lengthMenu: "Show _MENU_ devices per page",
+                    info: "Showing _START_ to _END_ of _TOTAL_ devices",
+                    infoEmpty: "No devices to show",
+                    infoFiltered: "(filtered from _MAX_ total devices)"
+                }
             });
 
             // Initialize device print buttons
             initializeDevicePrintButtons();
+            
+            // Set default filter to exclude sold devices
+            $('#filterStatus').val('available');
+            applyFilters();
+            
+            // Add event listeners for buttons
+            $('#addDeviceBtn').on('click', showCreateDeviceModal);
+            $('#availableDevicesBtn').on('click', showAvailableDevices);
+            $('#soldDevicesBtn').on('click', showSoldDevices);
+            $('#applyFiltersBtn').on('click', applyFilters);
+            $('#clearFiltersBtn').on('click', clearFilters);
         });
 
         function printDevices() {
@@ -655,6 +771,8 @@
             loadBrands();
             // Load categories
             loadCategories();
+            // Load companies
+            loadDeviceModalCompanies();
             // Show modal
             $('#createDeviceModal').modal('show');
         }
@@ -699,6 +817,48 @@
                 error: function() {
                     console.error('Error loading categories');
                     alert('Error loading categories. Please try again.');
+                }
+            });
+        }
+
+        function loadDeviceCompanies() {
+            $.ajax({
+                url: '@Url.Action("GetSelectionList", "Company")',
+                type: 'GET',
+                success: function(companies) {
+                    const companySelect = $('#filterCompany');
+                    companySelect.empty();
+                    companySelect.append('<option value="">All Companies</option>');
+
+                    if (companies && companies.length > 0) {
+                        companies.forEach(function(company) {
+                            companySelect.append('<option value="' + company.id + '">' + company.name + '</option>');
+                        });
+                    }
+                },
+                error: function() {
+                    console.error('Error loading companies');
+                }
+            });
+        }
+
+        function loadDeviceModalCompanies() {
+            $.ajax({
+                url: '@Url.Action("GetSelectionList", "Company")',
+                type: 'GET',
+                success: function(companies) {
+                    const companySelect = $('#companyId');
+                    companySelect.empty();
+                    companySelect.append('<option value="">Select Company (Optional)</option>');
+
+                    if (companies && companies.length > 0) {
+                        companies.forEach(function(company) {
+                            companySelect.append('<option value="' + company.id + '">' + company.name + '</option>');
+                        });
+                    }
+                },
+                error: function() {
+                    console.error('Error loading companies for modal');
                 }
             });
         }
@@ -767,11 +927,15 @@
                 return;
             }
 
+            const companyId = $('#companyId').val();
+            
             const formData = {
                 BrandId: parseInt(brandId),
                 DeviceCategoryId: parseInt(categoryId),
                 DeviceModelId: parseInt(modelId),
+                CompanyId: companyId ? parseInt(companyId) : null,
                 IMEISerialNumber: $('#imeiSerialNumber').val() || '',
+                GB: $('#gb').val() || null,
                 BatteryHealthPercentage: $('#batteryHealth').val() ? parseInt($('#batteryHealth').val()) : null,
                 NetworkStatus: $('#networkStatus').val() || 'Unlocked',
                 ScratchesCondition: $('#scratches').val() || 'Excellent',
@@ -824,12 +988,14 @@
                 }
             });
         }
+        window.editDevice = editDevice;
 
         function viewDevice(id) {
             // For now, just show an alert with device ID
             // This can be expanded to show a detailed view modal
             alert('View device details for ID: ' + id);
         }
+        window.viewDevice = viewDevice;
 
         function deleteDevice(id) {
             if (confirm('Are you sure you want to delete this device?')) {
@@ -849,6 +1015,7 @@
                 });
             }
         }
+        window.deleteDevice = deleteDevice;
 
         function toggleAvailableForSale(id) {
             $.ajax({
@@ -866,6 +1033,7 @@
                 }
             });
         }
+        window.toggleAvailableForSale = toggleAvailableForSale;
 
         function markAsSold(id) {
             $('#soldDeviceId').val(id);
@@ -874,6 +1042,7 @@
             loadCustomersForSale();
             $('#markAsSoldModal').modal('show');
         }
+        window.markAsSold = markAsSold;
 
         function loadCustomersForSale() {
             $.ajax({
@@ -996,6 +1165,8 @@
 
                 const imei = '<span class="badge bg-secondary">' + (device.imeiSerialNumber || device.IMEISerialNumber || 'N/A') + '</span>';
 
+                const gb = '<span class="badge bg-info">' + (device.gb || device.GB || 'N/A') + '</span>';
+
                 const networkStatus = '<span class="badge ' + ((device.networkStatus || device.NetworkStatus) === 'Unlocked' ? 'bg-success' : 'bg-warning') + '">' +
                     (device.networkStatus || device.NetworkStatus) + '</span>';
 
@@ -1004,6 +1175,8 @@
 
                 const condition = '<div><small>Battery: ' + (device.batteryHealthPercentage || device.BatteryHealthPercentage || 0) + '%</small><br>' +
                     '<small>Scratches: ' + (device.scratchesCondition || device.ScratchesCondition) + '</small></div>';
+
+                const notes = '<small>' + ((device.notes || device.Notes) ? (device.notes || device.Notes) : '-') + '</small>';
 
                 const statusBadge = (device.isSold || device.IsSold) ?
                     '<span class="badge bg-success">Sold</span>' + ((device.soldDate || device.SoldDate) ? '<br><small class="text-muted">' + new Date(device.soldDate || device.SoldDate).toLocaleDateString() + '</small>' : '') :
@@ -1022,9 +1195,11 @@
                 devicesTable.row.add([
                     deviceDetails,
                     imei,
+                    gb,
                     networkStatus,
                     sellingPrice,
                     condition,
+                    notes,
                     statusBadge,
                     soldTo,
                     createdDate,
@@ -1034,12 +1209,26 @@
 
             // Redraw the table
             devicesTable.draw();
+            
+            // Reinitialize print buttons after table update
+            initializeDevicePrintButtons();
         }
 
-        function generateActionButtons(device) {
-            let buttons = '<div class="btn-group" role="group">';
-            buttons += '<button type="button" class="btn btn-sm btn-outline-primary" onclick="viewDevice(' + (device.id || device.Id) + ')" title="View Details"><i class="fas fa-eye"></i></button>';
-            buttons += '<button type="button" class="btn btn-sm btn-outline-warning" onclick="editDevice(' + (device.id || device.Id) + ')" title="Edit"><i class="fas fa-edit"></i></button>';
+	        function generateActionButtons(device) {
+	            let buttons = '<div class="btn-group" role="group">';
+	            
+	            if (!(device.isSold || device.IsSold) && (device.isAvailableForSale || device.IsAvailableForSale)) {
+	                buttons += '<button type="button" class="btn btn-sm btn-success add-to-cart-btn" ' +
+	                    'data-id="' + (device.id || device.Id) + '" ' +
+	                    'data-brand="' + (device.brand || device.Brand) + '" ' +
+	                    'data-model="' + (device.model || device.Model) + '" ' +
+	                    'data-price="' + ((device.sellingPrice || device.SellingPrice) ? (device.sellingPrice || device.SellingPrice).toFixed(2) : '0.00') + '" ' +
+	                    'data-imei="' + (device.imeiSerialNumber || device.IMEISerialNumber || '') + '" ' +
+	                    'title="Add to POS Cart"><i class="fas fa-cart-plus"></i></button>';
+	            }
+	
+	            buttons += '<button type="button" class="btn btn-sm btn-outline-primary" onclick="viewDevice(' + (device.id || device.Id) + ')" title="View Details"><i class="fas fa-eye"></i></button>';
+	            buttons += '<button type="button" class="btn btn-sm btn-outline-warning" onclick="editDevice(' + (device.id || device.Id) + ')" title="Edit"><i class="fas fa-edit"></i></button>';
             buttons += '<button type="button" class="btn btn-sm btn-outline-secondary print-device-btn" ' +
                 'data-device-id="' + (device.id || device.Id) + '" ' +
                 'data-brand="' + (device.brand || device.Brand) + '" ' +
@@ -1049,25 +1238,26 @@
                 'data-battery="' + (device.batteryHealthPercentage || device.BatteryHealthPercentage || '') + '" ' +
                 'data-scratches="' + (device.scratchesCondition || device.ScratchesCondition) + '" ' +
                 'data-selling-price="' + ((device.sellingPrice || device.SellingPrice) ? (device.sellingPrice || device.SellingPrice).toFixed(2) : '0.00') + '" ' +
+                'data-notes="' + (device.notes || device.Notes || '') + '" ' +
                 'data-created-date="' + new Date(device.createdDate || device.CreatedDate).toLocaleDateString() + '" ' +
                 'title="Print"><i class="fas fa-print"></i></button>';
-
-            if (!(device.isSold || device.IsSold)) {
-                const toggleClass = (device.isAvailableForSale || device.IsAvailableForSale) ? 'btn-outline-secondary' : 'btn-outline-success';
-                const toggleIcon = (device.isAvailableForSale || device.IsAvailableForSale) ? 'fa-times' : 'fa-check';
-                const toggleTitle = (device.isAvailableForSale || device.IsAvailableForSale) ? 'Mark as Not for Sale' : 'Mark as Available for Sale';
-                buttons += '<button type="button" class="btn btn-sm ' + toggleClass + '" onclick="toggleAvailableForSale(' + (device.id || device.Id) + ')" title="' + toggleTitle + '"><i class="fas ' + toggleIcon + '"></i></button>';
-
-                if (device.isAvailableForSale || device.IsAvailableForSale) {
-                    buttons += '<button type="button" class="btn btn-sm btn-outline-success" onclick="markAsSold(' + (device.id || device.Id) + ')" title="Mark as Sold"><i class="fas fa-dollar-sign"></i></button>';
-                }
-            }
-
-            buttons += '<button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteDevice(' + (device.id || device.Id) + ')" title="Delete"><i class="fas fa-trash"></i></button>';
-            buttons += '</div>';
-
-            return buttons;
-        }
+	
+	            if (!(device.isSold || device.IsSold)) {
+	                const toggleClass = (device.isAvailableForSale || device.IsAvailableForSale) ? 'btn-outline-secondary' : 'btn-outline-success';
+	                const toggleIcon = (device.isAvailableForSale || device.IsAvailableForSale) ? 'fa-times' : 'fa-check';
+	                const toggleTitle = (device.isAvailableForSale || device.IsAvailableForSale) ? 'Mark as Not for Sale' : 'Mark as Available for Sale';
+	                buttons += '<button type="button" class="btn btn-sm ' + toggleClass + '" onclick="toggleAvailableForSale(' + (device.id || device.Id) + ')" title="' + toggleTitle + '"><i class="fas ' + toggleIcon + '"></i></button>';
+	
+	                if (device.isAvailableForSale || device.IsAvailableForSale) {
+	                    buttons += '<button type="button" class="btn btn-sm btn-outline-success" onclick="markAsSold(' + (device.id || device.Id) + ')" title="Mark as Sold"><i class="fas fa-dollar-sign"></i></button>';
+	                }
+	            }
+	
+	            buttons += '<button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteDevice(' + (device.id || device.Id) + ')" title="Delete"><i class="fas fa-trash"></i></button>';
+	            buttons += '</div>';
+	
+	            return buttons;
+	        }
 
         function clearFilters() {
             $('#deviceFilterForm')[0].reset();
@@ -1075,22 +1265,62 @@
         }
 
         // DEVICE PRINT FUNCTION - Same method as repair page
-        function initializeDevicePrintButtons() {
-            $('.print-device-btn').click(function() {
-                var $btn = $(this);
-
-                // Get all device data from button attributes
-                var deviceData = {
-                    brand: $btn.data('brand'),
-                    model: $btn.data('model'),
-                    imei: $btn.data('imei'),
-                    networkStatus: $btn.data('network-status'),
-                    battery: $btn.data('battery'),
-                    scratches: $btn.data('scratches'),
-                    sellingPrice: $btn.data('selling-price'),
-                    createdDate: $btn.data('created-date')
+	        // DEVICE ADD TO CART LOGIC
+	        $(document).on('click', '.add-to-cart-btn', function () {
+	            const data = $(this).data();
+	            
+	             const deviceItem = {
+	                Id: 'dev_' + data.id,
+	                Type: 'Device',
+	                Name: data.brand + ' ' + data.model,
+	                Description: 'IMEI: ' + data.imei,
+	                Price: parseFloat(data.price),
+	                Quantity: 1,
+	                TaxRate: 0,
+	                ReferenceId: data.id,
+	                Note: 'IMEI: ' + data.imei,
+	                IsCustomItem: false
+	                // No CustomerId needed for device sale
+	            };
+	
+	            // Use AJAX to add to cart session
+	            $.ajax({
+	                url: '@Url.Action("AddToCart", "POS")',
+	                type: 'POST',
+	                contentType: 'application/json',
+	                data: JSON.stringify(deviceItem),
+	                success: function(response) {
+	                    if (response.success) {
+	                        alert('Device ' + data.brand + ' ' + data.model + ' added to cart! Redirecting to POS...');
+	                        // Redirect to POS page to complete sale
+	                        window.location.href = '@Url.Action("Index", "POS")';
+	                    } else {
+	                        alert('Error adding to cart: ' + response.message);
+	                    }
+	                },
+	                error: function() {
+	                    alert('An unexpected error occurred while adding to cart.');
+	                }
+	            });
+	        });
+	
+	        function initializeDevicePrintButtons() {
+	            $('.print-device-btn').click(function() {
+	                var $btn = $(this);
+	
+	                // Get all device data from button
+                const deviceData = {
+                    brand: $(this).data('brand'),
+                    model: $(this).data('model'),
+                    imei: $(this).data('imei'),
+                    networkStatus: $(this).data('network-status'),
+                    battery: $(this).data('battery'),
+                    scratches: $(this).data('scratches'),
+                    sellingPrice: $(this).data('selling-price'),
+                    notes: $(this).data('notes'),
+                    createdDate: $(this).data('created-date')
                 };
-
+                
                 // Update the hidden print template with current data
                 document.getElementById('printShopPhone').textContent = shopPhone;
 
@@ -1117,6 +1347,12 @@
                 // Selling Price
                 document.getElementById('printSellPrice').textContent = deviceData.sellingPrice ? '$' + deviceData.sellingPrice : '$0.00';
 
+                // Created Date
+                document.getElementById('printCreatedDate').textContent = deviceData.createdDate || 'N/A';
+
+                // Notes
+                document.getElementById('printNotes').textContent = deviceData.notes || 'N/A';
+
                 // Get the print content from hidden div
                 const printContent = document.getElementById('printTemplate').innerHTML;
                 const originalContent = document.body.innerHTML;
@@ -1134,5 +1370,7 @@
                 initializeDevicePrintButtons();
             });
         }
+
+        // DataTables buttons handle export and print functionality
     </script>
 }

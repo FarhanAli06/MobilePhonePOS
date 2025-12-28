@@ -48,12 +48,12 @@ public class RepairService : IRepairService
             DeviceCategoryId = request.DeviceCategoryId,
             DeviceModelId = request.DeviceModelId,
             RepairNumber = repairNumber,
-            Issue = request.Issue,
             Description = request.Description,
             Comments = request.Comments,
             Status = "InProgress", // Default status
             PaymentStatus = request.PaymentStatus.ToString(),
             Cost = request.Cost,
+            CompanyId = request.CompanyId,
             CreatedBy = createdByUserId > 0 ? createdByUserId : (int?)null,
             CreatedDate = DateTime.UtcNow
         };
@@ -100,6 +100,9 @@ public class RepairService : IRepairService
             .Include(r => r.Shop)
             .Include(r => r.CreatedByUser)
             .Include(r => r.ModifiedByUser)
+            .Include(r => r.RepairParts)
+                .ThenInclude(rp => rp.InventoryItem)
+                    .ThenInclude(ii => ii.Item)
             .Where(r => r.ShopId == filter.ShopId);
 
         // Apply date range filter
@@ -127,7 +130,6 @@ public class RepairService : IRepairService
             var searchTerm = filter.SearchTerm.ToLower();
             query = query.Where(r => 
                 r.RepairNumber.ToLower().Contains(searchTerm) ||
-                r.Issue.ToLower().Contains(searchTerm) ||
                 r.Description.ToLower().Contains(searchTerm) ||
                 (r.Customer.FirstName + " " + r.Customer.LastName).ToLower().Contains(searchTerm) ||
                 r.Customer.Phone.Contains(searchTerm));
@@ -155,9 +157,6 @@ public class RepairService : IRepairService
 
         if (request.DeviceModelId.HasValue)
             repair.DeviceModelId = request.DeviceModelId;
-
-        if (!string.IsNullOrWhiteSpace(request.Issue))
-            repair.Issue = request.Issue;
 
         if (!string.IsNullOrWhiteSpace(request.Description))
             repair.Description = request.Description;
@@ -228,6 +227,12 @@ public class RepairService : IRepairService
 
     private RepairDto MapToRepairDto(Repair repair)
     {
+        var repairPartNames = repair.RepairParts?.
+            Where(rp => rp.InventoryItem?.Item != null)
+            .Select(rp => rp.InventoryItem.Item.Name)
+            .Distinct()
+            .ToList() ?? new List<string>();
+
         return new RepairDto
         {
             Id = repair.Id,
@@ -243,7 +248,6 @@ public class RepairService : IRepairService
             DeviceModelId = repair.DeviceModelId,
             DeviceModel = repair.DeviceModel?.Name ?? "",
             RepairNumber = repair.RepairNumber,
-            Issue = repair.Issue,
             Description = repair.Description,
             Comments = repair.Comments,
             Status = repair.Status,
@@ -256,7 +260,8 @@ public class RepairService : IRepairService
                 : "Unknown",
             ModifiedByUser = repair.ModifiedByUser != null 
                 ? $"{repair.ModifiedByUser.FirstName} {repair.ModifiedByUser.LastName}".Trim() 
-                : null
+                : null,
+            RepairPartNames = repairPartNames
         };
     }
 }

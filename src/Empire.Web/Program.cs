@@ -5,6 +5,8 @@ using Empire.Domain.Interfaces;
 using Empire.Infrastructure.Repositories;
 using Empire.Application.Interfaces;
 using Empire.Infrastructure.Services;
+using Empire.Application.DTOs.Company;
+using Empire.Application.DTOs.Sale;
 using Empire.Domain.Entities;
 using Empire.Domain.Enums;
 
@@ -36,8 +38,12 @@ builder.Services.AddScoped<IRepairService, RepairService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<IDeviceService, DeviceService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
+builder.Services.AddScoped<ICompanyService, CompanyService>();
 builder.Services.AddScoped<IShopService, ShopService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IPOSService, POSService>();
+builder.Services.AddScoped<IItemService, ItemService>();
+builder.Services.AddScoped<InventoryTransactionService>();
 
 // Configure Session-based Authentication only
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -110,7 +116,9 @@ using (var scope = app.Services.CreateScope())
     try
     {
         // Apply migrations
+        Console.WriteLine("Applying database migrations...");
         context.Database.Migrate();
+        Console.WriteLine("✅ Database migrations applied successfully!");
         
         // Create super admin user if not exists
         if (!context.Users.Any(u => u.Username == "superadmin"))
@@ -134,6 +142,10 @@ using (var scope = app.Services.CreateScope())
     {
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
         logger.LogError(ex, "An error occurred while seeding the database: {Message}", ex.Message);
+        Console.WriteLine($"❌ ERROR: {ex.Message}");
+        Console.WriteLine($"Stack Trace: {ex.StackTrace}");
+        // Uncomment the line below to stop the app on migration errors:
+        // throw;
     }
 }
 

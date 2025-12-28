@@ -33,9 +33,23 @@
                 <input type="text" class="form-control" id="editImeiSerialNumber" value="@Model.IMEISerialNumber">
             </div>
         </div>
+	        <div class="col-md-6">
+	            <div class="mb-3">
+	                <label class="form-label">GB</label>
+	                <input type="text" class="form-control" id="editGB" value="@Model.GB" placeholder="e.g., 64GB, 128GB, 256GB">
+	            </div>
+	        </div>
+	        <div class="col-md-6">
+	            <div class="mb-3">
+	                <label class="form-label">Company</label>
+	                <select class="form-select" id="editCompanyId">
+	                    <option value="">Select Company</option>
+	                </select>
+	            </div>
+	        </div>
         <div class="col-md-6">
             <div class="mb-3">
-                <label class="form-label">Battery Health (%)</label>
+                <label class="form-label">Battery Health (%)">
                 <input type="number" class="form-control" id="editBatteryHealth" min="0" max="100" value="@Model.BatteryHealthPercentage">
             </div>
         </div>
@@ -75,6 +89,12 @@
             <div class="mb-3">
                 <label class="form-label">Year</label>
                 <input type="number" class="form-control" id="editYear" min="2000" max="2099" value="@Model.Year">
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Source</label>
+                <input type="text" class="form-control" id="editSource" value="@Model.Source">
             </div>
         </div>
         <div class="col-md-6">
@@ -121,14 +141,16 @@
     var originalScratches = "@Model.ScratchesCondition";
     var originalIsAvailable = @Model.IsAvailableForSale.ToString().ToLower();
     var isSold = @Model.IsSold.ToString().ToLower();
-    var originalCustomerId = @(Model.SoldToCustomerId.HasValue ? Model.SoldToCustomerId.Value.ToString() : "null");
-
-    // Load dropdowns when modal opens
-    $(document).ready(function() {
-        loadEditBrands();
-        loadEditCategories();
-        
-        // Set network status
+	    var originalCustomerId = @(Model.SoldToCustomerId.HasValue ? Model.SoldToCustomerId.Value.ToString() : "null");
+	    var originalCompanyId = @(Model.CompanyId.HasValue ? Model.CompanyId.Value.ToString() : "null");
+	
+	    // Load dropdowns when modal opens
+	    $(document).ready(function() {
+	        loadEditBrands();
+	        loadEditCategories();
+	        loadEditCompanies(); // Load companies
+	        
+	        // Set network status
         $('#editNetworkStatus').val(originalNetworkStatus);
         
         // Set scratches
@@ -262,63 +284,100 @@
     });
 
     function loadEditCustomers() {
+	        $.ajax({
+	            url: '@Url.Action("GetCustomersForSelection", "Customers")',
+	            type: 'GET',
+	            success: function(response) {
+	                var select = $('#editSoldToCustomerId');
+	                select.empty();
+	                select.append('<option value="">Select Customer</option>');
+	                
+	                if (response.success && response.customers && response.customers.length > 0) {
+	                    response.customers.forEach(function(customer) {
+	                        var customerId = customer.id || customer.Id;
+	                        var customerName = customer.name || customer.Name;
+	                        var displayText = customerName + (customer.phone ? ' - ' + customer.phone : '');
+	                        var selected = customerId == originalCustomerId ? 'selected' : '';
+	                        select.append('<option value="' + customerId + '" ' + selected + '>' + displayText + '</option>');
+	                    });
+	                }
+	            },
+	            error: function() {
+	                console.error('Error loading customers');
+	            }
+	        });
+	    }
+	
+    function loadEditCompanies() {
         $.ajax({
-            url: '@Url.Action("GetCustomersForSelection", "Customers")',
+            url: '@Url.Action("GetSelectionList", "Company")',
             type: 'GET',
-            success: function(response) {
-                var select = $('#editSoldToCustomerId');
-                select.empty();
-                select.append('<option value="">Select Customer</option>');
-                
-                if (response.success && response.customers && response.customers.length > 0) {
-                    response.customers.forEach(function(customer) {
-                        var customerId = customer.id || customer.Id;
-                        var customerName = customer.name || customer.Name;
-                        var selected = customerId === originalCustomerId ? 'selected' : '';
-                        select.append('<option value="' + customerId + '" ' + selected + '>' + customerName + '</option>');
-                    });
-                } else {
-                    console.log('No customers found or error in response');
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('Error loading customers:', error);
-                console.error('Response:', xhr.responseText);
+            success: function(companies) {
+	                var select = $('#editCompanyId');
+	                select.empty();
+	                select.append('<option value="">Select Company</option>');
+	                
+	                if (companies && companies.length > 0) {
+	                    companies.forEach(function(company) {
+	                        var companyId = company.id || company.Id;
+	                        var companyName = company.name || company.Name;
+	                        var selected = companyId == originalCompanyId ? 'selected' : '';
+	                        select.append('<option value="' + companyId + '" ' + selected + '>' + companyName + '</option>');
+	                    });
+	                }
+	            },
+            error: function() {
+                console.error('Error loading companies');
             }
         });
     }
 
-    function updateDevice() {
-        debugger;
-        var deviceId = $('#editDeviceId').val();
-        var brandId = $('#editBrandId').val();
-        var categoryId = $('#editDeviceCategoryId').val();
-        var modelId = $('#editDeviceModelId').val();
+function updateDevice() {
+    var deviceId = $('#editDeviceId').val();
+    var brandId = $('#editBrandId').val();
+    var categoryId = $('#editDeviceCategoryId').val();
+    var modelId = $('#editDeviceModelId').val();
+    var companyId = $('#editCompanyId').val();
+	            
+	            if (!brandId || !categoryId || !modelId) {
+	                alert('Please select Brand, Category, and Model');
+	                return;
+	            }
 
-
+        // Get the text values from the dropdowns for the DTO
         var brandText = $('#editBrandId option:selected').text();
         var categoryText = $('#editDeviceCategoryId option:selected').text();
         var modelText = $('#editDeviceModelId option:selected').text();
 
-        if (!brandId || !categoryId || !modelId) {
-            alert('Please select Brand, Category, and Model');
-            return;
-        }
-
         var deviceData = {
-            BrandId: brandText,
-            DeviceCategoryId: categoryText,
-            DeviceModelId: modelText,
-            IMEISerialNumber: $('#editImeiSerialNumber').val(),
-            BatteryHealthPercentage: parseInt($('#editBatteryHealth').val()) || null,
-            NetworkStatus: $('#editNetworkStatus').val(),
-            ScratchesCondition: $('#editScratches').val(),
-            BuyingPrice: parseFloat($('#editBuyingPrice').val()) || 0,
-            SellingPrice: parseFloat($('#editSellingPrice').val()) || 0,
-            Year: parseInt($('#editYear').val()) || null,
-            IsAvailableForSale: $('#editIsAvailableForSale').val() === 'true',
-            Notes: $('#editNotes').val()
-        };
+            // Lookup IDs (required for update)
+            BrandId: parseInt(brandId),
+            DeviceCategoryId: parseInt(categoryId),
+            DeviceModelId: parseInt(modelId),
+            
+            // Required properties for DTO validation
+            Brand: brandText,
+            Category: categoryText,
+            Model: modelText,
+            ModelNumber: '',
+            DeviceType: 0, // Default value
+            
+	            // Properties that are actually used by the service
+	            IMEISerialNumber: $('#editImeiSerialNumber').val() || '',
+	            GB: $('#editGB').val() || null,
+	            BatteryHealthPercentage: $('#editBatteryHealth').val() ? parseInt($('#editBatteryHealth').val()) : null,
+	            NetworkStatus: $('#editNetworkStatus').val() || 'Unlocked',
+	            ScratchesCondition: $('#editScratches').val() || 'Excellent',
+	            BuyingPrice: $('#editBuyingPrice').val() ? parseFloat($('#editBuyingPrice').val()) : null,
+	            SellingPrice: $('#editSellingPrice').val() ? parseFloat($('#editSellingPrice').val()) : null,
+	            Year: $('#editYear').val() ? parseInt($('#editYear').val()) : null,
+	            Source: $('#editSource').val() || '',
+	            Notes: $('#editNotes').val() || '',
+	            IsAvailableForSale: $('#editIsAvailableForSale').val() === 'true',
+	            IsSold: isSold,
+	            SoldToCustomerId: null,
+	            CompanyId: companyId ? parseInt(companyId) : null // Added CompanyId
+	        };
         
         // Add customer ID if device is sold
         if (isSold && $('#editSoldToCustomerId').length > 0) {
@@ -329,7 +388,7 @@
         }
 
         $.ajax({
-            url: '@Url.Action("Edit", "Devices")/' + deviceId,
+            url: '/Devices/Edit/' + deviceId,
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify(deviceData),
@@ -356,4 +415,3 @@
     window.updateDevice = updateDevice;
 })();
 </script>
-

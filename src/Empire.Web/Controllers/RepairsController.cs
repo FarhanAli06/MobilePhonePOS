@@ -4,7 +4,9 @@ using Empire.Application.Interfaces;
 using Empire.Application.DTOs.Repair;
 using Empire.Web.Models;
 using Empire.Domain.Enums;
+using Empire.Domain.Entities;
 using Empire.Infrastructure.Data;
+using Empire.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace Empire.Web.Controllers;
@@ -111,22 +113,79 @@ public class RepairsController : Controller
 
         try
         {
+            var currentShopId = GetCurrentShopId();
             var request = new CreateRepairRequest
             {
-                ShopId = GetCurrentShopId(),
+                ShopId = currentShopId,
                 CustomerId = model.CustomerId,
                 BrandId = model.BrandId,
                 DeviceCategoryId = model.DeviceCategoryId,
                 DeviceModelId = model.DeviceModelId,
-                Issue = model.Issue,
                 Description = model.Description,
                 Comments = model.Comments,
                 Cost = model.Cost,
-                PaymentStatus = model.PaymentStatus
+                PaymentStatus = model.PaymentStatus,
+                CompanyId = model.CompanyId
             };
 
-            await _repairService.CreateRepairAsync(request, GetCurrentUserId());
-            TempData["Success"] = "Repair created successfully";
+            var repair = await _repairService.CreateRepairAsync(request, GetCurrentUserId());
+            
+            // Add repair parts and manage inventory using formal transaction system
+            _logger.LogInformation($"InventoryParts count: {model.InventoryParts?.Count ?? 0}");
+            if (model.InventoryParts != null && model.InventoryParts.Any())
+            {
+                using var scope = _serviceProvider.CreateScope();
+                var context = scope.ServiceProvider.GetRequiredService<EmpireDbContext>();
+                var transactionService = scope.ServiceProvider.GetRequiredService<InventoryTransactionService>();
+                
+                foreach (var inventoryItemId in model.InventoryParts)
+                {
+                    // Get inventory item
+                    var inventoryItem = await context.InventoryItems
+                        .FirstOrDefaultAsync(i => i.Id == inventoryItemId && i.ShopId == currentShopId);
+                    
+                    if (inventoryItem != null)
+                    {
+                        // Check current stock (calculated from transactions)
+                        var currentStock = await transactionService.GetCurrentStockAsync(inventoryItemId);
+                        
+                        if (currentStock > 0)
+                        {
+                            // Create repair part record
+                            var repairPart = new RepairPart
+                            {
+                                RepairId = repair.Id,
+                                InventoryItemId = inventoryItemId,
+                                Quantity = 1,
+                                UnitPrice = inventoryItem.RetailPrice
+                            };
+                            context.RepairParts.Add(repairPart);
+                            await context.SaveChangesAsync();
+                            
+                            // Create inventory transaction (OUT)
+                            await transactionService.CreateRepairPartTransactionAsync(
+                                inventoryItemId,
+                                1,
+                                repair.Id,
+                                repair.RepairNumber,
+                                GetCurrentUserId()
+                            );
+                            
+                            _logger.LogInformation(
+                                "Part {ItemId} used in repair {RepairNumber}. Stock: {OldStock} -> {NewStock}",
+                                inventoryItemId, repair.RepairNumber, currentStock, currentStock - 1);
+                        }
+                        else
+                        {
+                            _logger.LogWarning(
+                                "Part {ItemId} ({ItemName}) is out of stock, skipping",
+                                inventoryItemId, inventoryItem.Name);
+                        }
+                    }
+                }
+            }
+            
+            TempData["Success"] = "Repair created successfully with parts";
             return RedirectToAction("Index");
         }
         catch (Exception ex)
@@ -158,7 +217,6 @@ public class RepairsController : Controller
                 BrandId = repair.BrandId,
                 DeviceCategoryId = repair.DeviceCategoryId,
                 DeviceModelId = repair.DeviceModelId,
-                Issue = repair.Issue,
                 Description = repair.Description,
                 Comments = repair.Comments,
                 Status = repair.Status,
@@ -188,12 +246,16 @@ public class RepairsController : Controller
 
         try
         {
+            using var scope = _serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<EmpireDbContext>();
+            var transactionService = scope.ServiceProvider.GetRequiredService<InventoryTransactionService>();
+            var currentUserId = GetCurrentUserId();
+            
             var request = new UpdateRepairRequest
             {
                 BrandId = model.BrandId,
                 DeviceCategoryId = model.DeviceCategoryId,
                 DeviceModelId = model.DeviceModelId,
-                Issue = model.Issue,
                 Description = model.Description,
                 Comments = model.Comments,
                 Status = model.Status,
@@ -201,7 +263,79 @@ public class RepairsController : Controller
                 Cost = model.Cost
             };
 
-            await _repairService.UpdateRepairAsync(model.Id, request, GetCurrentUserId());
+            await _repairService.UpdateRepairAsync(model.Id, request, currentUserId);
+            
+            // Update inventory parts if provided
+            if (model.InventoryParts != null && model.InventoryParts.Any())
+            {
+                // Get current repair parts
+                var currentParts = await context.RepairParts
+                    .Where(rp => rp.RepairId == model.Id && !rp.IsDeleted)
+                    .ToListAsync();
+                
+                var currentPartIds = currentParts.Select(rp => rp.InventoryItemId).ToList();
+                var newPartIds = model.InventoryParts;
+                
+                // Find parts to remove (in current but not in new)
+                var partsToRemove = currentParts.Where(rp => !newPartIds.Contains(rp.InventoryItemId)).ToList();
+                
+                // Find parts to add (in new but not in current)
+                var partsToAdd = newPartIds.Where(id => !currentPartIds.Contains(id)).ToList();
+                
+                // Remove old parts (soft delete) and create reverse transactions
+                foreach (var part in partsToRemove)
+                {
+                    part.IsDeleted = true;
+                    part.ModifiedDate = DateTime.UtcNow;
+                    
+                    // Create IN transaction to return stock
+                    await transactionService.CreateStockInTransactionAsync(
+                        part.InventoryItemId,
+                        part.Quantity,
+                        $"Removed from Repair #{model.Id}",
+                        currentUserId,
+                        "REPAIR_EDIT",
+                        model.Id
+                    );
+                }
+                
+                // Add new parts and create OUT transactions
+                var repair = await context.Repairs.FindAsync(model.Id);
+                foreach (var inventoryItemId in partsToAdd)
+                {
+                    var inventoryItem = await context.InventoryItems.FindAsync(inventoryItemId);
+                    if (inventoryItem != null)
+                    {
+                        var currentStock = await transactionService.GetCurrentStockAsync(inventoryItemId);
+                        
+                        if (currentStock > 0)
+                        {
+                            var repairPart = new RepairPart
+                            {
+                                RepairId = model.Id,
+                                InventoryItemId = inventoryItemId,
+                                Quantity = 1,
+                                UnitPrice = inventoryItem.RetailPrice,
+                                CreatedDate = DateTime.UtcNow
+                            };
+                            
+                            context.RepairParts.Add(repairPart);
+                            
+                            // Create OUT transaction
+                            await transactionService.CreateRepairPartTransactionAsync(
+                                inventoryItemId,
+                                1,
+                                model.Id,
+                                repair?.RepairNumber ?? $"R-{model.Id}",
+                                currentUserId
+                            );
+                        }
+                    }
+                }
+                
+                await context.SaveChangesAsync();
+            }
+            
             TempData["Success"] = "Repair updated successfully";
             return RedirectToAction("Index");
         }
@@ -354,6 +488,98 @@ public class RepairsController : Controller
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error retrieving brands");
+            return Json(new { success = false, message = ex.Message });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetInventoryParts(int? brandId, int? categoryId, int? modelId)
+    {
+        try
+        {
+            var currentShopId = GetCurrentShopId();
+            
+            using var scope = _serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<EmpireDbContext>();
+            
+            var query = context.InventoryItems
+                .Include(i => i.Brand)
+                .Include(i => i.DeviceCategory)
+                .Include(i => i.DeviceModel)
+                .Include(i => i.Item)
+                .Where(i => i.ShopId == currentShopId && i.IsActive);
+            
+            // Filter by brand if provided
+            if (brandId.HasValue && brandId.Value > 0)
+            {
+                query = query.Where(i => i.BrandId == brandId.Value);
+            }
+            
+            // Filter by category if provided
+            if (categoryId.HasValue && categoryId.Value > 0)
+            {
+                query = query.Where(i => i.DeviceCategoryId == categoryId.Value);
+            }
+            
+            // Filter by model if provided
+            if (modelId.HasValue && modelId.Value > 0)
+            {
+                query = query.Where(i => i.DeviceModelId == modelId.Value);
+            }
+            
+            var items = await query.OrderBy(i => i.Name).ToListAsync();
+            
+            // Use CurrentStock field directly
+            var parts = items.Select(item => new
+            {
+                id = item.Id,
+                name = item.Name,
+                itemType = item.Item != null ? item.Item.Name : "",
+                brand = item.Brand != null ? item.Brand.Name : "",
+                category = item.DeviceCategory != null ? item.DeviceCategory.Name : "",
+                model = item.DeviceModel != null ? item.DeviceModel.Name : "",
+                quantity = item.CurrentStock,
+                price = item.RetailPrice,
+                inStock = item.CurrentStock > 0,
+                notes = item.Notes ?? "",
+                description = item.Description ?? ""
+            }).ToList();
+            
+            _logger.LogInformation("Retrieved {Count} inventory parts", parts.Count);
+            return Json(new { success = true, data = parts });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving inventory parts");
+            return Json(new { success = false, message = ex.Message });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetRepairParts(int repairId)
+    {
+        try
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<EmpireDbContext>();
+            
+            var repairParts = await context.RepairParts
+                .Where(rp => rp.RepairId == repairId && !rp.IsDeleted)
+                .Select(rp => new
+                {
+                    id = rp.Id,
+                    inventoryItemId = rp.InventoryItemId,
+                    quantity = rp.Quantity,
+                    unitPrice = rp.UnitPrice,
+                    notes = rp.Notes
+                })
+                .ToListAsync();
+            
+            return Json(new { success = true, data = repairParts });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving repair parts for repair {RepairId}", repairId);
             return Json(new { success = false, message = ex.Message });
         }
     }

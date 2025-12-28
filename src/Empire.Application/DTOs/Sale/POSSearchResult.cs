@@ -15,6 +15,7 @@ public class POSSearchResult
     public string? IMEI { get; set; }
     public string? NetworkStatus { get; set; }
     public string? RepairNumber { get; set; }
+    public int? RepairId { get; set; } // Added for tracking repair items
     public string? CustomerName { get; set; }
     public bool IsAvailable { get; set; } = true;
 }

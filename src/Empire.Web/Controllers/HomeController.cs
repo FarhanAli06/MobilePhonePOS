@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
 using Empire.Application.Interfaces;
 using Empire.Application.DTOs.Auth;
 using Empire.Web.Models;
@@ -14,19 +15,22 @@ public class HomeController : Controller
     private readonly IInventoryService _inventoryService;
     private readonly IShopService _shopService;
     private readonly ILogger<HomeController> _logger;
+    private readonly Empire.Infrastructure.Data.EmpireDbContext _context;
 
     public HomeController(
         IAuthService authService,
         IRepairService repairService,
         IInventoryService inventoryService,
         IShopService shopService,
-        ILogger<HomeController> logger)
+        ILogger<HomeController> logger,
+        Empire.Infrastructure.Data.EmpireDbContext context)
     {
         _authService = authService;
         _repairService = repairService;
         _inventoryService = inventoryService;
         _shopService = shopService;
         _logger = logger;
+        _context = context;
     }
 
     public IActionResult Index()
@@ -185,11 +189,35 @@ public class HomeController : Controller
             var inventory = await _inventoryService.GetInventoryAsync(inventoryFilter);
             var lowStockItems = await _inventoryService.GetLowStockItemsAsync(currentShopId);
 
+            // Debug logging
+            _logger.LogInformation($"Dashboard - Total Repairs: {repairs.Count()}");
+            _logger.LogInformation($"Dashboard - Repair Statuses: {string.Join(", ", repairs.Select(r => r.Status).Distinct())}");
+            _logger.LogInformation($"Dashboard - Low Stock Items Count: {lowStockItems.Count()}");
+            _logger.LogInformation($"Dashboard - Low Stock Items: {string.Join(", ", lowStockItems.Select(i => $"{i.Name} (Stock: {i.Stock}, Reorder: {i.ReorderPoint})"))}");
+
             model.TotalRepairs = repairs.Count();
-            model.InProgressRepairs = repairs.Count(r => r.Status == "InProgress");
-            model.CompletedRepairs = repairs.Count(r => r.Status == "Completed" || r.Status == "Done");
+            model.InProgressRepairs = repairs.Count(r => r.Status.Equals("InProgress", StringComparison.OrdinalIgnoreCase) || 
+                                                         r.Status.Equals("In Progress", StringComparison.OrdinalIgnoreCase) ||
+                                                         r.Status.Equals("Pending", StringComparison.OrdinalIgnoreCase));
+            model.CompletedRepairs = repairs.Count(r => r.Status.Equals("Completed", StringComparison.OrdinalIgnoreCase) || 
+                                                        r.Status.Equals("Complete", StringComparison.OrdinalIgnoreCase) ||
+                                                        r.Status.Equals("Done", StringComparison.OrdinalIgnoreCase));
             model.TotalInventoryValue = inventory.Sum(i => i.Stock * i.RetailPrice);
             model.LowStockItemsCount = lowStockItems.Count();
+            
+            // Calculate daily sales and profit
+            var today = DateTime.UtcNow.Date;
+            var todaySales = await _context.Sales
+                .Where(s => s.ShopId == currentShopId && 
+                           s.SaleDate.Date == today &&
+                           !s.IsDeleted)
+                .Include(s => s.SaleItems)
+                .ToListAsync();
+            
+            model.DailySales = todaySales.Sum(s => s.TotalAmount);
+            model.DailyProfit = todaySales
+                .SelectMany(s => s.SaleItems)
+                .Sum(item => (item.UnitPrice - item.CostPrice) * item.Quantity);
             
             model.RecentRepairs = repairs.OrderByDescending(r => r.CreatedDate).Take(5).ToList();
             model.LowStockItems = lowStockItems.Take(5).ToList();

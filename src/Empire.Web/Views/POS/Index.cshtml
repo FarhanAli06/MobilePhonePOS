@@ -2,6 +2,10 @@
     ViewData["Title"] = "Point of Sale";
 }
 
+<!-- Include Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+
 <style>
     .pos-container {
         height: calc(100vh - 100px);
@@ -27,7 +31,7 @@
     }
     
     .pos-cart-section {
-        width: 400px;
+        width: 450px;
         display: flex;
         flex-direction: column;
         background: #f8f9fa;
@@ -50,6 +54,7 @@
         margin-bottom: 10px;
         border-radius: 8px;
         border: 1px solid #dee2e6;
+        position: relative;
     }
     
     .cart-item-header {
@@ -70,6 +75,12 @@
         cursor: pointer;
         font-size: 18px;
         margin-left: 10px;
+        transition: all 0.2s;
+    }
+    
+    .cart-item-remove:hover {
+        color: #a71d2a;
+        transform: scale(1.2);
     }
     
     .cart-item-details {
@@ -140,6 +151,13 @@
         border-top: 2px solid #dee2e6;
     }
     
+    .summary-row.balance {
+        font-size: 16px;
+        font-weight: bold;
+        color: #dc3545;
+        padding-top: 5px;
+    }
+    
     .product-card {
         background: white;
         border: 1px solid #dee2e6;
@@ -200,6 +218,7 @@
         display: flex;
         gap: 10px;
         margin-bottom: 15px;
+        flex-wrap: wrap;
     }
     
     .filter-tab {
@@ -222,6 +241,30 @@
         border-color: #007bff;
     }
     
+    .add-new-btns {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+    }
+    
+    .add-new-btn {
+        flex: 1;
+        padding: 10px;
+        border: 2px dashed #007bff;
+        background: #f8f9fa;
+        border-radius: 8px;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.2s;
+        color: #007bff;
+        font-weight: 600;
+    }
+    
+    .add-new-btn:hover {
+        background: #e7f1ff;
+        border-color: #0056b3;
+    }
+    
     .empty-cart {
         text-align: center;
         padding: 40px 20px;
@@ -239,32 +282,120 @@
         padding: 40px 20px;
         color: #6c757d;
     }
+    
+    /* Select2 customization */
+    .select2-container--bootstrap-5 .select2-selection {
+        min-height: 46px;
+        padding: 8px;
+    }
+    
+    .payment-amount-input {
+        display: none;
+    }
+    
+    .payment-amount-input.show {
+        display: block;
+    }
+    
+    /* Invoice styles */
+    #invoicePrintArea {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+    }
+    
+    #invoicePrintArea .invoice-header {
+        text-align: center;
+        margin-bottom: 30px;
+        border-bottom: 2px solid #000;
+        padding-bottom: 20px;
+    }
+    
+    #invoicePrintArea .invoice-header h1 {
+        margin: 0;
+        font-size: 28px;
+    }
+    
+    #invoicePrintArea .invoice-info {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 20px;
+    }
+    
+    #invoicePrintArea .invoice-info div {
+        flex: 1;
+    }
+    
+    #invoicePrintArea table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+    }
+    
+    #invoicePrintArea th,
+    #invoicePrintArea td {
+        padding: 10px;
+        text-align: left;
+        border-bottom: 1px solid #ddd;
+    }
+    
+    #invoicePrintArea th {
+        background-color: #f8f9fa;
+        font-weight: bold;
+    }
+    
+    #invoicePrintArea .text-right {
+        text-align: right;
+    }
+    
+    #invoicePrintArea .totals {
+        margin-top: 20px;
+        text-align: right;
+    }
+    
+    #invoicePrintArea .totals div {
+        margin: 5px 0;
+    }
+    
+    #invoicePrintArea .total-row {
+        font-size: 18px;
+        font-weight: bold;
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 2px solid #000;
+    }
+    
+    #invoicePrintArea .footer {
+        margin-top: 40px;
+        text-align: center;
+        font-size: 12px;
+        color: #666;
+    }
+    
+    /* Print styles */
+    @@media print {
+        .no-print {
+            display: none !important;
+        }
+        
+        #invoicePrintArea {
+            display: block !important;
+        }
+        
+        body > *:not(#invoicePrintArea) {
+            display: none !important;
+        }
+    }
 </style>
 
 <div class="pos-container">
     <!-- Search Section -->
     <div class="pos-search-section">
         <div class="row g-3">
-            <div class="col-md-4">
+            <div class="col-12">
                 <div class="input-group input-group-lg">
                     <span class="input-group-text"><i class="fas fa-search"></i></span>
-                    <input type="text" class="form-control" id="searchInput" placeholder="Search by name, IMEI, repair number..." autocomplete="off">
+                    <input type="text" class="form-control" id="searchInput" placeholder="Search by name, IMEI, repair number, invoice number..." autocomplete="off">
                 </div>
-            </div>
-            <div class="col-md-2">
-                <select class="form-select form-select-lg no-select2" id="brandFilter">
-                    <option value="">All Brands</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <select class="form-select form-select-lg no-select2" id="categoryFilter">
-                    <option value="">All Categories</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <select class="form-select form-select-lg no-select2" id="modelFilter">
-                    <option value="">All Models</option>
-                </select>
             </div>
         </div>
     </div>
@@ -273,6 +404,19 @@
     <div class="pos-main-content">
         <!-- Products Section -->
         <div class="pos-products-section">
+            <!-- Add New Buttons -->
+            <div class="add-new-btns">
+                <div class="add-new-btn" onclick="showAddRepairModal()">
+                    <i class="fas fa-wrench me-2"></i>New Repair
+                </div>
+                <div class="add-new-btn" onclick="showAddDeviceModal()">
+                    <i class="fas fa-mobile-alt me-2"></i>New Device
+                </div>
+                <div class="add-new-btn" onclick="showAddInventoryModal()">
+                    <i class="fas fa-box me-2"></i>New Inventory
+                </div>
+            </div>
+            
             <div class="filter-tabs">
                 <button class="filter-tab active" data-type="" onclick="filterByType('')">
                     <i class="fas fa-th me-1"></i> All Items
@@ -286,12 +430,232 @@
                 <button class="filter-tab" data-type="repair" onclick="filterByType('repair')">
                     <i class="fas fa-wrench me-1"></i> Repairs
                 </button>
+                <button class="filter-tab" data-type="custom" onclick="showCustomSaleTab()">
+                    <i class="fas fa-plus me-1"></i> Custom Sale
+                </button>
+                <button class="filter-tab" data-type="search" onclick="showSearchTab()">
+                    <i class="fas fa-search me-1"></i> Search
+                </button>
             </div>
 
             <div id="productsContainer">
                 <div class="no-products">
                     <i class="fas fa-search"></i>
                     <p>Search for products to add to cart</p>
+                </div>
+            </div>
+            
+            <!-- Custom Sale Tab Content -->
+            <div id="customSaleContainer" style="display: none; padding: 20px; background: white; border-radius: 8px;">
+                <h4 class="mb-4">Add Custom Sale Item</h4>
+                <div class="mb-3">
+                    <label for="customItemName" class="form-label">Item Name</label>
+                    <input type="text" class="form-control" id="customItemName" placeholder="e.g., Screen Protector Installation" required>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="customItemQuantity" class="form-label">Quantity</label>
+                        <input type="number" class="form-control" id="customItemQuantity" value="1" min="1" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="customItemPrice" class="form-label">Price</label>
+                        <input type="number" class="form-control" id="customItemPrice" step="0.01" min="0" value="0.00" required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="customItemNote" class="form-label">Note (Optional)</label>
+                    <textarea class="form-control" id="customItemNote" rows="2"></textarea>
+                </div>
+                <button class="btn btn-primary w-100" onclick="addCustomItemToCart()">
+                    <i class="fas fa-cart-plus me-2"></i>Add to Cart
+                </button>
+            </div>
+            
+            <!-- Inventory Tab Content -->
+            <div id="inventoryContainer" style="display: none; padding: 20px; background: white; border-radius: 8px;">
+                <h4 class="mb-4"><i class="fas fa-box me-2"></i>Search Inventory</h4>
+                
+                <!-- Inventory Search Filters -->
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <label for="inventoryBrand" class="form-label small mb-1">Brand</label>
+                        <select class="form-select form-select-sm" id="inventoryBrand" onchange="onInventoryBrandChange()">
+                            <option value="">All Brands</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="inventoryDeviceCategory" class="form-label small mb-1">Device Category</label>
+                        <select class="form-select form-select-sm" id="inventoryDeviceCategory" onchange="onInventoryDeviceCategoryChange()">
+                            <option value="">All Device Categories</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="inventoryModel" class="form-label small mb-1">Model</label>
+                        <select class="form-select form-select-sm" id="inventoryModel">
+                            <option value="">All Models</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="inventoryCategory" class="form-label small mb-1">Inventory Category</label>
+                        <select class="form-select form-select-sm" id="inventoryCategory">
+                            <option value="">All Categories</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <button class="btn btn-primary btn-sm" onclick="searchInventoryItems()">
+                            <i class="fas fa-search me-2"></i>Search Inventory
+                        </button>
+                        <button class="btn btn-secondary btn-sm ms-2" onclick="clearInventoryFilters()">
+                            <i class="fas fa-times me-2"></i>Clear Filters
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Inventory Search Results -->
+                <div id="inventoryResults">
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-box" style="font-size: 48px; opacity: 0.3;"></i>
+                        <p class="mt-2">Select filters and click "Search Inventory" to find items</p>
+                    </div>
+                </div>
+                
+                <!-- Cart Items in Inventory Tab -->
+                <div id="inventoryCartItems" style="margin-top: 30px; display: none;">
+                    <h5 class="mb-3"><i class="fas fa-shopping-cart me-2"></i>Items in Cart</h5>
+                    <div id="inventoryCartItemsContainer"></div>
+                </div>
+            </div>
+            
+            <!-- Device Tab Search Container -->
+            <div id="deviceSearchContainer" style="display: none; padding: 20px; background: white; border-radius: 8px;">
+                <h4 class="mb-4"><i class="fas fa-mobile-alt me-2"></i>Search Devices</h4>
+                
+                <!-- Device Search Filters -->
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <label for="deviceBrand" class="form-label small mb-1">Brand</label>
+                        <select class="form-select form-select-sm" id="deviceBrand" onchange="onDeviceBrandChange()">
+                            <option value="">All Brands</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="deviceCategory" class="form-label small mb-1">Device Category</label>
+                        <select class="form-select form-select-sm" id="deviceCategory" onchange="onDeviceCategoryChange()">
+                            <option value="">All Categories</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="deviceModel" class="form-label small mb-1">Model</label>
+                        <select class="form-select form-select-sm" id="deviceModel">
+                            <option value="">All Models</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="deviceNetwork" class="form-label small mb-1">Network</label>
+                        <select class="form-select form-select-sm" id="deviceNetwork">
+                            <option value="">All Networks</option>
+                            <option value="Unlocked">Unlocked</option>
+                            <option value="AT&T">AT&T</option>
+                            <option value="T-Mobile">T-Mobile</option>
+                            <option value="Verizon">Verizon</option>
+                            <option value="Sprint">Sprint</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <label for="deviceGB" class="form-label small mb-1">Storage (GB)</label>
+                        <select class="form-select form-select-sm" id="deviceGB">
+                            <option value="">All Storage</option>
+                            <option value="16">16 GB</option>
+                            <option value="32">32 GB</option>
+                            <option value="64">64 GB</option>
+                            <option value="128">128 GB</option>
+                            <option value="256">256 GB</option>
+                            <option value="512">512 GB</option>
+                            <option value="1024">1 TB</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="deviceScratches" class="form-label small mb-1">Scratches</label>
+                        <select class="form-select form-select-sm" id="deviceScratches">
+                            <option value="">All Conditions</option>
+                            <option value="None">None</option>
+                            <option value="Light">Light</option>
+                            <option value="Moderate">Moderate</option>
+                            <option value="Heavy">Heavy</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="deviceIMEI" class="form-label small mb-1">IMEI Number</label>
+                        <input type="text" class="form-control form-control-sm" id="deviceIMEI" placeholder="Enter IMEI number...">
+                    </div>
+                </div>
+                
+                <div class="row mb-4">
+                    <div class="col-md-12">
+                        <button class="btn btn-primary btn-sm" onclick="searchDeviceItems()">
+                            <i class="fas fa-search me-2"></i>Search Devices
+                        </button>
+                        <button class="btn btn-secondary btn-sm ms-2" onclick="clearDeviceFilters()">
+                            <i class="fas fa-times me-2"></i>Clear Filters
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Device Search Results -->
+                <div id="deviceResults">
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-mobile-alt" style="font-size: 48px; opacity: 0.3;"></i>
+                        <p class="mt-2">Select filters and click "Search Devices" to find items</p>
+                    </div>
+                </div>
+                
+                <!-- Cart Items in Device Tab -->
+                <div id="deviceCartItems" style="margin-top: 30px; display: none;">
+                    <h5 class="mb-3"><i class="fas fa-shopping-cart me-2"></i>Items in Cart</h5>
+                    <div id="deviceCartItemsContainer"></div>
+                </div>
+            </div>
+            
+            <!-- Search Tab Content -->
+            <div id="searchContainer" style="display: none; padding: 20px; background: white; border-radius: 8px;">
+                <h4 class="mb-4"><i class="fas fa-search me-2"></i>Search Items</h4>
+                
+                <!-- Search Filters -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="searchType" class="form-label small mb-1">Item Type</label>
+                        <select class="form-select form-select-sm" id="searchType">
+                            <option value="">All Types</option>
+                            <option value="Inventory">Inventory</option>
+                            <option value="Repair">Repairs</option>
+                            <option value="Device">Devices</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="searchKeyword" class="form-label small mb-1">Keyword</label>
+                        <input type="text" class="form-control form-control-sm" id="searchKeyword" placeholder="Name, SKU, Barcode...">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small mb-1">&nbsp;</label>
+                        <button class="btn btn-primary btn-sm w-100" onclick="performSearch()">
+                            <i class="fas fa-search me-2"></i>Search Database
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Search Results -->
+                <div id="searchResults">
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-search" style="font-size: 48px; opacity: 0.3;"></i>
+                        <p class="mt-2">Enter search criteria and click "Search Database"</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -305,45 +669,108 @@
                 </h4>
             </div>
 
-            <div class="cart-items" id="cartItems">
-                <div class="empty-cart">
+            <div class="cart-items" id="cartItems" style="overflow-x: auto; max-height: 400px;">
+                <table id="cartTable" class="table table-sm table-hover" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Price</th>
+                            <th>Qty</th>
+                            <th>Total</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="cartTableBody">
+                    </tbody>
+                </table>
+                <div class="empty-cart" id="emptyCartMessage">
                     <i class="fas fa-shopping-cart"></i>
                     <p>Cart is empty<br><small>Add items to get started</small></p>
                 </div>
             </div>
 
-            <div class="cart-summary">
-                <div class="summary-row">
+            <div class="cart-summary" style="padding: 0.5rem 0;">
+                <div class="summary-row" style="font-size: 0.9rem; padding: 0.25rem 0;">
                     <span>Subtotal:</span>
                     <span id="subtotal">$0.00</span>
                 </div>
-                <div class="summary-row">
+                <div class="summary-row" style="font-size: 0.9rem; padding: 0.25rem 0;">
                     <span>Tax (0%):</span>
                     <span id="tax">$0.00</span>
                 </div>
-                <div class="summary-row">
+                <div class="summary-row" style="font-size: 0.9rem; padding: 0.25rem 0;">
                     <span>Discount:</span>
                     <span id="discount">$0.00</span>
                 </div>
-                <div class="summary-row total">
+                <div class="summary-row total" style="padding: 0.5rem 0;">
                     <span>Total:</span>
                     <span id="total">$0.00</span>
                 </div>
+                <div class="summary-row balance" id="balanceRow" style="display: none; padding: 0.25rem 0; font-size: 0.9rem;">
+                    <span>Balance Due:</span>
+                    <span id="balance">$0.00</span>
+                </div>
                 
-                <div class="mt-3">
-                    <select class="form-select mb-2 no-select2" id="customerSelect">
-                        <option value="">Select Customer *</option>
+                <div class="mt-2">
+                    <!-- Customer Select -->
+                    <label class="form-label small mb-1">Customer *</label>
+                    <div class="d-flex gap-2 mb-2">
+                        <select class="form-select form-select-sm" id="customerSelect" style="flex: 1;">
+                            <option value="">Select Customer</option>
+                        </select>
+                        <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addNewCustomerModal" title="Add New Customer">
+                            <i class="fas fa-plus"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Payment Type -->
+                    <label class="form-label small mb-1">Payment Type *</label>
+                    <select class="form-select form-select-sm mb-2 no-select2" id="paymentType">
+                        <option value="full">Full Payment</option>
+                        <option value="partial">Partial Payment</option>
                     </select>
-                    <select class="form-select mb-3 no-select2" id="paymentMethod">
+                    
+                    <!-- Payment Method -->
+                    <label class="form-label small mb-1">Payment Method *</label>
+                    <select class="form-select form-select-sm mb-2 no-select2" id="paymentMethod">
                         <option value="Cash">Cash</option>
                         <option value="Card">Card</option>
                         <option value="Check">Check</option>
+                        <option value="Zelle">Zelle</option>
+                        <option value="Venmo">Venmo</option>
                         <option value="Other">Other</option>
                     </select>
-                    <button class="btn btn-success btn-lg w-100" onclick="completeSale()">
+                    
+                    <!-- Partial Payment Details -->
+                    <div class="payment-amount-input" id="paymentAmountContainer">
+                        <label class="form-label small mb-1">Amount Paid *</label>
+                        <input type="number" class="form-control form-control-sm mb-2" id="paymentAmount" step="0.01" min="0" placeholder="0.00">
+                        
+                        <label class="form-label small mb-1">Balance</label>
+                        <input type="text" class="form-control form-control-sm mb-2" id="remainingBalance" readonly placeholder="$0.00" style="background-color: #f8f9fa; font-weight: 600;">
+                        
+                        <!-- Second Payment Method -->
+                        <div id="secondPaymentContainer" style="display: none;">
+                            <label class="form-label small mb-1">2nd Payment Method *</label>
+                            <select class="form-select form-select-sm mb-2 no-select2" id="secondPaymentMethod">
+                                <option value="">Select Method</option>
+                                <option value="Cash">Cash</option>
+                                <option value="Card">Card</option>
+                                <option value="Check">Check</option>
+                                <option value="Zelle">Zelle</option>
+                                <option value="Venmo">Venmo</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-success w-100 mt-2" onclick="completeSale()">
                         <i class="fas fa-check me-2"></i>Complete Sale
                     </button>
-                    <button class="btn btn-outline-secondary btn-sm w-100 mt-2" onclick="clearCart()">
+                    <button class="btn btn-primary btn-sm w-100 mt-1" onclick="printLastInvoice()" id="printLastInvoiceBtn">
+                        <i class="fas fa-print me-2"></i>Print Last Invoice
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm w-100 mt-1" onclick="clearCart()">
                         <i class="fas fa-trash me-2"></i>Clear Cart
                     </button>
                 </div>
@@ -366,10 +793,13 @@
                 <i class="fas fa-check-circle text-success" style="font-size: 64px;"></i>
                 <h4 class="mt-3">Sale Successful!</h4>
                 <p class="mb-0">Invoice Number: <strong id="invoiceNumber"></strong></p>
+                <p class="mb-0" id="paymentStatusMsg"></p>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="printInvoice()">
+            <div class="modal-footer d-flex justify-content-between">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Close
+                </button>
+                <button type="button" class="btn btn-success btn-lg" onclick="printInvoice()">
                     <i class="fas fa-print me-2"></i>Print Invoice
                 </button>
             </div>
@@ -377,16 +807,436 @@
     </div>
 </div>
 
+<!-- Hidden Invoice for Printing -->
+<div id="invoicePrintArea" style="display: none;">
+    <!-- Invoice content will be populated by JavaScript -->
+</div>
+
+<!-- Add Repair Modal (Popup) -->
+<div class="modal fade" id="addRepairModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-wrench me-2"></i>Add New Repair</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <iframe id="repairIframe" src="" style="width: 100%; height: 500px; border: none;"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Device Modal (Popup) -->
+<div class="modal fade" id="addDeviceModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-mobile-alt me-2"></i>Add New Device</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <iframe id="deviceIframe" src="" style="width: 100%; height: 500px; border: none;"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Inventory Modal (Popup) -->
+<div class="modal fade" id="addInventoryModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-box me-2"></i>Add New Inventory</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <iframe id="inventoryIframe" src="" style="width: 100%; height: 500px; border: none;"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Search Results Modal -->
+<div class="modal fade" id="searchResultsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-search me-2"></i>Search Results</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="searchResultsModalBody" style="max-height: 500px; overflow-y: auto;">
+                <!-- Results will be populated here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden Invoice Print Template -->
+<div id="invoicePrintTemplate" style="display: none;">
+    <div class="invoice-print">
+        <div class="invoice-header">
+            <img id="printShopLogo" src="" alt="Shop Logo" style="max-width: 150px; max-height: 100px; display: none; margin: 0 auto 5px auto;" />
+            <h1>INVOICE</h1>
+            <div class="invoice-info">
+                <p><strong>Invoice #:</strong> <span id="printInvoiceNumber"></span></p>
+                <p><strong>Date:</strong> <span id="printInvoiceDate"></span></p>
+            </div>
+        </div>
+        
+        <div class="invoice-parties">
+            <div class="invoice-from">
+                <h3>From:</h3>
+                <p><strong id="printShopName"></strong></p>
+                <p id="printShopEmail"></p>
+                <p id="printShopAddressLine1"></p>
+                <p id="printShopAddressLine2"></p>
+                <p><strong>Phone #:</strong> <span id="printShopPhone"></span></p>
+            </div>
+            <div class="invoice-to">
+                <h3>To:</h3>
+                <p><strong id="printCustomerName"></strong></p>
+            </div>
+        </div>
+        
+        <table class="invoice-items">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Type</th>
+                    <th>Qty</th>
+                    <th>Price</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody id="printInvoiceItems">
+            </tbody>
+        </table>
+        
+        <div class="invoice-totals">
+            <div class="total-row">
+                <span>Subtotal:</span>
+                <span id="printSubtotal"></span>
+            </div>
+            <div class="total-row">
+                <span>Tax:</span>
+                <span id="printTax"></span>
+            </div>
+            <div class="total-row">
+                <span>Discount:</span>
+                <span id="printDiscount"></span>
+            </div>
+            <div class="total-row grand-total">
+                <span>Total:</span>
+                <span id="printTotal"></span>
+            </div>
+        </div>
+        
+        <div class="invoice-payment">
+            <h3>Payment Information</h3>
+            <p><strong>Payment Status:</strong> <span id="printPaymentStatus"></span></p>
+            <p><strong>Payment Method:</strong> <span id="printPaymentMethod"></span></p>
+            <p id="printBalanceRow" style="display: none;"><strong>Balance Due:</strong> <span id="printBalance"></span></p>
+        </div>
+        
+        <div class="invoice-footer">
+            <p>Thank you for your business!</p>
+            <p><strong>Cashier:</strong> <span id="printCashier"></span></p>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Invoice print styles */
+    .invoice-print {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 40px;
+        background: white;
+    }
+    
+    .invoice-header {
+        text-align: center;
+        border-bottom: 3px solid #333;
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+    
+    .invoice-header h1 {
+        margin: 5px 0;
+        font-size: 36px;
+        color: #333;
+    }
+    
+    #printShopLogo {
+        max-width: 150px;
+        max-height: 100px;
+        margin: 0 auto 5px auto;
+    }
+    
+    #printShopLogo[src]:not([src=""]) {
+        display: block !important;
+    }
+    
+    .invoice-info {
+        margin-top: 5px;
+    }
+    
+    .invoice-info p {
+        margin: 3px 0;
+    }
+    
+    .invoice-parties {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 30px;
+    }
+    
+    .invoice-from, .invoice-to {
+        flex: 1;
+    }
+    
+    .invoice-from h3, .invoice-to h3 {
+        margin-top: 0;
+        color: #666;
+        font-size: 14px;
+        text-transform: uppercase;
+    }
+    
+    .invoice-items {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 30px;
+        border: 2px solid #dee2e6;
+    }
+    
+    .invoice-items th {
+        background: #f5f5f5;
+        padding: 12px 15px;
+        padding-left: 5%;
+        text-align: left;
+        border: 1px solid #dee2e6;
+        font-weight: 600;
+    }
+    
+    tr > th {
+        padding-left: 5%;
+    }
+    
+    .invoice-items td {
+        padding: 12px 15px;
+        border: 1px solid #e0e0e0;
+        vertical-align: top;
+    }
+    
+    .invoice-items th:nth-child(2),
+    .invoice-items td:nth-child(2),
+    .invoice-items th:nth-child(3),
+    .invoice-items td:nth-child(3) {
+        text-align: center;
+    }
+    
+    .invoice-items th:nth-child(4),
+    .invoice-items td:nth-child(4),
+    .invoice-items th:nth-child(5),
+    .invoice-items td:nth-child(5) {
+        text-align: right;
+    }
+    
+    .invoice-totals {
+        margin-left: auto;
+        width: 300px;
+        margin-bottom: 30px;
+        padding-left: 5%;
+    }
+    
+    .total-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+    }
+    
+    .grand-total {
+        font-size: 18px;
+        font-weight: bold;
+        border-top: 2px solid #333;
+        border-bottom: 3px double #333;
+        padding: 12px 0;
+    }
+    
+    .invoice-payment {
+        background: #f9f9f9;
+        padding: 20px;
+        margin-bottom: 30px;
+        border-radius: 5px;
+    }
+    
+    .invoice-payment h3 {
+        margin-top: 0;
+        color: #333;
+    }
+    
+    .invoice-footer {
+        text-align: center;
+        padding-top: 20px;
+        border-top: 2px solid #ddd;
+        color: #666;
+    }
+</style>
+
+@section Scripts {
+<!-- Include Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <script>
+    console.log('POS JavaScript loaded - Version 4.0 - Cart Persistence Fix');
+    
+    // Load cart from localStorage or initialize empty
     let cart = [];
-    let products = [];
+    try {
+        const savedCart = localStorage.getItem('pos_cart');
+        if (savedCart) {
+            cart = JSON.parse(savedCart);
+            console.log('Loaded cart from localStorage:', cart.length, 'items');
+        }
+    } catch (e) {
+        console.error('Error loading cart from localStorage:', e);
+        cart = [];
+    }
+    
     let currentFilter = '';
-    let searchTimeout;
+    let lastInvoiceNumber = null;
+    let lastSaleData = null;
+    let selectedCustomerId = null;
+    let allItems = []; // Central storage for all items loaded from database
+    let searchTimeout = null; // Timeout for search debouncing
+
+    // Save cart to localStorage
+    function saveCartToStorage() {
+        try {
+            localStorage.setItem('pos_cart', JSON.stringify(cart));
+            console.log('Cart saved to localStorage');
+        } catch (e) {
+            console.error('Error saving cart to localStorage:', e);
+        }
+    }
 
     $(document).ready(function() {
-        loadCustomers();
-        loadBrands();
-        loadCategories();
+        // Check for pending cart items from other pages (Repair, Device, etc.)
+        $.ajax({
+            url: '@Url.Action("GetPendingCartItems", "POS")',
+            type: 'GET',
+            success: function(response) {
+                if (response.success && response.items && response.items.length > 0) {
+                    console.log('Found pending cart items:', response.items);
+                    // Add each pending item to the cart
+                    response.items.forEach(function(item) {
+                        addToCart(item);
+                    });
+                }
+            },
+            error: function(xhr) {
+                console.error('Error loading pending cart items:', xhr);
+            },
+            complete: function() {
+                // Update cart display after loading pending items
+                updateCart();
+            }
+        });
+        
+        // Check if there's a last invoice to enable print button
+        if (lastInvoiceNumber) {
+            $('#printLastInvoiceBtn').prop('disabled', false);
+        }
+        
+        console.log('Initializing Select2 for customer dropdown');
+        console.log('Customer select element:', $('#customerSelect').length);
+        
+        // Initialize Select2 for customer dropdown
+        $('#customerSelect').select2({
+            theme: 'bootstrap-5',
+            placeholder: 'Search and select customer',
+            allowClear: true,
+            ajax: {
+                url: '@Url.Action("GetCustomers", "POS")',
+                dataType: 'json',
+                delay: 250,
+                data: function (params) {
+                    return {
+                        search: params.term
+                    };
+                },
+                processResults: function (data) {
+                    console.log('GetCustomers response:', data);
+                    // Controller returns { results: [...] }
+                    if (data.results) {
+                        console.log('Found', data.results.length, 'customers');
+                        return {
+                            results: data.results.map(function(customer) {
+                                return {
+                                    id: customer.id,
+                                    text: customer.text
+                                };
+                            })
+                        };
+                    }
+                    console.log('No results found in response');
+                    return { results: [] };
+                },
+                cache: true
+            },
+            minimumInputLength: 0  // 0 means show all customers when dropdown opens
+        });
+        
+        // Trigger Select2 to load all customers on first open
+        $('#customerSelect').on('select2:open', function() {
+            if (!$(this).data('loaded')) {
+                $(this).data('loaded', true);
+            }
+        });
+        
+        // Handle customer selection change
+        $('#customerSelect').on('change', function() {
+            selectedCustomerId = $(this).val();
+            if (selectedCustomerId) {
+                loadCustomerRepairs(selectedCustomerId);
+            }
+        });
+        
+        // Handle payment type change
+        $('#paymentType').on('change', function() {
+            const paymentType = $(this).val();
+            if (paymentType === 'partial') {
+                $('#paymentAmountContainer').addClass('show');
+                $('#paymentAmount').prop('required', true);
+            } else {
+                $('#paymentAmountContainer').removeClass('show');
+                $('#paymentAmount').prop('required', false);
+            }
+            updateSummary();
+        });
+        
+        // Handle payment amount change
+        $('#paymentAmount').on('input', function() {
+            updateSummary();
+            
+            // Show second payment method if there's a remaining balance
+            const total = cart.reduce((sum, item) => sum + (item.Price * item.quantity), 0);
+            const paymentAmount = parseFloat($(this).val()) || 0;
+            const balance = total - paymentAmount;
+            
+            if (balance > 0 && paymentAmount > 0) {
+                $('#secondPaymentContainer').show();
+            } else {
+                $('#secondPaymentContainer').hide();
+                $('#secondPaymentMethod').val('');
+            }
+        });
         
         // Search input handler
         $('#searchInput').on('input', function() {
@@ -396,159 +1246,316 @@
             }, 300);
         });
 
-        // Brand filter - reload models when brand changes
-        $('#brandFilter').on('change', function() {
-            loadModels();
-            searchProducts();
-        });
-
-        // Category filter - reload models when category changes
-        $('#categoryFilter').on('change', function() {
-            loadModels();
-            searchProducts();
-        });
-
-        // Model filter
-        $('#modelFilter').on('change', function() {
-            searchProducts();
-        });
-
-        // Initial search - delay to ensure everything is loaded
+        // Initial display - show all cart items on the default 'All Items' tab
         setTimeout(function() {
-            searchProducts();
+            displayCartItems(''); // Empty string for 'All Items' tab
         }, 100);
     });
-
-    function loadCustomers() {
-        $.ajax({
-            url: '@Url.Action("GetCustomers", "POS")',
-            type: 'GET',
-            success: function(response) {
-                if (response.success) {
-                    const select = $('#customerSelect');
-                    select.empty();
-                    select.append('<option value="">Select Customer *</option>');
-                    
-                    response.data.forEach(function(customer) {
-                        select.append(`<option value="${customer.id}">${customer.text}</option>`);
-                    });
-                }
-            },
-            error: function(xhr) {
-                console.error('Error loading customers:', xhr);
-            }
-        });
-    }
-
-    function loadBrands() {
-        $.ajax({
-            url: '@Url.Action("GetBrands", "POS")',
-            type: 'GET',
-            success: function(response) {
-                if (response.success) {
-                    const select = $('#brandFilter');
-                    response.data.forEach(function(brand) {
-                        select.append(`<option value="${brand.name}" data-id="${brand.id}">${brand.name}</option>`);
-                    });
-                }
-            }
-        });
-    }
-
-    function loadCategories() {
-        $.ajax({
-            url: '@Url.Action("GetCategories", "POS")',
-            type: 'GET',
-            success: function(response) {
-                if (response.success) {
-                    const select = $('#categoryFilter');
-                    response.data.forEach(function(category) {
-                        select.append(`<option value="${category.name}" data-id="${category.id}">${category.name}</option>`);
-                    });
-                }
-            }
-        });
-    }
-
-    function loadModels() {
-        const brandId = getBrandIdFromName($('#brandFilter').val());
-        const categoryId = getCategoryIdFromName($('#categoryFilter').val());
+    
+    function loadCustomerRepairs(customerId) {
+        if (!customerId) {
+            return;
+        }
         
         $.ajax({
-            url: '@Url.Action("GetModels", "POS")',
+            url: '@Url.Action("GetCustomerRepairs", "POS")',
             type: 'GET',
-            data: { 
-                brandId: brandId, 
-                categoryId: categoryId 
-            },
+            data: { customerId: customerId },
             success: function(response) {
-                if (response.success) {
-                    const select = $('#modelFilter');
-                    select.empty();
-                    select.append('<option value="">All Models</option>');
+                console.log('Customer repairs response:', response);
+                if (response.success && response.data.length > 0) {
+                    console.log('Raw repair data:', response.data);
+                    // Get IDs of items already in cart
+                    const cartItemIds = cart.map(item => item.Id);
+                    const cartRepairIds = cart.map(item => item.RepairId).filter(id => id != null);
                     
-                    response.data.forEach(function(model) {
-                        select.append(`<option value="${model.name}" data-id="${model.id}">${model.name}</option>`);
-                    });
+                    // Filter out repairs already in cart and normalize data
+                    const availableRepairs = response.data
+                        .filter(repair => {
+                            const repairId = repair.RepairId || repair.Id;
+                            const itemId = repair.Id;
+                            // Don't show if already in cart
+                            return !cartItemIds.includes(itemId) && !cartRepairIds.includes(repairId);
+                        })
+                        .map(repair => ({
+                            Id: repair.Id || repair.id,  // Handle both cases
+                            Type: 'Repair',
+                            Name: repair.Name || repair.name || 'Repair',  // Handle both Pascal and camel case
+                            Description: repair.Description || repair.description || '',
+                            Price: parseFloat(repair.Price || repair.price || 0),  // Handle both cases
+                            RepairId: repair.RepairId || repair.repairId,
+                            RepairNumber: repair.RepairNumber || repair.repairNumber,
+                            IMEI: repair.IMEI || repair.imei || '',
+                            Stock: 1
+                        }));
+                    
+                    if (availableRepairs.length > 0) {
+                        console.log('Mapped available repairs:', availableRepairs);
+                        // Display available repair items
+                        displayProducts(availableRepairs);
+                    } else {
+                        // All repairs already in cart
+                        $('#productsContainer').html(`
+                            <div class="no-products">
+                                <i class="fas fa-check-circle text-success"></i>
+                                <p>All repairs for this customer are already in the cart</p>
+                            </div>
+                        `);
+                    }
+                } else {
+                    // If no repairs, show empty state
+                    $('#productsContainer').html(`
+                        <div class="no-products">
+                            <i class="fas fa-info-circle"></i>
+                            <p>No repairs found for this customer</p>
+                        </div>
+                    `);
                 }
             },
             error: function(xhr) {
-                console.error('Error loading models:', xhr);
+                console.error('Error loading customer repairs:', xhr);
+                $('#productsContainer').html(`
+                    <div class="no-products">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <p>Error loading customer repairs</p>
+                    </div>
+                `);
             }
         });
     }
 
-    // Helper function to get brand ID from name
-    function getBrandIdFromName(brandName) {
-        if (!brandName) return null;
-        const option = $('#brandFilter option:selected');
-        // We need to store brand IDs, let's update loadBrands to include data-id
-        return option.data('id') || null;
-    }
-
-    // Helper function to get category ID from name
-    function getCategoryIdFromName(categoryName) {
-        if (!categoryName) return null;
-        const option = $('#categoryFilter option:selected');
-        return option.data('id') || null;
-    }
+    // Dropdown functions removed - simplified search interface
 
     function searchProducts() {
-        const query = $('#searchInput').val();
-        const brand = $('#brandFilter').val();
-        const category = $('#categoryFilter').val();
-        const model = $('#modelFilter').val();
-
+        const query = $('#searchInput').val().trim();
+        
+        if (!query) {
+            // Don't clear if we're on a tab that shows cart items
+            if (currentFilter && currentFilter !== '' && currentFilter !== 'search' && currentFilter !== 'custom') {
+                // We're on a tab showing cart items, don't interfere
+                return;
+            }
+            // Clear results if empty
+            products = [];
+            displayProducts(products);
+            return;
+        }
+        
+        // Intelligent search detection
+        let searchType = detectSearchType(query);
+        
+        // Check if query looks like an invoice number
+        if (searchType === 'Invoice') {
+            searchInvoiceByNumber(query);
+            return;
+        }
+        
+        // For other types, search and show in modal
         $.ajax({
-            url: '@Url.Action("SearchItems", "POS")',
+            url: '@Url.Action("SearchItemsTab", "POS")',
             type: 'GET',
             data: { 
                 query: query,
-                type: currentFilter
+                type: searchType,
+                customerId: selectedCustomerId
             },
             success: function(response) {
-                if (response.success) {
-                    products = response.data;
-                    
-                    // Apply additional filters
-                    let filteredProducts = products;
-                    if (brand) {
-                        filteredProducts = filteredProducts.filter(p => p.Brand === brand);
-                    }
-                    if (category) {
-                        filteredProducts = filteredProducts.filter(p => p.Category === category);
-                    }
-                    if (model) {
-                        filteredProducts = filteredProducts.filter(p => p.Name && p.Name.includes(model));
-                    }
-                    
-                    displayProducts(filteredProducts);
+                if (response.success && response.data && response.data.length > 0) {
+                    // Show results in modal
+                    showSearchResultsModal(response.data, searchType);
+                } else {
+                    // No results - show empty modal
+                    showSearchResultsModal([], searchType);
                 }
             },
             error: function(xhr) {
                 console.error('Error searching products:', xhr);
+                alert('Error performing search');
             }
         });
+    }
+    
+    // Detect search type based on query pattern
+    function detectSearchType(query) {
+        query = query.toUpperCase();
+        
+        // Invoice patterns
+        if (query.startsWith('INV') || query.startsWith('SAL') || /^\d{4,}$/.test(query)) {
+            return 'Invoice';
+        }
+        
+        // IMEI pattern (15 digits)
+        if (/^\d{15}$/.test(query)) {
+            return 'Device';
+        }
+        
+        // Repair number pattern
+        if (query.startsWith('REP') || query.startsWith('R-')) {
+            return 'Repair';
+        }
+        
+        // SKU pattern (alphanumeric with dashes/underscores)
+        if (/^[A-Z0-9\-_]{6,}$/.test(query)) {
+            return 'Inventory';
+        }
+        
+        // Default to inventory search for general queries
+        return 'Inventory';
+    }
+    
+    // Search for invoice by number
+    function searchInvoiceByNumber(invoiceNumber) {
+        $.ajax({
+            url: '@Url.Action("SearchSaleByNumber", "POS")',
+            type: 'GET',
+            data: { saleNumber: invoiceNumber },
+            success: function(response) {
+                if (response.success && response.sale) {
+                    // Open invoice edit modal
+                    openInvoiceEditModal(response.sale.id);
+                } else {
+                    alert('Invoice not found: ' + invoiceNumber);
+                }
+            },
+            error: function(xhr) {
+                console.error('Error searching invoice:', xhr);
+                alert('Error searching for invoice');
+            }
+        });
+    }
+    
+    // Display invoice search result
+    function displayInvoiceSearchResult(sale) {
+        const container = $('#productsContainer');
+        container.html(`
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-invoice me-2"></i>Invoice Found: ${sale.saleNumber}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Date:</strong> ${new Date(sale.saleDate).toLocaleString()}</p>
+                            <p class="mb-1"><strong>Customer:</strong> ${sale.customerName || 'Walk-in Customer'}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p class="mb-1"><strong>Total:</strong> $${sale.totalAmount.toFixed(2)}</p>
+                            <p class="mb-1"><strong>Status:</strong> <span class="badge bg-${sale.paymentStatus === 'Paid' ? 'success' : 'warning'}">${sale.paymentStatus}</span></p>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-primary" onclick="loadInvoiceForEdit(${sale.id})">
+                            <i class="fas fa-edit me-1"></i>Edit Invoice
+                        </button>
+                        <button class="btn btn-secondary" onclick="printInvoiceById(${sale.id})">
+                            <i class="fas fa-print me-1"></i>Print Invoice
+                        </button>
+                        <button class="btn btn-info" onclick="viewInvoiceDetails(${sale.id})">
+                            <i class="fas fa-eye me-1"></i>View Details
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `);
+    }
+    
+    // Print invoice by ID
+    function printInvoiceById(saleId) {
+        window.lastSaleId = saleId;
+        
+        // Fetch complete invoice data from server
+        $.ajax({
+            url: '@Url.Action("GetInvoiceData", "POS")',
+            type: 'GET',
+            data: { saleId: saleId },
+            success: function(response) {
+                if (response.success) {
+                    generateAndPrintInvoice(response);
+                } else {
+                    alert('Error loading invoice data.');
+                }
+            },
+            error: function(xhr) {
+                console.error('Error:', xhr);
+                alert('Error loading invoice. Please try again.');
+            }
+        });
+    }
+    
+    // View invoice details
+    function viewInvoiceDetails(saleId) {
+        $.ajax({
+            url: '@Url.Action("GetInvoiceData", "POS")',
+            type: 'GET',
+            data: { saleId: saleId },
+            success: function(response) {
+                if (response.success) {
+                    showInvoiceDetailsModal(response);
+                } else {
+                    alert('Error loading invoice details');
+                }
+            },
+            error: function(xhr) {
+                console.error('Error:', xhr);
+                alert('Error loading invoice details');
+            }
+        });
+    }
+    
+    // Show invoice details in a modal
+    function showInvoiceDetailsModal(data) {
+        const items = data.items.map(item => `
+            <tr>
+                <td>${item.name}</td>
+                <td>${item.quantity}</td>
+                <td>$${item.unitPrice.toFixed(2)}</td>
+                <td>$${item.totalPrice.toFixed(2)}</td>
+            </tr>
+        `).join('');
+        
+        const modalHtml = `
+            <div class="modal fade" id="invoiceDetailsModal" tabindex="-1">
+                <div class="modal-dialog modal-lg">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Invoice Details: ${data.invoice.number}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <h6>Items:</h6>
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>Qty</th>
+                                        <th>Price</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${items}
+                                </tbody>
+                            </table>
+                            <div class="text-end">
+                                <p><strong>Subtotal:</strong> $${data.totals.subtotal.toFixed(2)}</p>
+                                <p><strong>Tax:</strong> $${data.totals.tax.toFixed(2)}</p>
+                                <p><strong>Total:</strong> $${data.totals.total.toFixed(2)}</p>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Remove existing modal if any
+        $('#invoiceDetailsModal').remove();
+        $('body').append(modalHtml);
+        $('#invoiceDetailsModal').modal('show');
     }
 
     function displayProducts(products) {
@@ -579,7 +1586,7 @@
             };
 
             const card = $(`
-                <div class="product-card" onclick='addToCart(${JSON.stringify(product)})'>
+                <div class="product-card">
                     <div class="product-card-header">
                         <div class="product-name">${product.Name}</div>
                         <span class="badge bg-${typeColors[product.Type]} product-type-badge">
@@ -588,15 +1595,24 @@
                     </div>
                     <div class="product-description">${product.Description}</div>
                     <div class="product-footer">
-                        <div class="product-price">$${product.Price.toFixed(2)}</div>
+                        <div class="product-price">$${(product.Price || 0).toFixed(2)}</div>
                         <div class="product-stock">
                             ${product.Type === 'Inventory' ? `Stock: ${product.Stock}` : ''}
                             ${product.IMEI ? `IMEI: ${product.IMEI}` : ''}
                             ${product.RepairNumber ? `#${product.RepairNumber}` : ''}
                         </div>
                     </div>
+                    <button class="btn btn-${product.Type === 'Repair' ? 'success' : 'primary'} btn-sm w-100 mt-2 add-to-cart-btn">
+                        <i class="fas fa-cart-plus me-1"></i>Add to Cart
+                    </button>
                 </div>
             `);
+            
+            // Attach click handler to the Add to Cart button
+            card.find('.add-to-cart-btn').on('click', function(e) {
+                e.stopPropagation();
+                addToCart(product);
+            });
 
             container.append(card);
         });
@@ -609,10 +1625,301 @@
         $('.filter-tab').removeClass('active');
         $(`.filter-tab[data-type="${type}"]`).addClass('active');
         
-        searchProducts();
+        // Show inventory search container for inventory tab
+        if (type === 'inventory') {
+            $('#productsContainer').hide();
+            $('#customSaleContainer').hide();
+            $('#searchContainer').hide();
+            $('#inventoryContainer').show();
+            $('#deviceSearchContainer').hide();
+            
+            // Load dropdowns if not already loaded
+            if ($('#inventoryBrand option').length === 1) {
+                loadInventoryDropdowns();
+            }
+            
+            // Display inventory cart items
+            displayInventoryCartItems();
+        } else if (type === 'device' || type === 'Device') {
+            // Show device search container for device tab
+            $('#productsContainer').hide();
+            $('#customSaleContainer').hide();
+            $('#searchContainer').hide();
+            $('#inventoryContainer').hide();
+            $('#deviceSearchContainer').show();
+            
+            // Load dropdowns if not already loaded
+            if ($('#deviceBrand option').length === 1) {
+                loadDeviceDropdowns();
+            }
+            
+            // Display device cart items
+            displayDeviceCartItems();
+        } else {
+            $('#productsContainer').show();
+            $('#customSaleContainer').hide();
+            $('#searchContainer').hide();
+            $('#inventoryContainer').hide();
+            $('#deviceSearchContainer').hide();
+            
+            // Display cart items filtered by type
+            displayCartItems(type);
+        }
+    }
+
+    function showCustomSaleTab() {
+        currentFilter = 'custom';
+        $('.filter-tab').removeClass('active');
+        $(`.filter-tab[data-type="custom"]`).addClass('active');
+        
+        $('#productsContainer').hide();
+        $('#customSaleContainer').show();
+        $('#searchContainer').hide();
+        $('#inventoryContainer').hide();
+        $('#deviceSearchContainer').hide();
+    }
+    
+    function showSearchTab() {
+        currentFilter = 'search';
+        $('.filter-tab').removeClass('active');
+        $(`.filter-tab[data-type="search"]`).addClass('active');
+        
+        $('#productsContainer').hide();
+        $('#customSaleContainer').hide();
+        $('#searchContainer').show();
+        $('#inventoryContainer').hide();
+        $('#deviceSearchContainer').hide();
+    }
+    
+    function performSearch() {
+        const searchType = $('#searchType').val();
+        const searchKeyword = $('#searchKeyword').val();
+        
+        if (!searchKeyword || searchKeyword.trim() === '') {
+            alert('Please enter a search keyword');
+            return;
+        }
+        
+        const resultsContainer = $('#searchResults');
+        resultsContainer.html('<div class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Searching database...</div>');
+        
+        // Search database
+        $.ajax({
+            url: '@Url.Action("SearchItemsTab", "POS")',
+            method: 'GET',
+            data: {
+                type: searchType,
+                keyword: searchKeyword
+            },
+            success: function(response) {
+                if (response.success && response.data && response.data.length > 0) {
+                    displaySearchResults(response.data);
+                } else {
+                    resultsContainer.html(`
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-inbox" style="font-size: 48px; opacity: 0.3;"></i>
+                            <p class="mt-2">No items found matching your search</p>
+                        </div>
+                    `);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Search error:', xhr.responseText);
+                const errorMsg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : error;
+                resultsContainer.html(`
+                    <div class="text-center text-danger py-4">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px;"></i>
+                        <p class="mt-2">Error searching database</p>
+                        <small>${errorMsg}</small>
+                        <br><small class="text-muted">Check console for details</small>
+                    </div>
+                `);
+            }
+        });
+    }
+    
+    function displaySearchResults(items) {
+        const container = $('#searchResults');
+        container.empty();
+        
+        items.forEach(function(item) {
+            const card = $(`
+                <div class="product-card">
+                    <div class="product-info">
+                        <div class="product-name">${item.name}</div>
+                        <div class="product-description">${item.description || ''}</div>
+                        <div class="product-meta">
+                            <span class="badge bg-primary">${item.type}</span>
+                            ${item.sku ? '<span class="text-muted">SKU: ' + item.sku + '</span>' : ''}
+                        </div>
+                    </div>
+                    <div class="product-footer">
+                        <div class="product-price">$${(parseFloat(item.price) || 0).toFixed(2)}</div>
+                        <button class="btn btn-sm btn-success add-search-item-btn" data-item='${JSON.stringify(item)}'>
+                            <i class="fas fa-cart-plus"></i> Add
+                        </button>
+                    </div>
+                </div>
+            `);
+            
+            container.append(card);
+        });
+        
+        // Attach click handlers to add buttons
+        $('.add-search-item-btn').off('click').on('click', function() {
+            const itemData = JSON.parse($(this).attr('data-item'));
+            addToCart({
+                Id: `${itemData.type.toLowerCase()}_${itemData.id}`,
+                Name: itemData.name,
+                Description: itemData.description || '',
+                Price: parseFloat(itemData.price),
+                OriginalPrice: parseFloat(itemData.price),
+                Type: itemData.type,
+                quantity: 1,
+                ReferenceId: itemData.id
+            });
+            alert('Item added to cart!');
+        });
+    }
+    
+    function addSearchResultToCart(itemId, itemType) {
+        // Fetch item details and add to cart
+        $.ajax({
+            url: '@Url.Action("GetItemDetails", "POS")',
+            method: 'GET',
+            data: {
+                id: itemId,
+                type: itemType
+            },
+            success: function(response) {
+                console.log('GetItemDetails response:', response);
+                if (response.success && response.data) {
+                    const item = response.data;
+                    try {
+                        addToCart({
+                            Id: item.id,
+                            Name: item.name,
+                            Description: item.description,
+                            Price: parseFloat(item.price),
+                            OriginalPrice: parseFloat(item.price),
+                            Type: item.type,
+                            quantity: 1
+                        });
+                        
+                        // Show success message
+                        alert('Item added to cart!');
+                    } catch (error) {
+                        console.error('Error in addToCart:', error);
+                        alert('Error adding item to cart: ' + error.message);
+                    }
+                } else {
+                    console.error('Invalid response:', response);
+                    const errorMsg = response.message || 'Unknown error';
+                    alert('Error adding item to cart: ' + errorMsg);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('AJAX error fetching item details:', {
+                    status: status,
+                    error: error,
+                    responseText: xhr.responseText,
+                    response: xhr.responseJSON
+                });
+                const errorMsg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : error;
+                alert('Error fetching item details: ' + errorMsg + '\nCheck console for details');
+            }
+        });
+    }
+    
+    function displayCartItems(filterType) {
+        const container = $('#productsContainer');
+        container.empty();
+        
+        // Filter cart items by type
+        let filteredItems = cart;
+        if (filterType) {
+            filteredItems = cart.filter(item => {
+                const itemType = item.Type.toLowerCase();
+                return itemType === filterType.toLowerCase();
+            });
+        }
+        
+        if (filteredItems.length === 0) {
+            container.html(`
+                <div class="no-products">
+                    <i class="fas fa-shopping-cart"></i>
+                    <p>${filterType ? 'No ' + filterType + ' items in cart' : 'Cart is empty'}</p>
+                    <small>Add items to cart to see them here</small>
+                </div>
+            `);
+            return;
+        }
+        
+        // Display filtered cart items
+        filteredItems.forEach(function(item) {
+            // Find the actual index in the cart array
+            const cartIndex = cart.findIndex(cartItem => cartItem.Id === item.Id);
+            
+            const card = $(`
+                <div class="product-card">
+                    <div class="product-info">
+                        <div class="product-name">${item.Name}</div>
+                        <div class="product-description">${item.Description || ''}</div>
+                        <div class="product-meta">
+                            <span class="badge bg-info">${item.Type}</span>
+                            <span class="text-muted">Qty: ${item.quantity}</span>
+                        </div>
+                    </div>
+                    <div class="product-footer">
+                        <div class="product-price">$${(item.Price || 0).toFixed(2)}</div>
+                        <button class="btn btn-sm btn-danger" onclick="removeFromCartAndRefresh(${cartIndex})">
+                            <i class="fas fa-trash"></i> Remove
+                        </button>
+                    </div>
+                </div>
+            `);
+            
+            container.append(card);
+        });
+    }
+
+    function addCustomItemToCart() {
+        const name = $('#customItemName').val();
+        const quantity = parseInt($('#customItemQuantity').val());
+        const price = parseFloat($('#customItemPrice').val());
+        const note = $('#customItemNote').val();
+
+        if (!name || quantity <= 0 || price < 0) {
+            alert('Please enter a valid item name, quantity, and price.');
+            return;
+        }
+
+        const customItem = {
+            Id: 'custom_' + Date.now(),
+            Type: 'Custom',
+            Name: name,
+            Description: 'Custom Sale Item',
+            Price: price,
+            OriginalPrice: price,
+            quantity: quantity,
+            Note: note,
+            ReferenceId: null
+        };
+
+        cart.push(customItem);
+        updateCart();
+
+        // Reset form
+        $('#customItemName').val('');
+        $('#customItemQuantity').val('1');
+        $('#customItemPrice').val('0.00');
+        $('#customItemNote').val('');
+        
+        filterByType('');
     }
 
     function addToCart(product) {
+        console.log('addToCart called with product:', product);
         // Check if item already in cart
         const existingIndex = cart.findIndex(item => item.Id === product.Id);
         
@@ -625,30 +1932,64 @@
                 return;
             }
         } else {
+            // Parse ReferenceId safely
+            let referenceId = null;
+            if (product.Id && typeof product.Id === 'string' && product.Id.includes('_')) {
+                referenceId = parseInt(product.Id.split('_')[1]);
+            } else if (typeof product.Id === 'number') {
+                referenceId = product.Id;
+            }
+            
+            // Ensure Name and Price are never undefined
+            const itemName = product.Name || product.name || 'Unknown Item';
+            const itemPrice = parseFloat(product.Price || product.price || 0);
+            const itemDescription = product.Description || product.description || '';
+            
             cart.push({
-                Id: product.Id,
-                Type: product.Type,
-                Name: product.Name,
-                Description: product.Description,
-                Price: product.Price,
-                OriginalPrice: product.Price,
-                quantity: 1,
-                ReferenceId: parseInt(product.Id.split('_')[1])
+                Id: product.Id || `custom_${Date.now()}`,
+                Type: product.Type || 'Custom',
+                Name: itemName,
+                Description: itemDescription,
+                Price: itemPrice,
+                OriginalPrice: itemPrice,
+                quantity: product.quantity || 1,
+                ReferenceId: referenceId,
+                RepairId: product.RepairId || product.repairId || null,
+                Note: product.Note || product.note || '',
+                IsCustomItem: product.Type === 'Custom',
+                IsTaxable: true
             });
         }
 
         updateCart();
+        
+        // Refresh the current tab display to show the newly added item
+        if (currentFilter !== 'custom' && currentFilter !== 'search') {
+            displayCartItems(currentFilter);
+        }
     }
 
     function removeFromCart(index) {
         cart.splice(index, 1);
         updateCart();
+        saveCartToStorage();
+    }
+    
+    function removeFromCartAndRefresh(index) {
+        cart.splice(index, 1);
+        updateCart();
+        saveCartToStorage();
+        
+        // Refresh the current tab display
+        if (currentFilter !== 'custom' && currentFilter !== 'search') {
+            displayCartItems(currentFilter);
+        }
     }
 
     function updateQuantity(index, delta) {
         const item = cart[index];
         
-        if (item.Type !== 'Inventory') {
+        if (item.Type !== 'Inventory' && item.Type !== 'Custom') {
             alert('Quantity can only be changed for inventory items');
             return;
         }
@@ -668,73 +2009,107 @@
     }
 
     function updateCart() {
-        const container = $('#cartItems');
-        container.empty();
+        const tableBody = $('#cartTableBody');
+        const emptyMessage = $('#emptyCartMessage');
+        const cartTable = $('#cartTable');
+        
+        tableBody.empty();
 
         if (cart.length === 0) {
-            container.html(`
-                <div class="empty-cart">
-                    <i class="fas fa-shopping-cart"></i>
-                    <p>Cart is empty<br><small>Add items to get started</small></p>
-                </div>
-            `);
+            cartTable.hide();
+            emptyMessage.show();
             $('#cartCount').text('0');
         } else {
+            emptyMessage.hide();
+            cartTable.show();
+            
             cart.forEach(function(item, index) {
+                // Safety checks for undefined properties
+                if (!item || typeof item !== 'object') {
+                    console.error('Invalid cart item at index', index, item);
+                    return;
+                }
+                
+                // Ensure required properties exist
+                item.Name = item.Name || 'Unknown Item';
+                item.Description = item.Description || '';
+                item.Price = parseFloat(item.Price) || 0;
+                item.OriginalPrice = parseFloat(item.OriginalPrice) || item.Price;
+                item.quantity = parseInt(item.quantity) || 1;
+                item.Type = item.Type || 'Custom';
+                
                 const itemTotal = item.Price * item.quantity;
                 const priceChanged = item.Price !== item.OriginalPrice;
 
-                const cartItem = $(`
-                    <div class="cart-item">
-                        <div class="cart-item-header">
-                            <div class="cart-item-name">
-                                ${item.Name}
-                                <br><small class="text-muted">${item.Description}</small>
-                            </div>
-                            <span class="cart-item-remove" onclick="removeFromCart(${index})">
-                                <i class="fas fa-times"></i>
-                            </span>
-                        </div>
-                        <div class="cart-item-details">
-                            ${item.Type === 'Inventory' ? `
-                                <div class="cart-item-quantity">
-                                    <button class="qty-btn" onclick="updateQuantity(${index}, -1)">-</button>
-                                    <span>${item.quantity}</span>
-                                    <button class="qty-btn" onclick="updateQuantity(${index}, 1)">+</button>
+                const row = $(`
+                    <tr>
+                        <td>
+                            <strong>${item.Name}</strong><br>
+                            <small class="text-muted">${item.Description || ''}</small>
+                            ${priceChanged ? '<br><small class="text-warning">Price adjusted from $' + (item.OriginalPrice || 0).toFixed(2) + '</small>' : ''}
+                        </td>
+                        <td>
+                            $<input type="number" class="form-control form-control-sm" style="width: 80px; display: inline-block;" 
+                                value="${(item.Price || 0).toFixed(2)}" 
+                                onchange="updatePrice(${index}, this.value)" 
+                                step="0.01" min="0">
+                        </td>
+                        <td>
+                            ${item.Type === 'Inventory' || item.Type === 'Custom' ? `
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button class="btn btn-outline-secondary" onclick="updateQuantity(${index}, -1)">-</button>
+                                    <button class="btn btn-outline-secondary" disabled>${item.quantity}</button>
+                                    <button class="btn btn-outline-secondary" onclick="updateQuantity(${index}, 1)">+</button>
                                 </div>
-                            ` : `<div><span class="badge bg-secondary">Qty: 1</span></div>`}
-                            <div>
-                                $<input type="number" class="price-input" value="${item.Price.toFixed(2)}" 
-                                    onchange="updatePrice(${index}, this.value)" step="0.01" min="0">
-                                ${priceChanged ? '<br><small class="text-muted">Was: $' + item.OriginalPrice.toFixed(2) + '</small>' : ''}
-                            </div>
-                        </div>
-                        <div class="text-end mt-2">
-                            <strong>Total: $${itemTotal.toFixed(2)}</strong>
-                        </div>
-                    </div>
+                            ` : `<span class="badge bg-secondary">${item.quantity}</span>`}
+                        </td>
+                        <td><strong>$${itemTotal.toFixed(2)}</strong></td>
+                        <td>
+                            <button class="btn btn-sm btn-danger" onclick="removeFromCart(${index})" title="Remove">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
                 `);
 
-                container.append(cartItem);
+                tableBody.append(row);
             });
 
             $('#cartCount').text(cart.length);
         }
 
         updateSummary();
+        saveCartToStorage();
     }
 
     function updateSummary() {
-        const subtotal = cart.reduce((sum, item) => sum + (item.Price * item.quantity), 0);
-        const taxRate = 0; // 0% tax, can be changed
+        const subtotal = cart.reduce((sum, item) => {
+            const price = parseFloat(item.Price) || 0;
+            const quantity = parseInt(item.quantity) || 1;
+            return sum + (price * quantity);
+        }, 0);
+        const taxRate = 0;
         const tax = subtotal * taxRate;
-        const discount = 0; // Can add discount functionality
+        const discount = 0;
         const total = subtotal + tax - discount;
 
         $('#subtotal').text('$' + subtotal.toFixed(2));
         $('#tax').text('$' + tax.toFixed(2));
         $('#discount').text('$' + discount.toFixed(2));
         $('#total').text('$' + total.toFixed(2));
+        
+        // Handle partial payment balance
+        const paymentType = $('#paymentType').val();
+        if (paymentType === 'partial') {
+            const paymentAmount = parseFloat($('#paymentAmount').val()) || 0;
+            const balance = total - paymentAmount;
+            $('#balance').text('$' + balance.toFixed(2));
+            $('#remainingBalance').val('$' + balance.toFixed(2)); // Update textbox
+            $('#balanceRow').show();
+        } else {
+            $('#balanceRow').hide();
+            $('#remainingBalance').val('$0.00');
+        }
     }
 
     function clearCart() {
@@ -743,6 +2118,9 @@
         if (confirm('Are you sure you want to clear the cart?')) {
             cart = [];
             updateCart();
+            saveCartToStorage();
+            // Refresh the page to reset everything
+            location.reload();
         }
     }
 
@@ -760,6 +2138,7 @@
             return;
         }
 
+        const paymentType = $('#paymentType').val();
         const paymentMethod = $('#paymentMethod').val();
 
         // Calculate totals
@@ -767,6 +2146,55 @@
         const taxAmount = 0;
         const discountAmount = 0;
         const totalAmount = subtotal + taxAmount - discountAmount;
+        
+        let paymentAmount = totalAmount;
+        let paymentStatus = 'Paid';
+        
+        if (paymentType === 'partial') {
+            paymentAmount = parseFloat($('#paymentAmount').val()) || 0;
+            
+            if (paymentAmount <= 0) {
+                alert('Please enter a valid payment amount');
+                $('#paymentAmount').focus();
+                return;
+            }
+            
+            if (paymentAmount > totalAmount) {
+                alert('Payment amount cannot exceed total amount');
+                $('#paymentAmount').focus();
+                return;
+            }
+            
+            paymentStatus = paymentAmount >= totalAmount ? 'Paid' : 'Partial';
+            
+            // Check if second payment method is selected for remaining balance
+            const secondPaymentMethod = $('#secondPaymentMethod').val();
+            if (paymentStatus === 'Partial' && secondPaymentMethod) {
+                // User wants to pay remaining balance with second payment method
+                const remainingAmount = totalAmount - paymentAmount;
+                paymentStatus = 'Paid'; // Mark as paid since both payments cover the total
+            }
+        }
+
+        // Prepare payments array
+        const payments = [{
+            Amount: paymentAmount,
+            PaymentMethod: paymentMethod,
+            TransactionId: ''
+        }];
+        
+        // Add second payment if applicable
+        if (paymentType === 'partial') {
+            const secondPaymentMethod = $('#secondPaymentMethod').val();
+            if (secondPaymentMethod) {
+                const remainingAmount = totalAmount - paymentAmount;
+                payments.push({
+                    Amount: remainingAmount,
+                    PaymentMethod: secondPaymentMethod,
+                    TransactionId: ''
+                });
+            }
+        }
 
         // Prepare sale data
         const saleData = {
@@ -774,17 +2202,25 @@
             Items: cart.map(item => ({
                 ItemType: item.Type,
                 ItemReferenceId: item.ReferenceId,
-                Description: item.Name,
+                RepairId: item.RepairId,
+                InventoryItemId: item.Type === 'Inventory' ? item.ReferenceId : null,
+                ItemName: item.Name,
+                Description: item.Description,
                 Quantity: item.quantity,
                 UnitPrice: item.Price,
+                TotalPrice: item.Price * item.quantity,
+                DiscountAmount: 0,
+                Note: item.Note || '',
+                IsCustomItem: item.Type === 'Custom',
+                IsTaxable: item.IsTaxable,
                 OriginalPrice: item.OriginalPrice,
-                DiscountAmount: 0
             })),
             SubTotal: subtotal,
             TaxAmount: taxAmount,
             DiscountAmount: discountAmount,
             TotalAmount: totalAmount,
-            PaymentMethod: paymentMethod
+            PaymentStatus: paymentStatus,
+            Payments: payments
         };
 
         // Submit sale
@@ -795,16 +2231,62 @@
             data: JSON.stringify(saleData),
             success: function(response) {
                 if (response.success) {
+                    // Store sale data for printing (before clearing cart)
+                    const secondPaymentMethodVal = $('#secondPaymentMethod').val();
+                    let paymentMethodDisplay = paymentMethod;
+                    if (secondPaymentMethodVal) {
+                        paymentMethodDisplay = `${paymentMethod} ($${paymentAmount.toFixed(2)}) + ${secondPaymentMethodVal} ($${(totalAmount - paymentAmount).toFixed(2)})`;
+                    }
+                    
+                    // Prepare sale data
+                    const customer = $('#customerSelect').select2('data')[0];
+                    const customerName = customer ? customer.text : 'Walk-in Customer';
+                    
+                    const saleData = {
+                        items: Object.assign([], cart),
+                        customerId: customerId,
+                        customerName: customerName,
+                        paymentMethod: paymentMethod,
+                        paymentStatus: paymentStatus,
+                        totalAmount: totalAmount,
+                        paymentAmount: paymentAmount
+                    };
+                    
                     $('#invoiceNumber').text(response.invoiceNumber);
+                    
+                    // Save last invoice data for printing
+                    lastInvoiceNumber = response.invoiceNumber;
+                    lastSaleData = saleData;
+                    window.lastSaleId = response.saleId; // Store sale ID for invoice printing
+                    
+                    // Enable print button
+                    $('#printLastInvoiceBtn').prop('disabled', false);
+                    
+                    if (paymentStatus === 'Partial') {
+                        const balance = totalAmount - paymentAmount;
+                        $('#paymentStatusMsg').html(`<small class="text-warning">Partial Payment: $${paymentAmount.toFixed(2)} paid, $${balance.toFixed(2)} remaining</small>`);
+                    } else if (secondPaymentMethodVal) {
+                        $('#paymentStatusMsg').html(`<small class="text-success">Fully Paid (${paymentMethod}: $${paymentAmount.toFixed(2)}, ${secondPaymentMethodVal}: $${(totalAmount - paymentAmount).toFixed(2)})</small>`);
+                    } else {
+                        $('#paymentStatusMsg').html('<small class="text-success">Fully Paid</small>');
+                    }
+                    
                     $('#successModal').modal('show');
                     
                     // Clear cart
                     cart = [];
                     updateCart();
+                    saveCartToStorage();
                     
-                    // Reset customer and payment method
-                    $('#customerSelect').val('');
+                    // Reset form
+                    $('#customerSelect').val(null).trigger('change');
+                    $('#paymentType').val('full');
+                    $('#paymentAmountContainer').removeClass('show');
+                    $('#paymentAmount').val('');
                     $('#paymentMethod').val('Cash');
+                    $('#secondPaymentMethod').val('');
+                    $('#secondPaymentContainer').hide();
+                    selectedCustomerId = null;
                 } else {
                     alert('Error: ' + response.message);
                 }
@@ -816,9 +2298,949 @@
         });
     }
 
-    function printInvoice() {
-        // TODO: Implement invoice printing
-        alert('Invoice printing will be implemented');
+    function printLastInvoice() {
+        // If we have a recent sale in memory, use it
+        if (window.lastSaleId) {
+            printInvoiceById(window.lastSaleId);
+            return;
+        }
+        
+        // Otherwise, fetch the most recent invoice from the server
+        $.ajax({
+            url: '@Url.Action("GetLastInvoice", "POS")',
+            type: 'GET',
+            success: function(response) {
+                if (response.success && response.saleId) {
+                    window.lastSaleId = response.saleId;
+                    printInvoiceById(response.saleId);
+                } else {
+                    alert('No invoices found. Please complete a sale first.');
+                }
+            },
+            error: function(xhr) {
+                console.error('Error fetching last invoice:', xhr);
+                alert('Error loading last invoice. Please try again.');
+            }
+        });
     }
+    
+    function printInvoice() {
+        const invoiceNumber = $('#invoiceNumber').text();
+        if (!invoiceNumber) {
+            alert('No invoice to print');
+            return;
+        }
+        
+        printInvoiceWithData(invoiceNumber, lastSaleData);
+    }
+    
+    function printInvoiceWithData(invoiceNumber, saleData) {
+        if (!invoiceNumber) {
+            alert('Invoice number not available');
+            return;
+        }
+        
+        // Get the sale ID from the last completed sale
+        // We'll need to store this when the sale completes
+        if (!window.lastSaleId) {
+            alert('Sale ID not available. Please try again.');
+            return;
+        }
+        
+        // Fetch complete invoice data from server
+        $.ajax({
+            url: '@Url.Action("GetInvoiceData", "POS")',
+            type: 'GET',
+            data: { saleId: window.lastSaleId },
+            success: function(response) {
+                if (response.success) {
+                    generateAndPrintInvoice(response);
+                } else {
+                    alert('Error loading invoice: ' + response.message);
+                }
+            },
+            error: function(xhr) {
+                console.error('Error fetching invoice data:', xhr);
+                alert('Error loading invoice data. Please try again.');
+            }
+        });
+    }
+    
+    function generateAndPrintInvoice(data) {
+        const shop = data.shop;
+        const invoice = data.invoice;
+        const customer = data.customer;
+        const items = data.items;
+        const totals = data.totals;
+        const payment = data.payment;
+        
+        // Populate hidden template
+        document.getElementById('printInvoiceNumber').textContent = invoice.number;
+        document.getElementById('printInvoiceDate').textContent = new Date(invoice.date).toLocaleString();
+        
+        // Shop info
+        document.getElementById('printShopName').textContent = shop.name;
+        document.getElementById('printShopEmail').textContent = shop.email || '';
+        
+        // Split address into two lines
+        document.getElementById('printShopAddressLine1').textContent = shop.address || '';
+        const cityStateZip = [shop.city, shop.state, shop.zipCode].filter(x => x).join(' ');
+        document.getElementById('printShopAddressLine2').textContent = cityStateZip;
+        
+        document.getElementById('printShopPhone').textContent = shop.phone || '';
+        
+        // Handle shop logo
+        if (shop.logoPath && shop.logoPath.trim() !== '') {
+            document.getElementById('printShopLogo').src = shop.logoPath;
+            document.getElementById('printShopLogo').style.display = 'block';
+        } else {
+            document.getElementById('printShopLogo').style.display = 'none';
+        }
+        
+        // Customer info (no phone)
+        document.getElementById('printCustomerName').textContent = customer.name;
+        
+        // Populate items table
+        const itemsBody = document.getElementById('printInvoiceItems');
+        itemsBody.innerHTML = '';
+        items.forEach(item => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${item.name}</td>
+                <td>${item.type || ''}</td>
+                <td>${item.quantity}</td>
+                <td>$${item.unitPrice.toFixed(2)}</td>
+                <td>$${item.totalPrice.toFixed(2)}</td>
+            `;
+            itemsBody.appendChild(row);
+        });
+        
+        // Populate totals
+        document.getElementById('printSubtotal').textContent = '$' + totals.subtotal.toFixed(2);
+        document.getElementById('printTax').textContent = '$' + totals.tax.toFixed(2);
+        document.getElementById('printDiscount').textContent = '$' + totals.discount.toFixed(2);
+        document.getElementById('printTotal').textContent = '$' + totals.total.toFixed(2);
+        
+        // Populate payment info
+        document.getElementById('printPaymentStatus').textContent = payment.status;
+        
+        // Extract payment method names from objects
+        const paymentMethodNames = payment.methods.map(pm => {
+            if (typeof pm === 'string') {
+                return pm;
+            } else if (pm.method) {
+                // Format: "Method ($Amount)"
+                return `${pm.method} ($${pm.amount.toFixed(2)})`;
+            }
+            return 'Unknown';
+        });
+        document.getElementById('printPaymentMethod').textContent = paymentMethodNames.join(', ');
+        
+        if (payment.balance > 0) {
+            document.getElementById('printBalance').textContent = '$' + payment.balance.toFixed(2);
+            document.getElementById('printBalanceRow').style.display = 'block';
+        } else {
+            document.getElementById('printBalanceRow').style.display = 'none';
+        }
+        
+        document.getElementById('printCashier').textContent = invoice.createdBy;
+        
+        // Print using hidden template (same method as Repair page)
+        const printContent = document.getElementById('invoicePrintTemplate').innerHTML;
+        const originalContent = document.body.innerHTML;
+        
+        // Replace body content with print content
+        document.body.innerHTML = printContent;
+        
+        // Trigger print
+        window.print();
+        
+        // Restore original content
+        document.body.innerHTML = originalContent;
+        
+        // Reinitialize the page (reload to restore all event handlers)
+        location.reload();
+    }
+    
+    // Modal functions for adding new items
+    function showAddRepairModal() {
+        $('#repairIframe').attr('src', '@Url.Action("Create", "Repairs")');
+        $('#addRepairModal').modal('show');
+    }
+    
+    function showAddDeviceModal() {
+        // Load device form via AJAX instead of iframe since it returns partial view
+        $.get('@Url.Action("Create", "Devices")', function(html) {
+            $('#deviceIframe').parent().html(html);
+            $('#addDeviceModal').modal('show');
+        }).fail(function() {
+            alert('Error loading device form');
+        });
+    }
+    
+    function showAddInventoryModal() {
+        // Inventory uses API route - redirect to Inventory Index page in iframe
+        $('#inventoryIframe').attr('src', '@Url.Action("Index", "Inventory")');
+        $('#addInventoryModal').modal('show');
+    }
+    
+    // Inventory Tab Functions
+    function loadInventoryDropdowns() {
+        // Load Brands
+        $.ajax({
+            url: '@Url.Action("GetBrands", "Lookup")',
+            type: 'GET',
+            success: function(brands) {
+                const brandSelect = $('#inventoryBrand');
+                brandSelect.empty();
+                brandSelect.append('<option value="">All Brands</option>');
+                brands.forEach(function(brand) {
+                    brandSelect.append('<option value="' + brand.id + '">' + brand.name + '</option>');
+                });
+            },
+            error: function() {
+                console.error('Error loading brands');
+            }
+        });
+        
+        // Load Device Categories
+        $.ajax({
+            url: '@Url.Action("GetDeviceCategories", "Lookup")',
+            type: 'GET',
+            success: function(categories) {
+                const categorySelect = $('#inventoryDeviceCategory');
+                categorySelect.empty();
+                categorySelect.append('<option value="">All Device Categories</option>');
+                categories.forEach(function(category) {
+                    categorySelect.append('<option value="' + category.id + '">' + category.name + '</option>');
+                });
+            },
+            error: function() {
+                console.error('Error loading device categories');
+            }
+        });
+        
+        // Load Inventory Categories
+        $.ajax({
+            url: '@Url.Action("GetInventoryCategories", "Lookup")',
+            type: 'GET',
+            success: function(categories) {
+                const invCategorySelect = $('#inventoryCategory');
+                invCategorySelect.empty();
+                invCategorySelect.append('<option value="">All Categories</option>');
+                categories.forEach(function(category) {
+                    invCategorySelect.append('<option value="' + category.id + '">' + category.name + '</option>');
+                });
+            },
+            error: function() {
+                console.error('Error loading inventory categories');
+            }
+        });
+    }
+    
+    function onInventoryBrandChange() {
+        const brandId = $('#inventoryBrand').val();
+        const categoryId = $('#inventoryDeviceCategory').val();
+        
+        if (!brandId && !categoryId) {
+            $('#inventoryModel').empty();
+            $('#inventoryModel').append('<option value="">All Models</option>');
+            return;
+        }
+        
+        // Load models based on brand and/or category
+        $.ajax({
+            url: '@Url.Action("GetDeviceModels", "Lookup")',
+            type: 'GET',
+            data: { 
+                brandId: brandId || null,
+                categoryId: categoryId || null
+            },
+            success: function(models) {
+                const modelSelect = $('#inventoryModel');
+                modelSelect.empty();
+                modelSelect.append('<option value="">All Models</option>');
+                models.forEach(function(model) {
+                    modelSelect.append('<option value="' + model.id + '">' + model.name + '</option>');
+                });
+            },
+            error: function() {
+                console.error('Error loading models');
+            }
+        });
+    }
+    
+    function onInventoryDeviceCategoryChange() {
+        onInventoryBrandChange(); // Reload models when category changes
+    }
+    
+    function searchInventoryItems() {
+        const brandId = $('#inventoryBrand').val();
+        const deviceCategoryId = $('#inventoryDeviceCategory').val();
+        const modelId = $('#inventoryModel').val();
+        const inventoryCategoryId = $('#inventoryCategory').val();
+        
+        const resultsContainer = $('#inventoryResults');
+        resultsContainer.html('<div class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Searching inventory...</div>');
+        
+        $.ajax({
+            url: '@Url.Action("SearchInventory", "POS")',
+            type: 'GET',
+            data: {
+                brandId: brandId || null,
+                deviceCategoryId: deviceCategoryId || null,
+                modelId: modelId || null,
+                inventoryCategoryId: inventoryCategoryId || null
+            },
+            success: function(response) {
+                if (response.success && response.data && response.data.length > 0) {
+                    displayInventoryResults(response.data);
+                } else {
+                    resultsContainer.html(`
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-inbox" style="font-size: 48px; opacity: 0.3;"></i>
+                            <p class="mt-2">No inventory items found matching your criteria</p>
+                        </div>
+                    `);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Inventory search error:', xhr.responseText);
+                const errorMsg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : error;
+                resultsContainer.html(`
+                    <div class="text-center text-danger py-4">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px;"></i>
+                        <p class="mt-2">Error searching inventory</p>
+                        <small>${errorMsg}</small>
+                    </div>
+                `);
+            }
+        });
+    }
+    
+    function displayInventoryResults(items) {
+        const container = $('#inventoryResults');
+        container.empty();
+        
+        if (items.length === 0) {
+            container.html(`
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-inbox" style="font-size: 48px; opacity: 0.3;"></i>
+                    <p class="mt-2">No inventory items found</p>
+                </div>
+            `);
+            return;
+        }
+        
+        const resultsHtml = '<div class="row">';
+        container.append(resultsHtml);
+        
+        items.forEach(function(item, index) {
+            const itemId = 'inv_' + item.id + '_' + index;
+            const stock = item.stock || 0;
+            const price = parseFloat(item.price || 0).toFixed(2);
+            
+            const card = $(`
+                <div class="col-md-6 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="card-title mb-0">${item.name}</h6>
+                                <span class="badge bg-success">Stock: ${stock}</span>
+                            </div>
+                            <p class="card-text small text-muted mb-2">
+                                ${item.description || ''}
+                                ${item.sku ? '<br><strong>SKU:</strong> ' + item.sku : ''}
+                            </p>
+                            <div class="row g-2 mb-2">
+                                <div class="col-6">
+                                    <label class="form-label small mb-1">Quantity</label>
+                                    <input type="number" class="form-control form-control-sm qty-input" 
+                                           id="qty_${itemId}" 
+                                           value="1" 
+                                           min="1" 
+                                           data-max="${stock}">
+                                    <small class="text-muted">Max: ${stock}</small>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small mb-1">Price</label>
+                                    <input type="number" class="form-control form-control-sm" 
+                                           id="price_${itemId}" 
+                                           value="${price}" 
+                                           min="0" 
+                                           step="0.01">
+                                </div>
+                            </div>
+                            <button class="btn btn-success btn-sm w-100" 
+                                    onclick="addInventoryItemToCart('${itemId}', ${item.id}, '${item.name.replace(/'/g, "\\'")}',' ${item.description ? item.description.replace(/'/g, "\\'"): ''}', '${item.sku || ''}')">
+                                <i class="fas fa-cart-plus me-1"></i>Add to Cart
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `);
+            
+            // Add validation on quantity input change
+            card.find('#qty_' + itemId).on('input change', function() {
+                const val = parseInt($(this).val());
+                const max = parseInt($(this).attr('data-max'));
+                
+                if (val > max) {
+                    $(this).val(max);
+                    alert('Quantity cannot exceed available stock (' + max + ')');
+                } else if (val < 1) {
+                    $(this).val(1);
+                }
+            });
+            
+            container.append(card);
+        });
+    }
+    
+    function addInventoryItemToCart(itemId, inventoryId, name, description, sku) {
+        const qtyInput = $('#qty_' + itemId);
+        const priceInput = $('#price_' + itemId);
+        
+        const quantity = parseInt(qtyInput.val());
+        const price = parseFloat(priceInput.val());
+        const maxQty = parseInt(qtyInput.attr('data-max'));
+        
+        // Validation
+        if (!quantity || quantity < 1) {
+            alert('Please enter a valid quantity (minimum 1)');
+            qtyInput.focus();
+            return;
+        }
+        
+        if (quantity > maxQty) {
+            alert('Quantity cannot exceed available stock (' + maxQty + ')');
+            qtyInput.focus();
+            return;
+        }
+        
+        if (!price || price < 0) {
+            alert('Please enter a valid price (minimum 0)');
+            priceInput.focus();
+            return;
+        }
+        
+        // Add to cart
+        addToCart({
+            Id: 'inventory_' + inventoryId,
+            Name: name,
+            Description: description,
+            Price: price,
+            OriginalPrice: price,
+            Type: 'Inventory',
+            quantity: quantity,
+            SKU: sku,
+            Stock: maxQty,
+            IsTaxable: true
+        });
+        
+        // Show success message
+        alert('Item added to cart successfully!');
+        
+        // Reset quantity to 1
+        qtyInput.val(1);
+        
+        // Refresh inventory cart display
+        displayInventoryCartItems();
+    }
+    
+    function displayInventoryCartItems() {
+        const inventoryItems = cart.filter(item => item.Type === 'Inventory');
+        
+        if (inventoryItems.length === 0) {
+            $('#inventoryCartItems').hide();
+            return;
+        }
+        
+        $('#inventoryCartItems').show();
+        const container = $('#inventoryCartItemsContainer');
+        container.empty();
+        
+        inventoryItems.forEach(function(item, index) {
+            // Find the actual cart index
+            const cartIndex = cart.findIndex(c => c.Id === item.Id);
+            
+            const card = $(`
+                <div class="card mb-2">
+                    <div class="card-body p-3">
+                        <div class="row align-items-center">
+                            <div class="col-md-5">
+                                <h6 class="mb-1">${item.Name}</h6>
+                                <small class="text-muted">${item.Description || ''}</small>
+                            </div>
+                            <div class="col-md-2 text-center">
+                                <small class="text-muted d-block">Quantity</small>
+                                <strong>${item.quantity}</strong>
+                            </div>
+                            <div class="col-md-2 text-center">
+                                <small class="text-muted d-block">Price</small>
+                                <strong>$${parseFloat(item.Price).toFixed(2)}</strong>
+                            </div>
+                            <div class="col-md-2 text-center">
+                                <small class="text-muted d-block">Total</small>
+                                <strong>$${(item.quantity * item.Price).toFixed(2)}</strong>
+                            </div>
+                            <div class="col-md-1 text-end">
+                                <button class="btn btn-sm btn-danger" onclick="removeInventoryItemFromCart(${cartIndex})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `);
+            
+            container.append(card);
+        });
+    }
+    
+    function removeInventoryItemFromCart(index) {
+        cart.splice(index, 1);
+        updateCart();
+        saveCartToStorage();
+        displayInventoryCartItems();
+    }
+    
+    function clearInventoryFilters() {
+        $('#inventoryBrand').val('');
+        $('#inventoryDeviceCategory').val('');
+        $('#inventoryModel').val('');
+        $('#inventoryCategory').val('');
+        
+        // Clear models dropdown
+        $('#inventoryModel').empty();
+        $('#inventoryModel').append('<option value="">All Models</option>');
+        
+        // Clear results
+        $('#inventoryResults').html(`
+            <div class="text-center text-muted py-4">
+                <i class="fas fa-box" style="font-size: 48px; opacity: 0.3;"></i>
+                <p class="mt-2">Select filters and click "Search Inventory" to find items</p>
+            </div>
+        `);
+        
+        // Clear cart display
+        displayInventoryCartItems();
+    }
+    
+    // Device Tab Functions
+    function loadDeviceDropdowns() {
+        // Load Brands
+        $.ajax({
+            url: '@Url.Action("GetBrands", "Lookup")',
+            type: 'GET',
+            success: function(brands) {
+                const brandSelect = $('#deviceBrand');
+                brandSelect.empty();
+                brandSelect.append('<option value="">All Brands</option>');
+                brands.forEach(function(brand) {
+                    brandSelect.append('<option value="' + brand.id + '">' + brand.name + '</option>');
+                });
+            },
+            error: function() {
+                console.error('Error loading brands');
+            }
+        });
+        
+        // Load Device Categories
+        $.ajax({
+            url: '@Url.Action("GetDeviceCategories", "Lookup")',
+            type: 'GET',
+            success: function(categories) {
+                const categorySelect = $('#deviceCategory');
+                categorySelect.empty();
+                categorySelect.append('<option value="">All Device Categories</option>');
+                categories.forEach(function(category) {
+                    categorySelect.append('<option value="' + category.id + '">' + category.name + '</option>');
+                });
+            },
+            error: function() {
+                console.error('Error loading device categories');
+            }
+        });
+    }
+    
+    function onDeviceBrandChange() {
+        const brandId = $('#deviceBrand').val();
+        const categoryId = $('#deviceCategory').val();
+        
+        if (!brandId && !categoryId) {
+            $('#deviceModel').empty();
+            $('#deviceModel').append('<option value="">All Models</option>');
+            return;
+        }
+        
+        // Load models based on brand and/or category
+        $.ajax({
+            url: '@Url.Action("GetDeviceModels", "Lookup")',
+            type: 'GET',
+            data: { 
+                brandId: brandId || null,
+                categoryId: categoryId || null
+            },
+            success: function(models) {
+                const modelSelect = $('#deviceModel');
+                modelSelect.empty();
+                modelSelect.append('<option value="">All Models</option>');
+                models.forEach(function(model) {
+                    modelSelect.append('<option value="' + model.id + '">' + model.name + '</option>');
+                });
+            },
+            error: function() {
+                console.error('Error loading models');
+            }
+        });
+    }
+    
+    function onDeviceCategoryChange() {
+        onDeviceBrandChange(); // Reload models when category changes
+    }
+    
+    function searchDeviceItems() {
+        const brandId = $('#deviceBrand').val();
+        const deviceCategoryId = $('#deviceCategory').val();
+        const modelId = $('#deviceModel').val();
+        const network = $('#deviceNetwork').val();
+        const gb = $('#deviceGB').val();
+        const scratches = $('#deviceScratches').val();
+        const imei = $('#deviceIMEI').val().trim();
+        
+        const resultsContainer = $('#deviceResults');
+        resultsContainer.html('<div class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Searching devices...</div>');
+        
+        $.ajax({
+            url: '@Url.Action("SearchDevices", "POS")',
+            type: 'GET',
+            data: {
+                brandId: brandId || null,
+                deviceCategoryId: deviceCategoryId || null,
+                modelId: modelId || null,
+                network: network || null,
+                gb: gb || null,
+                scratches: scratches || null,
+                imei: imei || null
+            },
+            success: function(response) {
+                if (response.success && response.data && response.data.length > 0) {
+                    displayDeviceResults(response.data);
+                } else {
+                    resultsContainer.html(`
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>No devices found matching your criteria.
+                        </div>
+                    `);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error searching devices:', error);
+                resultsContainer.html(`
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Error searching devices. Please try again.
+                    </div>
+                `);
+            }
+        });
+    }
+    
+    function displayDeviceResults(devices) {
+        const resultsContainer = $('#deviceResults');
+        resultsContainer.empty();
+        
+        devices.forEach(function(device) {
+            const card = $(`
+                <div class="card mb-3" style="border: 2px solid #dee2e6;">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h6 class="mb-2">${device.name || 'Device'}</h6>
+                                <p class="mb-1 small">
+                                    <strong>IMEI:</strong> ${device.imei || 'N/A'} | 
+                                    <strong>Model:</strong> ${device.modelName || 'N/A'} |
+                                    <strong>Brand:</strong> ${device.brandName || 'N/A'}
+                                </p>
+                                <p class="mb-1 small">
+                                    <strong>Network:</strong> ${device.network || 'N/A'} | 
+                                    <strong>Storage:</strong> ${device.gb || 'N/A'} GB | 
+                                    <strong>Scratches:</strong> ${device.scratches || 'N/A'}
+                                </p>
+                                <p class="mb-2 small text-muted">
+                                    <strong>Condition:</strong> ${device.condition || 'N/A'} | 
+                                    <strong>Stock:</strong> ${device.stock || 0}
+                                </p>
+                                <p class="mb-0">
+                                    <span class="text-muted small">Buying Price:</span> 
+                                    <strong class="text-primary">$${(device.buyingPrice || 0).toFixed(2)}</strong>
+                                </p>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-2">
+                                    <label class="form-label small mb-1">Selling Price</label>
+                                    <input type="number" class="form-control form-control-sm" 
+                                           id="devicePrice_${device.id}" 
+                                           value="${device.sellingPrice || device.buyingPrice || 0}" 
+                                           min="0" step="0.01">
+                                    <small class="text-muted">Max: $${(device.sellingPrice || 0).toFixed(2)}</small>
+                                </div>
+                                <button class="btn btn-success btn-sm w-100" 
+                                        onclick="addDeviceItemToCart(${device.id})">
+                                    <i class="fas fa-cart-plus me-1"></i>Add to Cart
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `);
+            
+            resultsContainer.append(card);
+        });
+    }
+    
+    function addDeviceItemToCart(deviceId) {
+        const priceInput = $(`#devicePrice_${deviceId}`);
+        const price = parseFloat(priceInput.val());
+        
+        if (isNaN(price) || price < 0) {
+            alert('Please enter a valid price');
+            return;
+        }
+        
+        // Find device in results
+        const resultsContainer = $('#deviceResults');
+        const deviceCard = resultsContainer.find(`input#devicePrice_${deviceId}`).closest('.card');
+        
+        // Extract device info from card
+        const deviceName = deviceCard.find('h6').text();
+        const deviceInfo = deviceCard.find('.small').first().text();
+        
+        // Check if already in cart
+        const existingIndex = cart.findIndex(item => item.Id === `device_${deviceId}` && item.Type === 'Device');
+        
+        if (existingIndex >= 0) {
+            alert('This device is already in the cart');
+            return;
+        }
+        
+        // Add to cart
+        const deviceItem = {
+            Id: `device_${deviceId}`,
+            Type: 'Device',
+            Name: deviceName,
+            Description: deviceInfo,
+            Price: price,
+            OriginalPrice: price,
+            quantity: 1,
+            ReferenceId: deviceId,
+            IsTaxable: true
+        };
+        
+        cart.push(deviceItem);
+        updateCart();
+        saveCartToStorage();
+        
+        alert('Device added to cart!');
+        
+        // Refresh device cart display
+        displayDeviceCartItems();
+    }
+    
+    function displayDeviceCartItems() {
+        const deviceItems = cart.filter(item => item.Type === 'Device');
+        
+        if (deviceItems.length === 0) {
+            $('#deviceCartItems').hide();
+            return;
+        }
+        
+        $('#deviceCartItems').show();
+        const container = $('#deviceCartItemsContainer');
+        container.empty();
+        
+        deviceItems.forEach(function(item, index) {
+            const actualIndex = cart.findIndex(cartItem => cartItem.Id === item.Id);
+            const card = $(`
+                <div class="card mb-2" style="border: 1px solid #dee2e6;">
+                    <div class="card-body p-2">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>${item.Name}</strong><br>
+                                <small class="text-muted">${item.Description || ''}</small><br>
+                                <span class="text-success">$${(item.Price || 0).toFixed(2)}</span>
+                            </div>
+                            <button class="btn btn-danger btn-sm" onclick="removeDeviceFromCart(${actualIndex})">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `);
+            
+            container.append(card);
+        });
+    }
+    
+    function removeDeviceFromCart(index) {
+        cart.splice(index, 1);
+        updateCart();
+        saveCartToStorage();
+        displayDeviceCartItems();
+    }
+    
+    function clearDeviceFilters() {
+        $('#deviceBrand').val('');
+        $('#deviceCategory').val('');
+        $('#deviceModel').val('');
+        $('#deviceNetwork').val('');
+        $('#deviceGB').val('');
+        $('#deviceScratches').val('');
+        $('#deviceIMEI').val('');
+        
+        // Clear models dropdown
+        $('#deviceModel').empty();
+        $('#deviceModel').append('<option value="">All Models</option>');
+        
+        // Clear results
+        $('#deviceResults').html(`
+            <div class="text-center text-muted py-4">
+                <i class="fas fa-mobile-alt" style="font-size: 48px; opacity: 0.3;"></i>
+                <p class="mt-2">Select filters and click "Search Devices" to find items</p>
+            </div>
+        `);
+        
+        // Clear cart display
+        displayDeviceCartItems();
+    }
+    
+    // Search Results Modal Functions
+    function showSearchResultsModal(results, searchType) {
+        const modalBody = $('#searchResultsModalBody');
+        modalBody.empty();
+        
+        if (!results || results.length === 0) {
+            modalBody.html('<p class="text-center text-muted">No results found</p>');
+        } else {
+            const resultHtml = results.map(item => createSearchResultCard(item, searchType)).join('');
+            modalBody.html(resultHtml);
+        }
+        
+        $('#searchResultsModal').modal('show');
+    }
+    
+    function createSearchResultCard(item, type) {
+        let cardHtml = '';
+        
+        if (type === 'Device') {
+            cardHtml = `
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h6 class="mb-1">${item.Name || 'Device'}</h6>
+                                <p class="mb-1 small text-muted">
+                                    <strong>IMEI:</strong> ${item.IMEI || 'N/A'} | 
+                                    <strong>Model:</strong> ${item.Model || 'N/A'} |
+                                    <strong>Condition:</strong> ${item.Condition || 'N/A'}
+                                </p>
+                                <p class="mb-0"><strong class="text-success">$${(item.Price || 0).toFixed(2)}</strong></p>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <button class="btn btn-primary btn-sm" onclick="addSearchResultToCart('${item.Id}', 'Device')">
+                                    <i class="fas fa-cart-plus me-1"></i>Add to Cart
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else if (type === 'Repair') {
+            cardHtml = `
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h6 class="mb-1">Repair #${item.RepairNumber || item.Id}</h6>
+                                <p class="mb-1 small text-muted">
+                                    <strong>Device:</strong> ${item.DeviceName || 'N/A'} |
+                                    <strong>Issue:</strong> ${item.Issue || 'N/A'}
+                                </p>
+                                <p class="mb-0"><strong class="text-success">$${(item.Price || item.Cost || 0).toFixed(2)}</strong></p>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <button class="btn btn-primary btn-sm" onclick="addSearchResultToCart('${item.Id}', 'Repair')">
+                                    <i class="fas fa-cart-plus me-1"></i>Add to Cart
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } else { // Inventory
+            cardHtml = `
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h6 class="mb-1">${item.Name || 'Item'}</h6>
+                                <p class="mb-1 small text-muted">
+                                    <strong>SKU:</strong> ${item.SKU || 'N/A'} |
+                                    <strong>Brand:</strong> ${item.Brand || 'N/A'} |
+                                    <strong>Stock:</strong> ${item.Stock || 0}
+                                </p>
+                                <p class="mb-0"><strong class="text-success">$${(item.Price || 0).toFixed(2)}</strong></p>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <button class="btn btn-primary btn-sm" onclick="addSearchResultToCart('${item.Id}', 'Inventory')">
+                                    <i class="fas fa-cart-plus me-1"></i>Add to Cart
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        return cardHtml;
+    }
+    
+    function addSearchResultToCart(itemId, itemType) {
+        // Find the item in the products array or fetch it
+        $.ajax({
+            url: '@Url.Action("SearchItemsTab", "POS")',
+            type: 'GET',
+            data: { query: itemId, type: itemType },
+            success: function(response) {
+                if (response.success && response.data && response.data.length > 0) {
+                    const product = response.data[0];
+                    addToCart(product);
+                    $('#searchResultsModal').modal('hide');
+                    alert('Item added to cart!');
+                } else {
+                    alert('Error: Item not found');
+                }
+            },
+            error: function(xhr) {
+                console.error('Error adding item:', xhr);
+                alert('Error adding item to cart');
+            }
+        });
+    }
+    
+    // Listen for messages from iframes when items are created
+    window.addEventListener('message', function(event) {
+        if (event.data.type === 'itemCreated') {
+            // Close the modal
+            $('.modal').modal('hide');
+            // Show success message
+            alert(event.data.message || 'Item created successfully!');
+            // Refresh the entire page to show the new item
+            location.reload();
+        }
+    });
 </script>
 
+@* Include shared invoice edit modal *@
+@await Html.PartialAsync("_InvoiceEditModal")
+}

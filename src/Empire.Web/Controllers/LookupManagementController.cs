@@ -3,6 +3,8 @@ using Empire.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Empire.Web.Authorization;
 using Empire.Domain.Entities;
+using Empire.Application.Interfaces;
+using Empire.Application.DTOs.Item;
 
 namespace Empire.Web.Controllers;
 
@@ -10,10 +12,12 @@ namespace Empire.Web.Controllers;
 public class LookupManagementController : Controller
 {
     private readonly EmpireDbContext _context;
+    private readonly IItemService _itemService;
 
-    public LookupManagementController(EmpireDbContext context)
+    public LookupManagementController(EmpireDbContext context, IItemService itemService)
     {
         _context = context;
+        _itemService = itemService;
     }
 
     public IActionResult Index()
@@ -787,6 +791,86 @@ public class LookupManagementController : Controller
     }
 
     #endregion
+
+    #region Item Management
+
+    [HttpGet]
+    public async Task<IActionResult> GetItems()
+    {
+        try
+        {
+            var items = await _itemService.GetAllItemsAsync();
+            return Json(new { success = true, data = items });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = ex.Message });
+        }
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> CreateItem([FromBody] CreateItemRequest request)
+    {
+        try
+        {
+            var item = await _itemService.CreateItemAsync(request);
+            return Json(new { success = true, message = "Item created successfully.", data = new { item.Id, item.Name } });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Json(new { success = false, message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = $"Error creating item: {ex.Message}" });
+        }
+    }
+
+    [HttpPut]
+    public async Task<IActionResult> UpdateItem(int id, [FromBody] UpdateItemRequest request)
+    {
+        try
+        {
+            await _itemService.UpdateItemAsync(id, request);
+            return Json(new { success = true, message = "Item updated successfully." });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return Json(new { success = false, message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Json(new { success = false, message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = $"Error updating item: {ex.Message}" });
+        }
+    }
+
+    [HttpDelete]
+    public async Task<IActionResult> DeleteItem(int id)
+    {
+        try
+        {
+            await _itemService.DeleteItemAsync(id);
+            return Json(new { success = true, message = "Item deleted successfully." });
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return Json(new { success = false, message = ex.Message });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Json(new { success = false, message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return Json(new { success = false, message = $"Error deleting item: {ex.Message}" });
+        }
+    }
+
+    #endregion
 }
 
 #region Request Models
@@ -902,4 +986,3 @@ public class UpdateCategoryRequest
 }
 
 #endregion
-

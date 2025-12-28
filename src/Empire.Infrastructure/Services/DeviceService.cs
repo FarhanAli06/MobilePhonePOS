@@ -27,6 +27,7 @@ public class DeviceService : IDeviceService
             DeviceCategoryId = request.DeviceCategoryId, // Updated to use lookup ID
             DeviceModelId = request.DeviceModelId, // Updated to use lookup ID
             IMEISerialNumber = request.IMEISerialNumber,
+            GB = request.GB,
             BatteryHealthPercentage = request.BatteryHealthPercentage,
             NetworkStatus = request.NetworkStatus,
             ScratchesCondition = request.ScratchesCondition,
@@ -50,11 +51,53 @@ public class DeviceService : IDeviceService
         return device != null ? MapToDeviceSelectionDto(device) : null;
     }
 
-    public Task<IEnumerable<DeviceSelectionDto>> GetDevicesAsync(DeviceFilterRequest filter)
+    public async Task<IEnumerable<DeviceSelectionDto>> GetDevicesAsync(DeviceFilterRequest filter)
     {
-        // Note: This method needs to be updated for new lookup structure
-        // For now, return empty list
-        return Task.FromResult<IEnumerable<DeviceSelectionDto>>(new List<DeviceSelectionDto>());
+        // Get all devices for the shop first
+        if (!filter.ShopId.HasValue)
+            return Enumerable.Empty<DeviceSelectionDto>();
+            
+        var devices = await _deviceRepository.GetDevicesByShopAsync(filter.ShopId.Value);
+        
+        // Apply filters
+        var query = devices.AsEnumerable();
+        
+        if (filter.IsAvailableForSale.HasValue)
+        {
+            query = query.Where(d => d.IsAvailableForSale == filter.IsAvailableForSale.Value);
+        }
+        
+        if (filter.IsSold.HasValue)
+        {
+            query = query.Where(d => d.IsSold == filter.IsSold.Value);
+        }
+        
+        if (filter.BrandId.HasValue)
+        {
+            query = query.Where(d => d.BrandId == filter.BrandId.Value);
+        }
+        
+        if (filter.DeviceCategoryId.HasValue)
+        {
+            query = query.Where(d => d.DeviceCategoryId == filter.DeviceCategoryId.Value);
+        }
+        
+        if (filter.DeviceModelId.HasValue)
+        {
+            query = query.Where(d => d.DeviceModelId == filter.DeviceModelId.Value);
+        }
+        
+        if (!string.IsNullOrEmpty(filter.NetworkStatus))
+        {
+            query = query.Where(d => d.NetworkStatus == filter.NetworkStatus);
+        }
+        
+        if (!string.IsNullOrEmpty(filter.ScratchesCondition))
+        {
+            query = query.Where(d => d.ScratchesCondition == filter.ScratchesCondition);
+        }
+        
+        return query.Select(MapToDeviceSelectionDto);
     }
 
     public async Task<IEnumerable<DeviceSelectionDto>> GetDevicesByShopAsync(int shopId)
@@ -63,7 +106,7 @@ public class DeviceService : IDeviceService
         return devices.Select(MapToDeviceSelectionDto);
     }
 
-    public Task<IEnumerable<DeviceSelectionDto>> GetAvailableDevicesForSaleAsync(int shopId)
+    public async Task<IEnumerable<DeviceSelectionDto>> GetAvailableDevicesForSaleAsync(int shopId)
     {
         var filter = new DeviceFilterRequest
         {
@@ -71,21 +114,17 @@ public class DeviceService : IDeviceService
             IsAvailableForSale = true,
             IsSold = false
         };
-        // Note: This method needs to be updated for new lookup structure
-        // For now, return empty list
-        return Task.FromResult<IEnumerable<DeviceSelectionDto>>(new List<DeviceSelectionDto>());
+        return await GetDevicesAsync(filter);
     }
 
-    public Task<IEnumerable<DeviceSelectionDto>> GetSoldDevicesAsync(int shopId)
+    public async Task<IEnumerable<DeviceSelectionDto>> GetSoldDevicesAsync(int shopId)
     {
         var filter = new DeviceFilterRequest
         {
             ShopId = shopId,
             IsSold = true
         };
-        // Note: This method needs to be updated for new lookup structure
-        // For now, return empty list
-        return Task.FromResult<IEnumerable<DeviceSelectionDto>>(new List<DeviceSelectionDto>());
+        return await GetDevicesAsync(filter);
     }
 
     public async Task<DeviceSelectionDto> UpdateDeviceAsync(int id, UpdateDeviceRequest request, int userId)
@@ -94,9 +133,12 @@ public class DeviceService : IDeviceService
         if (device == null)
             throw new ArgumentException("Device not found");
 
-        // Note: Brand, Category, Model updates would require lookup table IDs
-        // For now, only update the properties that still exist
+        // Update all device properties
+        device.BrandId = request.BrandId;
+        device.DeviceCategoryId = request.DeviceCategoryId;
+        device.DeviceModelId = request.DeviceModelId;
         device.IMEISerialNumber = request.IMEISerialNumber;
+        device.GB = request.GB;
         device.BatteryHealthPercentage = request.BatteryHealthPercentage;
         device.NetworkStatus = request.NetworkStatus;
         device.ScratchesCondition = request.ScratchesCondition;
@@ -237,6 +279,7 @@ public class DeviceService : IDeviceService
             Year = device.DeviceModel?.Year,
             DeviceType = DeviceType.Phone, // Default for now, will be determined by category
             IMEISerialNumber = device.IMEISerialNumber,
+            GB = device.GB,
             BatteryHealthPercentage = device.BatteryHealthPercentage,
             NetworkStatus = device.NetworkStatus,
             ScratchesCondition = device.ScratchesCondition,

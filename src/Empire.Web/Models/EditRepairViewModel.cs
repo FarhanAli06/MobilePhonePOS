@@ -15,11 +15,6 @@ public class EditRepairViewModel
     [Display(Name = "Device Model")]
     public int? DeviceModelId { get; set; }
 
-    [Required(ErrorMessage = "Issue is required")]
-    [StringLength(200, ErrorMessage = "Issue cannot exceed 200 characters")]
-    [Display(Name = "Issue")]
-    public string Issue { get; set; } = string.Empty;
-
     [StringLength(1000, ErrorMessage = "Description cannot exceed 1000 characters")]
     [Display(Name = "Description")]
     public string? Description { get; set; }
@@ -40,6 +35,9 @@ public class EditRepairViewModel
     [Range(0, 99999.99, ErrorMessage = "Cost must be between 0 and 99,999.99")]
     [Display(Name = "Cost")]
     public decimal Cost { get; set; }
+
+    // Inventory parts used in repair
+    public List<int>? InventoryParts { get; set; }
 
     // Read-only display properties
     public string CustomerName { get; set; } = string.Empty;

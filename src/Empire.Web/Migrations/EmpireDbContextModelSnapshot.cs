@@ -57,11 +57,6 @@ namespace Empire.Web.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DisplayOrder");
-
-                    b.HasIndex("Name")
-                        .IsUnique();
-
                     b.ToTable("Brands");
                 });
 
@@ -87,14 +82,10 @@ namespace Empire.Web.Migrations
                         .HasColumnType("nvarchar(200)");
 
                     b.Property<int>("DisplayOrder")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
+                        .HasColumnType("int");
 
                     b.Property<bool>("IsActive")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(true);
+                        .HasColumnType("bit");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
@@ -112,13 +103,48 @@ namespace Empire.Web.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Name");
-
                     b.HasIndex("ParentCategoryId");
 
-                    b.HasIndex("CategoryType", "DisplayOrder");
-
                     b.ToTable("Categories");
+                });
+
+            modelBuilder.Entity("Empire.Domain.Entities.Company", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedDateUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("ModifiedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ModifiedDateUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("Rank")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Companies");
                 });
 
             modelBuilder.Entity("Empire.Domain.Entities.Customer", b =>
@@ -202,8 +228,14 @@ namespace Empire.Web.Migrations
                     b.Property<int>("BrandId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("BrandId1")
+                        .HasColumnType("int");
+
                     b.Property<decimal?>("BuyingPrice")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("CompanyId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
@@ -211,8 +243,18 @@ namespace Empire.Web.Migrations
                     b.Property<int>("DeviceCategoryId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("DeviceCategoryId1")
+                        .HasColumnType("int");
+
                     b.Property<int>("DeviceModelId")
                         .HasColumnType("int");
+
+                    b.Property<int?>("DeviceModelId1")
+                        .HasColumnType("int");
+
+                    b.Property<string>("GB")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("IMEISerialNumber")
                         .IsRequired()
@@ -267,15 +309,21 @@ namespace Empire.Web.Migrations
 
                     b.HasIndex("BrandId");
 
+                    b.HasIndex("BrandId1");
+
+                    b.HasIndex("CompanyId");
+
                     b.HasIndex("DeviceCategoryId");
+
+                    b.HasIndex("DeviceCategoryId1");
 
                     b.HasIndex("DeviceModelId");
 
-                    b.HasIndex("IMEISerialNumber");
+                    b.HasIndex("DeviceModelId1");
+
+                    b.HasIndex("ShopId");
 
                     b.HasIndex("SoldToCustomerId");
-
-                    b.HasIndex("ShopId", "BrandId", "DeviceModelId");
 
                     b.ToTable("Devices");
                 });
@@ -314,11 +362,6 @@ namespace Empire.Web.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("DisplayOrder");
-
-                    b.HasIndex("Name")
-                        .IsUnique();
 
                     b.ToTable("DeviceCategories");
                 });
@@ -372,12 +415,9 @@ namespace Empire.Web.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("BrandId");
+
                     b.HasIndex("DeviceCategoryId");
-
-                    b.HasIndex("DisplayOrder");
-
-                    b.HasIndex("BrandId", "DeviceCategoryId", "Name")
-                        .IsUnique();
 
                     b.ToTable("DeviceModels");
                 });
@@ -445,9 +485,7 @@ namespace Empire.Web.Migrations
 
                     b.HasIndex("DeviceId");
 
-                    b.HasIndex("ShopId", "DeviceType");
-
-                    b.HasIndex("ShopId", "Stock");
+                    b.HasIndex("ShopId");
 
                     b.ToTable("Inventories");
                 });
@@ -493,9 +531,9 @@ namespace Empire.Web.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("InventoryId");
 
-                    b.HasIndex("InventoryId", "AdjustmentDate");
+                    b.HasIndex("UserId");
 
                     b.ToTable("InventoryAdjustments");
                 });
@@ -535,11 +573,6 @@ namespace Empire.Web.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DisplayOrder");
-
-                    b.HasIndex("Name")
-                        .IsUnique();
-
                     b.ToTable("InventoryCategories");
                 });
 
@@ -552,6 +585,9 @@ namespace Empire.Web.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<int>("BrandId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("BrandId1")
                         .HasColumnType("int");
 
                     b.Property<int?>("CategoryId")
@@ -574,7 +610,13 @@ namespace Empire.Web.Migrations
                     b.Property<int>("DeviceCategoryId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("DeviceCategoryId1")
+                        .HasColumnType("int");
+
                     b.Property<int>("DeviceModelId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("DeviceModelId1")
                         .HasColumnType("int");
 
                     b.Property<bool>("EnableLowStockNotifications")
@@ -583,11 +625,20 @@ namespace Empire.Web.Migrations
                     b.Property<int>("InventoryCategoryId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("InventoryCategoryId1")
+                        .HasColumnType("int");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
+
+                    b.Property<int?>("ItemId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("MinStockLevel")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("ModifiedDate")
                         .HasColumnType("datetime2");
@@ -603,6 +654,9 @@ namespace Empire.Web.Migrations
                         .HasColumnType("nvarchar(1000)");
 
                     b.Property<int>("ReorderPoint")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ReorderQuantity")
                         .HasColumnType("int");
 
                     b.Property<decimal>("RetailPrice")
@@ -626,22 +680,142 @@ namespace Empire.Web.Migrations
 
                     b.HasIndex("BrandId");
 
+                    b.HasIndex("BrandId1");
+
                     b.HasIndex("CategoryId");
 
                     b.HasIndex("DeviceCategoryId");
 
+                    b.HasIndex("DeviceCategoryId1");
+
                     b.HasIndex("DeviceModelId");
+
+                    b.HasIndex("DeviceModelId1");
 
                     b.HasIndex("InventoryCategoryId");
 
-                    b.HasIndex("SKU")
-                        .IsUnique();
+                    b.HasIndex("InventoryCategoryId1");
 
-                    b.HasIndex("ShopId", "CurrentStock");
+                    b.HasIndex("ItemId");
 
-                    b.HasIndex("ShopId", "BrandId", "DeviceModelId");
+                    b.HasIndex("ShopId");
 
                     b.ToTable("InventoryItems");
+                });
+
+            modelBuilder.Entity("Empire.Domain.Entities.InventoryTransaction", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CreatedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("InventoryItemId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("ModifiedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Reason")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int?>("ReferenceId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ReferenceNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("ReferenceType")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<decimal?>("TotalCost")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("TransactionDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("TransactionType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal?>("UnitCost")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("InventoryItemId");
+
+                    b.HasIndex("ReferenceNumber");
+
+                    b.HasIndex("TransactionDate");
+
+                    b.HasIndex("TransactionType");
+
+                    b.ToTable("InventoryTransactions");
+                });
+
+            modelBuilder.Entity("Empire.Domain.Entities.Item", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("ModifiedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasFilter("[IsDeleted] = 0");
+
+                    b.ToTable("Items");
                 });
 
             modelBuilder.Entity("Empire.Domain.Entities.LookupValue", b =>
@@ -694,12 +868,57 @@ namespace Empire.Web.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.HasIndex("Category", "DisplayOrder");
-
-                    b.HasIndex("Category", "Value")
-                        .IsUnique();
-
                     b.ToTable("LookupValues");
+                });
+
+            modelBuilder.Entity("Empire.Domain.Entities.Payment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedDateUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("ModifiedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ModifiedDateUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PaymentMethod")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("SaleId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TransactionId")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SaleId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Payments");
                 });
 
             modelBuilder.Entity("Empire.Domain.Entities.Repair", b =>
@@ -714,15 +933,23 @@ namespace Empire.Web.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Comments")
-                        .IsRequired()
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int?>("CompanyId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("CompletedDate")
                         .HasColumnType("datetime2");
 
                     b.Property<decimal>("Cost")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("CreatedBy")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("CreatedByUserId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
@@ -731,7 +958,6 @@ namespace Empire.Web.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
@@ -747,10 +973,11 @@ namespace Empire.Web.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
-                    b.Property<string>("Issue")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                    b.Property<int?>("ModifiedBy")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("ModifiedByUserId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("ModifiedDate")
                         .HasColumnType("datetime2");
@@ -777,6 +1004,10 @@ namespace Empire.Web.Migrations
 
                     b.HasIndex("BrandId");
 
+                    b.HasIndex("CompanyId");
+
+                    b.HasIndex("CreatedByUserId");
+
                     b.HasIndex("CustomerId");
 
                     b.HasIndex("DeviceCategoryId");
@@ -785,12 +1016,207 @@ namespace Empire.Web.Migrations
 
                     b.HasIndex("DeviceModelId");
 
-                    b.HasIndex("RepairNumber")
-                        .IsUnique();
+                    b.HasIndex("ModifiedByUserId");
 
                     b.HasIndex("ShopId");
 
                     b.ToTable("Repairs");
+                });
+
+            modelBuilder.Entity("Empire.Domain.Entities.RepairPart", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("InventoryItemId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("ModifiedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RepairId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InventoryItemId");
+
+                    b.HasIndex("RepairId");
+
+                    b.ToTable("RepairParts");
+                });
+
+            modelBuilder.Entity("Empire.Domain.Entities.Sale", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CreatedByUserId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedDateUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("CustomerId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("ModifiedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ModifiedDateUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("PaymentMethod")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("PaymentStatus")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("SaleDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("SaleNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("ShopId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("SubTotal")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TaxAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("CustomerId");
+
+                    b.HasIndex("SaleNumber")
+                        .IsUnique();
+
+                    b.HasIndex("ShopId");
+
+                    b.ToTable("Sales");
+                });
+
+            modelBuilder.Entity("Empire.Domain.Entities.SaleItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("CostPrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedDateUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("InventoryItemId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsCustomItem")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsTaxable")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("ItemName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<DateTime?>("ModifiedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ModifiedDateUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SaleId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("TotalPrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InventoryItemId");
+
+                    b.HasIndex("SaleId");
+
+                    b.ToTable("SaleItems");
                 });
 
             modelBuilder.Entity("Empire.Domain.Entities.Shop", b =>
@@ -861,7 +1287,7 @@ namespace Empire.Web.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("CreatedBy")
+                    b.Property<int>("CreatedByUserId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedDate")
@@ -909,18 +1335,18 @@ namespace Empire.Web.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<decimal>("TotalCost")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("UnitCost")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CreatedBy");
+                    b.HasIndex("CreatedByUserId");
 
-                    b.HasIndex("MovementType");
-
-                    b.HasIndex("InventoryItemId", "CreatedDate");
+                    b.HasIndex("InventoryItemId");
 
                     b.ToTable("StockMovements");
                 });
@@ -975,12 +1401,6 @@ namespace Empire.Web.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Email")
-                        .IsUnique();
-
-                    b.HasIndex("Username")
-                        .IsUnique();
-
                     b.ToTable("Users");
                 });
 
@@ -1020,7 +1440,7 @@ namespace Empire.Web.Migrations
 
                     b.HasIndex("ShopId");
 
-                    b.HasIndex("UserId", "ShopId");
+                    b.HasIndex("UserId");
 
                     b.ToTable("UserShopRoles");
                 });
@@ -1029,8 +1449,7 @@ namespace Empire.Web.Migrations
                 {
                     b.HasOne("Empire.Domain.Entities.Category", "ParentCategory")
                         .WithMany("SubCategories")
-                        .HasForeignKey("ParentCategoryId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .HasForeignKey("ParentCategoryId");
 
                     b.Navigation("ParentCategory");
                 });
@@ -1049,22 +1468,39 @@ namespace Empire.Web.Migrations
             modelBuilder.Entity("Empire.Domain.Entities.Device", b =>
                 {
                     b.HasOne("Empire.Domain.Entities.Brand", "Brand")
-                        .WithMany("Devices")
+                        .WithMany()
                         .HasForeignKey("BrandId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Empire.Domain.Entities.DeviceCategory", "DeviceCategory")
+                    b.HasOne("Empire.Domain.Entities.Brand", null)
                         .WithMany("Devices")
+                        .HasForeignKey("BrandId1");
+
+                    b.HasOne("Empire.Domain.Entities.Company", "Company")
+                        .WithMany("Devices")
+                        .HasForeignKey("CompanyId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Empire.Domain.Entities.DeviceCategory", "DeviceCategory")
+                        .WithMany()
                         .HasForeignKey("DeviceCategoryId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Empire.Domain.Entities.DeviceModel", "DeviceModel")
+                    b.HasOne("Empire.Domain.Entities.DeviceCategory", null)
                         .WithMany("Devices")
+                        .HasForeignKey("DeviceCategoryId1");
+
+                    b.HasOne("Empire.Domain.Entities.DeviceModel", "DeviceModel")
+                        .WithMany()
                         .HasForeignKey("DeviceModelId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("Empire.Domain.Entities.DeviceModel", null)
+                        .WithMany("Devices")
+                        .HasForeignKey("DeviceModelId1");
 
                     b.HasOne("Empire.Domain.Entities.Shop", "Shop")
                         .WithMany("Devices")
@@ -1073,10 +1509,13 @@ namespace Empire.Web.Migrations
                         .IsRequired();
 
                     b.HasOne("Empire.Domain.Entities.Customer", "SoldToCustomer")
-                        .WithMany()
-                        .HasForeignKey("SoldToCustomerId");
+                        .WithMany("Devices")
+                        .HasForeignKey("SoldToCustomerId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Brand");
+
+                    b.Navigation("Company");
 
                     b.Navigation("DeviceCategory");
 
@@ -1092,13 +1531,13 @@ namespace Empire.Web.Migrations
                     b.HasOne("Empire.Domain.Entities.Brand", "Brand")
                         .WithMany("DeviceModels")
                         .HasForeignKey("BrandId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("Empire.Domain.Entities.DeviceCategory", "DeviceCategory")
                         .WithMany("DeviceModels")
                         .HasForeignKey("DeviceCategoryId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Brand");
@@ -1110,8 +1549,7 @@ namespace Empire.Web.Migrations
                 {
                     b.HasOne("Empire.Domain.Entities.Device", "Device")
                         .WithMany()
-                        .HasForeignKey("DeviceId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .HasForeignKey("DeviceId");
 
                     b.HasOne("Empire.Domain.Entities.Shop", "Shop")
                         .WithMany("Inventories")
@@ -1146,32 +1584,53 @@ namespace Empire.Web.Migrations
             modelBuilder.Entity("Empire.Domain.Entities.InventoryItem", b =>
                 {
                     b.HasOne("Empire.Domain.Entities.Brand", "Brand")
-                        .WithMany("InventoryItems")
+                        .WithMany()
                         .HasForeignKey("BrandId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("Empire.Domain.Entities.Brand", null)
+                        .WithMany("InventoryItems")
+                        .HasForeignKey("BrandId1");
 
                     b.HasOne("Empire.Domain.Entities.Category", null)
                         .WithMany("InventoryItems")
                         .HasForeignKey("CategoryId");
 
                     b.HasOne("Empire.Domain.Entities.DeviceCategory", "DeviceCategory")
-                        .WithMany("InventoryItems")
+                        .WithMany()
                         .HasForeignKey("DeviceCategoryId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Empire.Domain.Entities.DeviceModel", "DeviceModel")
+                    b.HasOne("Empire.Domain.Entities.DeviceCategory", null)
                         .WithMany("InventoryItems")
+                        .HasForeignKey("DeviceCategoryId1");
+
+                    b.HasOne("Empire.Domain.Entities.DeviceModel", "DeviceModel")
+                        .WithMany()
                         .HasForeignKey("DeviceModelId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("Empire.Domain.Entities.InventoryCategory", "InventoryCategory")
+                    b.HasOne("Empire.Domain.Entities.DeviceModel", null)
                         .WithMany("InventoryItems")
+                        .HasForeignKey("DeviceModelId1");
+
+                    b.HasOne("Empire.Domain.Entities.InventoryCategory", "InventoryCategory")
+                        .WithMany()
                         .HasForeignKey("InventoryCategoryId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("Empire.Domain.Entities.InventoryCategory", null)
+                        .WithMany("InventoryItems")
+                        .HasForeignKey("InventoryCategoryId1");
+
+                    b.HasOne("Empire.Domain.Entities.Item", "Item")
+                        .WithMany("InventoryItems")
+                        .HasForeignKey("ItemId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("Empire.Domain.Entities.Shop", "Shop")
                         .WithMany()
@@ -1187,25 +1646,72 @@ namespace Empire.Web.Migrations
 
                     b.Navigation("InventoryCategory");
 
+                    b.Navigation("Item");
+
                     b.Navigation("Shop");
+                });
+
+            modelBuilder.Entity("Empire.Domain.Entities.InventoryTransaction", b =>
+                {
+                    b.HasOne("Empire.Domain.Entities.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Empire.Domain.Entities.InventoryItem", "InventoryItem")
+                        .WithMany("InventoryTransactions")
+                        .HasForeignKey("InventoryItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("InventoryItem");
                 });
 
             modelBuilder.Entity("Empire.Domain.Entities.LookupValue", b =>
                 {
                     b.HasOne("Empire.Domain.Entities.Category", "CategoryEntity")
                         .WithMany("LookupValues")
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .HasForeignKey("CategoryId");
 
                     b.Navigation("CategoryEntity");
+                });
+
+            modelBuilder.Entity("Empire.Domain.Entities.Payment", b =>
+                {
+                    b.HasOne("Empire.Domain.Entities.Sale", "Sale")
+                        .WithMany("Payments")
+                        .HasForeignKey("SaleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Empire.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Sale");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Empire.Domain.Entities.Repair", b =>
                 {
                     b.HasOne("Empire.Domain.Entities.Brand", "Brand")
                         .WithMany()
-                        .HasForeignKey("BrandId")
+                        .HasForeignKey("BrandId");
+
+                    b.HasOne("Empire.Domain.Entities.Company", "Company")
+                        .WithMany("Repairs")
+                        .HasForeignKey("CompanyId")
                         .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Empire.Domain.Entities.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId");
 
                     b.HasOne("Empire.Domain.Entities.Customer", "Customer")
                         .WithMany("Repairs")
@@ -1215,8 +1721,7 @@ namespace Empire.Web.Migrations
 
                     b.HasOne("Empire.Domain.Entities.DeviceCategory", "DeviceCategory")
                         .WithMany()
-                        .HasForeignKey("DeviceCategoryId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .HasForeignKey("DeviceCategoryId");
 
                     b.HasOne("Empire.Domain.Entities.Device", null)
                         .WithMany("Repairs")
@@ -1224,8 +1729,11 @@ namespace Empire.Web.Migrations
 
                     b.HasOne("Empire.Domain.Entities.DeviceModel", "DeviceModel")
                         .WithMany()
-                        .HasForeignKey("DeviceModelId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .HasForeignKey("DeviceModelId");
+
+                    b.HasOne("Empire.Domain.Entities.User", "ModifiedByUser")
+                        .WithMany()
+                        .HasForeignKey("ModifiedByUserId");
 
                     b.HasOne("Empire.Domain.Entities.Shop", "Shop")
                         .WithMany("Repairs")
@@ -1235,27 +1743,96 @@ namespace Empire.Web.Migrations
 
                     b.Navigation("Brand");
 
+                    b.Navigation("Company");
+
+                    b.Navigation("CreatedByUser");
+
                     b.Navigation("Customer");
 
                     b.Navigation("DeviceCategory");
 
                     b.Navigation("DeviceModel");
 
+                    b.Navigation("ModifiedByUser");
+
                     b.Navigation("Shop");
+                });
+
+            modelBuilder.Entity("Empire.Domain.Entities.RepairPart", b =>
+                {
+                    b.HasOne("Empire.Domain.Entities.InventoryItem", "InventoryItem")
+                        .WithMany()
+                        .HasForeignKey("InventoryItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Empire.Domain.Entities.Repair", "Repair")
+                        .WithMany("RepairParts")
+                        .HasForeignKey("RepairId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("InventoryItem");
+
+                    b.Navigation("Repair");
+                });
+
+            modelBuilder.Entity("Empire.Domain.Entities.Sale", b =>
+                {
+                    b.HasOne("Empire.Domain.Entities.User", "CreatedByUser")
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Empire.Domain.Entities.Customer", "Customer")
+                        .WithMany("Sales")
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Empire.Domain.Entities.Shop", "Shop")
+                        .WithMany("Sales")
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CreatedByUser");
+
+                    b.Navigation("Customer");
+
+                    b.Navigation("Shop");
+                });
+
+            modelBuilder.Entity("Empire.Domain.Entities.SaleItem", b =>
+                {
+                    b.HasOne("Empire.Domain.Entities.InventoryItem", "InventoryItem")
+                        .WithMany("SaleItems")
+                        .HasForeignKey("InventoryItemId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Empire.Domain.Entities.Sale", "Sale")
+                        .WithMany("SaleItems")
+                        .HasForeignKey("SaleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("InventoryItem");
+
+                    b.Navigation("Sale");
                 });
 
             modelBuilder.Entity("Empire.Domain.Entities.StockMovement", b =>
                 {
                     b.HasOne("Empire.Domain.Entities.User", "CreatedByUser")
                         .WithMany()
-                        .HasForeignKey("CreatedBy")
+                        .HasForeignKey("CreatedByUserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Empire.Domain.Entities.InventoryItem", "InventoryItem")
                         .WithMany("StockMovements")
                         .HasForeignKey("InventoryItemId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("CreatedByUser");
@@ -1300,9 +1877,20 @@ namespace Empire.Web.Migrations
                     b.Navigation("SubCategories");
                 });
 
+            modelBuilder.Entity("Empire.Domain.Entities.Company", b =>
+                {
+                    b.Navigation("Devices");
+
+                    b.Navigation("Repairs");
+                });
+
             modelBuilder.Entity("Empire.Domain.Entities.Customer", b =>
                 {
+                    b.Navigation("Devices");
+
                     b.Navigation("Repairs");
+
+                    b.Navigation("Sales");
                 });
 
             modelBuilder.Entity("Empire.Domain.Entities.Device", b =>
@@ -1338,7 +1926,28 @@ namespace Empire.Web.Migrations
 
             modelBuilder.Entity("Empire.Domain.Entities.InventoryItem", b =>
                 {
+                    b.Navigation("InventoryTransactions");
+
+                    b.Navigation("SaleItems");
+
                     b.Navigation("StockMovements");
+                });
+
+            modelBuilder.Entity("Empire.Domain.Entities.Item", b =>
+                {
+                    b.Navigation("InventoryItems");
+                });
+
+            modelBuilder.Entity("Empire.Domain.Entities.Repair", b =>
+                {
+                    b.Navigation("RepairParts");
+                });
+
+            modelBuilder.Entity("Empire.Domain.Entities.Sale", b =>
+                {
+                    b.Navigation("Payments");
+
+                    b.Navigation("SaleItems");
                 });
 
             modelBuilder.Entity("Empire.Domain.Entities.Shop", b =>
@@ -1350,6 +1959,8 @@ namespace Empire.Web.Migrations
                     b.Navigation("Inventories");
 
                     b.Navigation("Repairs");
+
+                    b.Navigation("Sales");
 
                     b.Navigation("UserShopRoles");
                 });

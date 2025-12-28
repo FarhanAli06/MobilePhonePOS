@@ -1,0 +1,224 @@
+@model Empire.Application.DTOs.Device.CreateDeviceRequest
+
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+
+<form id="createDeviceForm">
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="deviceCustomerId" class="form-label">Customer *</label>
+            <select id="deviceCustomerId" name="CustomerId" class="form-select" required>
+                <option value="">Select Customer</option>
+            </select>
+        </div>
+        
+        <div class="col-md-6 mb-3">
+            <label for="deviceCompanyId" class="form-label">Company</label>
+            <select id="deviceCompanyId" name="CompanyId" class="form-select">
+                <option value="">Select Company</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="deviceBrandId" class="form-label">Brand *</label>
+            <select id="deviceBrandId" name="BrandId" class="form-select" required>
+                <option value="">Select Brand</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="deviceCategoryId" class="form-label">Device Category *</label>
+            <select id="deviceCategoryId" name="DeviceCategoryId" class="form-select" required>
+                <option value="">Select Category</option>
+            </select>
+        </div>
+        
+        <div class="col-md-6 mb-3">
+            <label for="deviceModelId" class="form-label">Device Model *</label>
+            <select id="deviceModelId" name="DeviceModelId" class="form-select" required disabled>
+                <option value="">Select Model</option>
+            </select>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="deviceIMEI" class="form-label">IMEI</label>
+            <input type="text" id="deviceIMEI" name="IMEI" class="form-control" placeholder="Enter IMEI">
+        </div>
+        
+        <div class="col-md-6 mb-3">
+            <label for="deviceSerialNumber" class="form-label">Serial Number</label>
+            <input type="text" id="deviceSerialNumber" name="SerialNumber" class="form-control" placeholder="Enter Serial Number">
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="deviceColor" class="form-label">Color</label>
+            <input type="text" id="deviceColor" name="Color" class="form-control" placeholder="Enter Color">
+        </div>
+        
+        <div class="col-md-6 mb-3">
+            <label for="deviceStorage" class="form-label">Storage</label>
+            <input type="text" id="deviceStorage" name="Storage" class="form-control" placeholder="e.g., 64GB, 128GB">
+        </div>
+    </div>
+    
+    <div class="mb-3">
+        <label for="deviceCondition" class="form-label">Condition</label>
+        <textarea id="deviceCondition" name="Condition" class="form-control" rows="2" placeholder="Device condition notes"></textarea>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label for="devicePurchasePrice" class="form-label">Purchase Price</label>
+            <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input type="number" id="devicePurchasePrice" name="PurchasePrice" class="form-control" step="0.01" min="0" placeholder="0.00">
+            </div>
+        </div>
+        
+        <div class="col-md-6 mb-3">
+            <label for="deviceSellingPrice" class="form-label">Selling Price</label>
+            <div class="input-group">
+                <span class="input-group-text">$</span>
+                <input type="number" id="deviceSellingPrice" name="SellingPrice" class="form-control" step="0.01" min="0" placeholder="0.00">
+            </div>
+        </div>
+    </div>
+    
+    <div class="mb-3">
+        <label for="deviceNotes" class="form-label">Notes</label>
+        <textarea id="deviceNotes" name="Notes" class="form-control" rows="2" placeholder="Additional notes"></textarea>
+    </div>
+    
+    <div class="d-grid gap-2">
+        <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save me-2"></i>Save Device
+        </button>
+        <button type="button" class="btn btn-secondary" onclick="parent.$('#addDeviceModal').modal('hide')">
+            <i class="fas fa-times me-2"></i>Cancel
+        </button>
+    </div>
+</form>
+
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+$(document).ready(function() {
+    // Initialize Select2 for all dropdowns
+    $('#deviceCustomerId, #deviceCompanyId, #deviceBrandId, #deviceCategoryId, #deviceModelId').select2({
+        theme: 'bootstrap-5',
+        dropdownParent: $('#addDeviceModal'),
+        width: '100%'
+    });
+    
+    // Load customers
+    $.get('/api/Customer/GetAll', function(response) {
+        const select = $('#deviceCustomerId');
+        if (response.success && response.data) {
+            response.data.forEach(function(customer) {
+                select.append(`<option value="${customer.id}">${customer.firstName} ${customer.lastName} - ${customer.phone}</option>`);
+            });
+        }
+    });
+    
+    // Load companies
+    $.get('/Company/GetSelectionList', function(companies) {
+        const select = $('#deviceCompanyId');
+        if (companies && companies.length > 0) {
+            companies.forEach(function(company) {
+                select.append(`<option value="${company.id}">${company.name}</option>`);
+            });
+        }
+    });
+    
+    // Load brands
+    $.get('/api/Lookup/GetBrands', function(response) {
+        const select = $('#deviceBrandId');
+        if (response.success && response.data) {
+            response.data.forEach(function(brand) {
+                select.append(`<option value="${brand.id}">${brand.name}</option>`);
+            });
+        }
+    });
+    
+    // Load categories
+    $.get('/api/Lookup/GetDeviceCategories', function(response) {
+        const select = $('#deviceCategoryId');
+        if (response.success && response.data) {
+            response.data.forEach(function(category) {
+                select.append(`<option value="${category.id}">${category.name}</option>`);
+            });
+        }
+    });
+    
+    // Load models when category changes
+    $('#deviceCategoryId').on('change', function() {
+        const categoryId = $(this).val();
+        const modelSelect = $('#deviceModelId');
+        
+        modelSelect.empty().append('<option value="">Select Model</option>');
+        
+        if (!categoryId) {
+            modelSelect.prop('disabled', true);
+            return;
+        }
+        
+        $.get(`/api/Lookup/GetDeviceModels?categoryId=${categoryId}`, function(response) {
+            if (response.success && response.data) {
+                response.data.forEach(function(model) {
+                    modelSelect.append(`<option value="${model.id}">${model.name}</option>`);
+                });
+                modelSelect.prop('disabled', false);
+            }
+        });
+    });
+    
+    // Handle form submission
+    $('#createDeviceForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const formData = {
+            CustomerId: parseInt($('#deviceCustomerId').val()) || null,
+            CompanyId: parseInt($('#deviceCompanyId').val()) || null,
+            BrandId: parseInt($('#deviceBrandId').val()),
+            DeviceCategoryId: parseInt($('#deviceCategoryId').val()),
+            DeviceModelId: parseInt($('#deviceModelId').val()),
+            IMEI: $('#deviceIMEI').val(),
+            SerialNumber: $('#deviceSerialNumber').val(),
+            Color: $('#deviceColor').val(),
+            Storage: $('#deviceStorage').val(),
+            Condition: $('#deviceCondition').val(),
+            PurchasePrice: parseFloat($('#devicePurchasePrice').val()) || 0,
+            SellingPrice: parseFloat($('#deviceSellingPrice').val()) || 0,
+            Notes: $('#deviceNotes').val()
+        };
+        
+        $.ajax({
+            url: '/Devices/Create',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(formData),
+            success: function(response) {
+                if (response.success) {
+                    alert('Device created successfully!');
+                    parent.$('#addDeviceModal').modal('hide');
+                    // Notify parent to refresh
+                    parent.postMessage({ type: 'itemCreated', itemType: 'device' }, '*');
+                } else {
+                    alert('Error: ' + response.message);
+                }
+            },
+            error: function(xhr) {
+                alert('Error creating device. Please try again.');
+                console.error(xhr);
+            }
+        });
+    });
+});
+</script>

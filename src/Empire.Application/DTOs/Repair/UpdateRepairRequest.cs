@@ -10,9 +10,6 @@ public class UpdateRepairRequest
     
     public int? DeviceModelId { get; set; }
     
-    [MaxLength(100)]
-    public string? Issue { get; set; }
-    
     [MaxLength(500)]
     public string? Description { get; set; }
     

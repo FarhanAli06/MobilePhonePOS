@@ -3,6 +3,39 @@
     var currentShopId = ViewBag.CurrentShopId ?? 1;
 }
 
+<!-- Include Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+
+<style>
+    /* Fix DataTable header text color */
+    #inventoryTable thead th {
+        color: #000 !important;
+        background-color: #f8f9fa !important;
+        font-weight: 600;
+    }
+    
+    /* Ensure table headers are visible */
+    .table thead th {
+        color: #000 !important;
+    }
+    
+    /* Fix table body text color - make all text black and visible */
+    #inventoryTable tbody td {
+        color: #000 !important;
+    }
+    
+    /* Ensure all table text is visible */
+    .table tbody td {
+        color: #000 !important;
+    }
+    
+    /* Override any Bootstrap or theme colors */
+    #inventoryTable tbody tr td {
+        color: #212529 !important;
+    }
+</style>
+
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2><i class="fas fa-boxes me-2"></i>Inventory Management</h2>
     <div>
@@ -315,7 +348,7 @@
                     },
                     { data: 'sku' },
                     { data: 'brandName' },
-                    { data: 'inventoryCategoryName' },
+                    { data: 'deviceCategoryName' },
                     {
                         data: 'currentStock',
                         render: function(data, type, row) {
@@ -393,9 +426,155 @@
         });
 
         function loadDropdownData() {
-            // Load brands, categories, models, etc. from lookup endpoints
-            // This would need to be implemented based on your lookup controllers
             console.log('Loading dropdown data...');
+            
+            // Initialize Select2 for all dropdowns in both modals
+            $('#createInventoryModal select[name="brandId"], #editInventoryModal select[name="brandId"]').select2({
+                dropdownParent: function() {
+                    return $(this).closest('.modal');
+                },
+                placeholder: 'Search brands...',
+                allowClear: true,
+                ajax: {
+                    url: '/Lookup/GetBrands',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        return {
+                            search: params.term
+                        };
+                    },
+                    processResults: function (data) {
+                        // Lookup controller returns direct array [{Id, Name}]
+                        if (Array.isArray(data)) {
+                            return {
+                                results: data.map(function(item) {
+                                    return {
+                                        id: item.Id || item.id,
+                                        text: item.Name || item.name
+                                    };
+                                })
+                            };
+                        }
+                        return { results: [] };
+                    },
+                    cache: true
+                }
+            });
+            
+            // Device Category dropdown
+            $('#createInventoryModal select[name="deviceCategoryId"], #editInventoryModal select[name="deviceCategoryId"]').select2({
+                dropdownParent: function() {
+                    return $(this).closest('.modal');
+                },
+                placeholder: 'Search categories...',
+                allowClear: true,
+                ajax: {
+                    url: '/Lookup/GetDeviceCategories',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        return {
+                            search: params.term
+                        };
+                    },
+                    processResults: function (data) {
+                        // Lookup controller returns direct array [{Id, Name}]
+                        if (Array.isArray(data)) {
+                            return {
+                                results: data.map(function(item) {
+                                    return {
+                                        id: item.Id || item.id,
+                                        text: item.Name || item.name
+                                    };
+                                })
+                            };
+                        }
+                        return { results: [] };
+                    },
+                    cache: true
+                }
+            });
+            
+            // Device Model dropdown (cascading based on brand and category)
+            $('#createInventoryModal select[name="deviceModelId"], #editInventoryModal select[name="deviceModelId"]').select2({
+                dropdownParent: function() {
+                    return $(this).closest('.modal');
+                },
+                placeholder: 'Search models...',
+                allowClear: true,
+                ajax: {
+                    url: '/Lookup/GetDeviceModels',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        const $form = $(this).closest('form');
+                        return {
+                            search: params.term,
+                            brandId: $form.find('select[name="brandId"]').val(),
+                            deviceCategoryId: $form.find('select[name="deviceCategoryId"]').val()
+                        };
+                    },
+                    processResults: function (data) {
+                        // Lookup controller returns direct array [{Id, Name}]
+                        if (Array.isArray(data)) {
+                            return {
+                                results: data.map(function(item) {
+                                    return {
+                                        id: item.Id || item.id,
+                                        text: item.Name || item.name
+                                    };
+                                })
+                            };
+                        }
+                        return { results: [] };
+                    },
+                    cache: true
+                }
+            });
+            
+            // Inventory Category dropdown
+            $('#createInventoryModal select[name="inventoryCategoryId"], #editInventoryModal select[name="inventoryCategoryId"]').select2({
+                dropdownParent: function() {
+                    return $(this).closest('.modal');
+                },
+                placeholder: 'Search inventory categories...',
+                allowClear: true,
+                ajax: {
+                    url: '/Lookup/GetInventoryCategories',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        return {
+                            search: params.term
+                        };
+                    },
+                    processResults: function (data) {
+                        // Lookup controller returns direct array [{Id, Name}]
+                        if (Array.isArray(data)) {
+                            return {
+                                results: data.map(function(item) {
+                                    return {
+                                        id: item.Id || item.id,
+                                        text: item.Name || item.name
+                                    };
+                                })
+                            };
+                        }
+                        return { results: [] };
+                    },
+                    cache: true
+                }
+            });
+            
+            // Refresh models when brand or category changes
+            $('#createInventoryModal select[name="brandId"], #createInventoryModal select[name="deviceCategoryId"]').on('change', function() {
+                $('#createInventoryModal select[name="deviceModelId"]').val(null).trigger('change');
+            });
+            
+            $('#editInventoryModal select[name="brandId"], #editInventoryModal select[name="deviceCategoryId"]').on('change', function() {
+                $('#editInventoryModal select[name="deviceModelId"]').val(null).trigger('change');
+            });
         }
 
         function applyInventoryFilters() {
@@ -603,5 +782,8 @@
             });
         }
     </script>
+    
+    <!-- Include Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 }
 

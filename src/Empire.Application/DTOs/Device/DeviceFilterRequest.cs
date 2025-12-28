@@ -5,6 +5,9 @@ namespace Empire.Application.DTOs.Device;
 public class DeviceFilterRequest
 {
     public int? ShopId { get; set; }
+    public int? BrandId { get; set; }
+    public int? DeviceCategoryId { get; set; }
+    public int? DeviceModelId { get; set; }
     public DeviceType? DeviceType { get; set; }
     public string? Brand { get; set; }
     public string? Category { get; set; }

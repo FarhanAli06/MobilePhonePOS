@@ -26,5 +26,8 @@ public class UpdateShopRequest
     [EmailAddress(ErrorMessage = "Invalid email format")]
     [StringLength(100, ErrorMessage = "Email cannot exceed 100 characters")]
     public string? Email { get; set; }
+    
+    [StringLength(500, ErrorMessage = "Logo path cannot exceed 500 characters")]
+    public string? LogoPath { get; set; }
 }
 

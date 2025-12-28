@@ -139,7 +139,8 @@ public class DevicesController : Controller
         }
     }
 
-    [HttpPost("Edit/{id}")]
+    [HttpPost]
+    [Route("Devices/Edit/{id}")]
     public async Task<IActionResult> Edit(int id, [FromBody] UpdateDeviceRequest request)
     {
         try

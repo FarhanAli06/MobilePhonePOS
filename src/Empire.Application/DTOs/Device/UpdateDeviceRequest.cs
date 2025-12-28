@@ -6,6 +6,15 @@ namespace Empire.Application.DTOs.Device;
 public class UpdateDeviceRequest
 {
     [Required]
+    public int BrandId { get; set; }
+    
+    [Required]
+    public int DeviceCategoryId { get; set; }
+    
+    [Required]
+    public int DeviceModelId { get; set; }
+    
+    [Required]
     [MaxLength(50)]
     public string Brand { get; set; } = string.Empty;
     
@@ -27,6 +36,9 @@ public class UpdateDeviceRequest
     
     [MaxLength(50)]
     public string IMEISerialNumber { get; set; } = string.Empty;
+    
+    [MaxLength(20)]
+    public string? GB { get; set; }
     
     [Range(0, 100)]
     public int? BatteryHealthPercentage { get; set; }

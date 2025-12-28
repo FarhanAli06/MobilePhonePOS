@@ -38,5 +38,6 @@ public class Shop : BaseEntity
     public virtual ICollection<Customer> Customers { get; set; } = new List<Customer>();
     public virtual ICollection<Device> Devices { get; set; } = new List<Device>();
     public virtual ICollection<Inventory> Inventories { get; set; } = new List<Inventory>();
+    public virtual ICollection<Sale> Sales { get; set; } = new List<Sale>();
 }
 

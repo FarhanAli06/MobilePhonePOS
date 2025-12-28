@@ -11,7 +11,7 @@
                     <h3 class="card-title">Create New Shop</h3>
                 </div>
                 <div class="card-body">
-                    <form asp-action="Create" method="post">
+                    <form asp-action="Create" method="post" enctype="multipart/form-data">
                         <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
                         
                         <div class="row">
@@ -73,6 +73,19 @@
                         </div>
 
                         <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="logoFile" class="form-label">Shop Logo</label>
+                                    <input type="file" class="form-control" id="logoFile" name="logoFile" accept="image/*" onchange="previewLogo(this)" />
+                                    <small class="text-muted">Recommended size: 200x200px. Supported formats: JPG, PNG, GIF</small>
+                                    <div id="logoPreview" class="mt-2" style="display: none;">
+                                        <img id="logoPreviewImage" src="" alt="Logo Preview" style="max-width: 200px; max-height: 200px; border: 2px solid #dee2e6; border-radius: 8px;" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
                             <div class="col-12">
                                 <div class="alert alert-info">
                                     <i class="fas fa-info-circle"></i>
@@ -98,5 +111,17 @@
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        function previewLogo(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    $('#logoPreviewImage').attr('src', e.target.result);
+                    $('#logoPreview').show();
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
 }
 

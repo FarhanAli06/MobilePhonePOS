@@ -9,7 +9,7 @@ public class StockMovement : BaseEntity
     public int InventoryItemId { get; set; }
     
     [Required]
-    public int CreatedBy { get; set; }
+    public int CreatedByUserId { get; set; }
     
     [Required]
     [MaxLength(20)]

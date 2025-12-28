@@ -81,6 +81,34 @@ public class CustomersController : Controller
         }
     }
 
+    // GET: /Customers/SearchCustomers?term=...
+    [HttpGet]
+    public async Task<IActionResult> SearchCustomers(string term)
+    {
+        try
+        {
+            var currentShopId = GetCurrentShopId();
+            if (currentShopId == 0)
+            {
+                return Json(new { results = new List<object>() });
+            }
+
+            var customers = await _customerService.SearchCustomersAsync(currentShopId, term);
+            
+            var results = customers.Select(c => new
+            {
+                id = c.Id,
+                text = $"{c.FirstName} {c.LastName} ({c.Phone ?? c.Email ?? "No Contact"})"
+            }).ToList();
+
+            return Json(new { results = results });
+        }
+        catch (Exception)
+        {
+            return Json(new { results = new List<object>() });
+        }
+    }
+
     [HttpGet]
     public async Task<IActionResult> Edit(int id)
     {

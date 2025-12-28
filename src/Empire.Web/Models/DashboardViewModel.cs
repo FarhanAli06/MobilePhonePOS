@@ -15,6 +15,8 @@ public class DashboardViewModel
     public int CompletedRepairs { get; set; }
     public decimal TotalInventoryValue { get; set; }
     public int LowStockItemsCount { get; set; }
+    public decimal DailySales { get; set; }
+    public decimal DailyProfit { get; set; }
     
     // Recent data
     public IEnumerable<RepairDto> RecentRepairs { get; set; } = new List<RepairDto>();

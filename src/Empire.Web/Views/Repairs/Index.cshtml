@@ -48,6 +48,13 @@
         <form method="get" asp-action="Index">
             <div class="row">
                 <div class="col-md-2 mb-3">
+                    <label for="companyFilter" class="form-label">Company</label>
+                    <select id="companyFilter" name="companyId" class="form-select" style="width: 100%;">
+                        <option value="">All Companies</option>
+                    </select>
+                </div>
+
+                <div class="col-md-2 mb-3">
                     <label for="searchTerm" class="form-label">Search</label>
                     <input type="text" class="form-control" id="searchTerm" name="searchTerm"
                            value="@Model.SearchTerm" placeholder="Search repairs...">
@@ -150,7 +157,14 @@
                                     }
                                 </td>
                                 <td>
-                                    <div>@repair.Issue</div>
+                                    @if (repair.RepairPartNames != null && repair.RepairPartNames.Any())
+                                    {
+                                        <div class="text-info"><strong>@string.Join(", ", repair.RepairPartNames)</strong></div>
+                                    }
+                                    else
+                                    {
+                                        <div class="text-muted"><em>No parts selected</em></div>
+                                    }
                                     @if (!string.IsNullOrEmpty(repair.Description))
                                     {
                                         <small class="text-muted">@repair.Description</small>
@@ -199,11 +213,23 @@
                                 </td>
                                 <td class="fw-semibold">$@repair.Cost.ToString("F2")</td>
                                 <td>
-                                    <div class="btn-group" role="group">
-                                        <a asp-action="Edit" asp-route-id="@repair.Id"
-                                           class="btn btn-sm btn-outline-primary">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
+	                                    <div class="btn-group" role="group">
+	                                        @if (repair.PaymentStatus != "Paid" && repair.Status != "PickedUp")
+	                                        {
+	                                            <button type="button" class="btn btn-sm btn-success add-to-cart-btn"
+	                                                    data-id="@repair.Id"
+	                                                    data-number="@repair.RepairNumber"
+		                                                    data-cost="@repair.Cost.ToString("F2")"
+	                                                    data-customer-id="@repair.CustomerId"
+	                                                    data-customer-name="@repair.CustomerName"
+	                                                    title="Add to POS Cart">
+	                                                <i class="fas fa-cart-plus"></i>
+	                                            </button>
+	                                        }
+	                                        <a asp-action="Edit" asp-route-id="@repair.Id"
+	                                           class="btn btn-sm btn-outline-primary">
+	                                            <i class="fas fa-edit"></i>
+	                                        </a>
                                         <button type="button" class="btn btn-sm btn-outline-secondary print-repair-btn"
                                                 data-repair-number="@repair.RepairNumber"
                                                 data-customer-name="@repair.CustomerName"
@@ -211,7 +237,6 @@
                                                 data-device-brand="@repair.DeviceBrand"
                                                 data-device-model="@repair.DeviceModel"
                                                 data-device-category="@repair.DeviceCategory"
-                                                data-issue="@repair.Issue"
                                                 data-description="@repair.Description"
                                                 data-created-by="@repair.CreatedByUser"
                                                 data-created-date="@repair.CreatedDate.ToString("MM/dd/yyyy")"
@@ -564,6 +589,17 @@
             // Apply the filter
             repairsTable.draw();
 
+            // Initialize Select2 for company dropdown
+            $('#companyFilter').select2({
+                theme: 'bootstrap-5',
+                allowClear: true,
+                placeholder: 'Select a company',
+                minimumInputLength: 0
+            });
+            
+            // Load companies
+            loadCompanies();
+
             // Initialize Select2 for filter dropdowns
             $('#brandFilter, #deviceCategoryFilter').select2({
                 theme: 'bootstrap-5',
@@ -574,16 +610,56 @@
             loadBrands();
             loadDeviceCategories();
 
-            // Initialize print buttons
-            initializePrintButtons();
-
-            // Add change event handler for status filter to redraw table
-            $('#status').on('change', function() {
-                repairsTable.draw();
-            });
-        });
-
-        function loadBrands() {
+	            // Initialize print buttons
+	            initializePrintButtons();
+	
+	            // Add to Cart Logic
+	            $('.add-to-cart-btn').on('click', function () {
+	                const data = $(this).data();
+	                
+	                const repairItem = {
+	                    Id: `rep_${data.id}`,
+	                    Type: 'Repair',
+	                    Name: `Repair #${data.number}`,
+	                    Description: `${data.issue} - ${data.customerName}`,
+	                    Price: parseFloat(data.cost),
+	                    OriginalPrice: parseFloat(data.cost),
+	                    quantity: 1,
+	                    ReferenceId: data.id,
+	                    Note: `Repair: ${data.issue}`,
+	                    IsCustomItem: false,
+	                    IsTaxable: true,
+	                    CustomerId: data.customerId // Pass customer ID for POS context
+	                };
+	
+	                // Use AJAX to add to cart session
+	                $.ajax({
+	                    url: '@Url.Action("AddToCart", "POS")',
+	                    type: 'POST',
+	                    contentType: 'application/json',
+	                    data: JSON.stringify(repairItem),
+	                    success: function(response) {
+	                        if (response.success) {
+	                            alert(`Repair #${data.number} added to cart! Redirecting to POS...`);
+	                            // Redirect to POS page to complete sale
+	                            window.location.href = '@Url.Action("Index", "POS")';
+	                        } else {
+	                            alert('Error adding to cart: ' + response.message);
+	                        }
+	                    },
+	                    error: function() {
+	                        alert('An unexpected error occurred while adding to cart.');
+	                    }
+	                });
+	            });
+	
+	            // Add change event handler for status filter to redraw table
+	            $('#status').on('change', function() {
+	                repairsTable.draw();
+	            });
+	        });
+	
+	        function loadBrands() {
             var url = '@Url.Action("GetBrands", "Repairs")';
             $.get(url, function(response) {
                 if (response.success) {
@@ -606,6 +682,20 @@
 
                     response.data.forEach(function(category) {
                         categorySelect.append('<option value="' + category.id + '">' + category.name + '</option>');
+                    });
+                }
+            });
+        }
+
+        function loadCompanies() {
+            var url = '@Url.Action("GetSelectionList", "Company")';
+            $.get(url, function(companies) {
+                const companySelect = $('#companyFilter');
+                companySelect.empty().append('<option value="">All Companies</option>');
+
+                if (companies && companies.length > 0) {
+                    companies.forEach(function(company) {
+                        companySelect.append('<option value="' + company.id + '">' + company.name + '</option>');
                     });
                 }
             });

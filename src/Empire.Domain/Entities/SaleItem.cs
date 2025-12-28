@@ -1,53 +1,54 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Empire.Domain.Common;
 
 namespace Empire.Domain.Entities;
 
-public class SaleItem
+public class SaleItem : AuditableEntity
 {
-    [Key]
-    public int Id { get; set; }
+
 
     [Required]
     public int SaleId { get; set; }
 
-    [ForeignKey(nameof(SaleId))]
-    public Sale? Sale { get; set; }
+    public virtual Sale Sale { get; set; } = null!;
+
+    // Nullable for custom items
+    public int? InventoryItemId { get; set; }
 
     [Required]
-    [MaxLength(50)]
-    public string ItemType { get; set; } = string.Empty; // "Device", "Inventory", "Repair"
-
-    public int? ItemReferenceId { get; set; } // ID of the Device, Inventory, or Repair
+    [MaxLength(255)]
+    public string ItemName { get; set; } = string.Empty; // For custom items
 
     [Required]
     [MaxLength(200)]
     public string Description { get; set; } = string.Empty;
 
     [Required]
-    public int Quantity { get; set; } = 1;
+    public int Quantity { get; set; }
 
     [Required]
     [Column(TypeName = "decimal(18,2)")]
     public decimal UnitPrice { get; set; }
 
-    [Column(TypeName = "decimal(18,2)")]
-    public decimal OriginalPrice { get; set; }
-
     [Required]
     [Column(TypeName = "decimal(18,2)")]
-    public decimal SubTotal { get; set; }
+    public decimal TotalPrice { get; set; }
 
     [Column(TypeName = "decimal(18,2)")]
-    public decimal DiscountAmount { get; set; }
+    public decimal DiscountAmount { get; set; } = 0;
 
-    [Required]
+    // Cost price at time of sale (for profit calculation)
     [Column(TypeName = "decimal(18,2)")]
-    public decimal TotalAmount { get; set; }
+    public decimal CostPrice { get; set; } = 0;
 
-    [MaxLength(500)]
-    public string? Notes { get; set; }
+    [MaxLength(1000)]
+    public string? Note { get; set; }
 
-    public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+    public bool IsCustomItem { get; set; } = false;
+    public bool IsTaxable { get; set; } = true;
+
+    // Navigation properties
+    public virtual InventoryItem? InventoryItem { get; set; }
 }
 

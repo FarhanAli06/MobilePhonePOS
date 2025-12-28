@@ -40,7 +40,7 @@ public class ShopController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(CreateShopRequest request)
+    public async Task<IActionResult> Create(CreateShopRequest request, IFormFile? logoFile)
     {
         if (!IsAuthenticated())
         {
@@ -55,6 +55,23 @@ public class ShopController : Controller
         try
         {
             var userId = GetCurrentUserId();
+            
+            // Handle logo upload
+            if (logoFile != null && logoFile.Length > 0)
+            {
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "logos");
+                Directory.CreateDirectory(uploadsFolder);
+                
+                var uniqueFileName = $"{Guid.NewGuid()}_{logoFile.FileName}";
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+                
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await logoFile.CopyToAsync(fileStream);
+                }
+                
+                request.LogoPath = $"/uploads/logos/{uniqueFileName}";
+            }
             
             // Create shop first
             var shop = await _shopService.CreateShopAsync(request, userId);
@@ -90,7 +107,8 @@ public class ShopController : Controller
                 State = shop.State,
                 ZipCode = shop.ZipCode,
                 Phone = shop.Phone,
-                Email = shop.Email
+                Email = shop.Email,
+                LogoPath = shop.LogoPath
             };
 
             return View(updateRequest);
@@ -104,7 +122,7 @@ public class ShopController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, UpdateShopRequest request)
+    public async Task<IActionResult> Edit(int id, UpdateShopRequest request, IFormFile? logoFile)
     {
         if (!ModelState.IsValid)
         {
@@ -114,6 +132,24 @@ public class ShopController : Controller
         try
         {
             var userId = GetCurrentUserId();
+            
+            // Handle logo upload
+            if (logoFile != null && logoFile.Length > 0)
+            {
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "logos");
+                Directory.CreateDirectory(uploadsFolder);
+                
+                var uniqueFileName = $"{Guid.NewGuid()}_{logoFile.FileName}";
+                var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+                
+                using (var fileStream = new FileStream(filePath, FileMode.Create))
+                {
+                    await logoFile.CopyToAsync(fileStream);
+                }
+                
+                request.LogoPath = $"/uploads/logos/{uniqueFileName}";
+            }
+            
             await _shopService.UpdateShopAsync(id, request, userId);
             
             TempData["SuccessMessage"] = "Shop updated successfully!";

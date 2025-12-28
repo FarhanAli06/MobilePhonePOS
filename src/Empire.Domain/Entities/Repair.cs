@@ -22,10 +22,6 @@ public class Repair : BaseEntity
     [MaxLength(20)]
     public string RepairNumber { get; set; } = string.Empty;
     
-    [Required]
-    [MaxLength(100)]
-    public string Issue { get; set; } = string.Empty;
-    
     [MaxLength(500)]
     public string? Description { get; set; }
     
@@ -55,7 +51,14 @@ public class Repair : BaseEntity
     public virtual Brand? Brand { get; set; }
     public virtual DeviceCategory? DeviceCategory { get; set; }
     public virtual DeviceModel? DeviceModel { get; set; }
+    
+    public int? CompanyId { get; set; }
+    public virtual Company? Company { get; set; }
+
     public virtual User? CreatedByUser { get; set; }
     public virtual User? ModifiedByUser { get; set; }
+    
+    // Repair parts relationship
+    public virtual ICollection<RepairPart> RepairParts { get; set; } = new List<RepairPart>();
 }
 

@@ -1,12 +1,13 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using Empire.Domain.Common;
+using Empire.Domain.Enums;
 
 namespace Empire.Domain.Entities;
 
-public class Sale
+public class Sale : AuditableEntity
 {
-    [Key]
-    public int Id { get; set; }
+
 
     [Required]
     public int ShopId { get; set; }
@@ -14,15 +15,14 @@ public class Sale
     [ForeignKey(nameof(ShopId))]
     public Shop? Shop { get; set; }
 
-    [Required]
-    public int CustomerId { get; set; }
+    public int? CustomerId { get; set; }
 
     [ForeignKey(nameof(CustomerId))]
     public Customer? Customer { get; set; }
 
     [Required]
     [MaxLength(50)]
-    public string InvoiceNumber { get; set; } = string.Empty;
+    public string SaleNumber { get; set; } = string.Empty;
 
     [Required]
     [Column(TypeName = "decimal(18,2)")]
@@ -39,10 +39,10 @@ public class Sale
     public decimal TotalAmount { get; set; }
 
     [MaxLength(50)]
-    public string PaymentMethod { get; set; } = "Cash";
+    public string PaymentMethod { get; set; } = "Cash"; // Will be deprecated by Payments collection
 
     [MaxLength(50)]
-    public string PaymentStatus { get; set; } = "Paid";
+    public string PaymentStatus { get; set; } = "Unpaid"; // Unpaid, Partial, Paid, Refunded
 
     [MaxLength(500)]
     public string? Notes { get; set; }
@@ -56,11 +56,10 @@ public class Sale
     [ForeignKey(nameof(CreatedByUserId))]
     public User? CreatedByUser { get; set; }
 
-    public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
-    public DateTime? ModifiedDate { get; set; }
 
-    // Navigation property
+
     public ICollection<SaleItem> SaleItems { get; set; } = new List<SaleItem>();
+    public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
 }
 

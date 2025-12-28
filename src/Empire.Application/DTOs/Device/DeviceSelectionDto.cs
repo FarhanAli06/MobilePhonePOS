@@ -17,7 +17,9 @@ public class DeviceSelectionDto
     public int? Year { get; set; }
     public DeviceType DeviceType { get; set; }
     public string IMEISerialNumber { get; set; } = string.Empty;
+    public string? GB { get; set; }
     public int? BatteryHealthPercentage { get; set; }
+    public int? CompanyId { get; set; }
     public string NetworkStatus { get; set; } = string.Empty;
     public string ScratchesCondition { get; set; } = string.Empty;
     public decimal? BuyingPrice { get; set; }

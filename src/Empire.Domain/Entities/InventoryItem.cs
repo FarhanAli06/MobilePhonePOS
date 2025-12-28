@@ -20,6 +20,9 @@ public class InventoryItem : BaseEntity
     [Required]
     public int InventoryCategoryId { get; set; }
     
+    // Item lookup (e.g., Screen, Battery, Charging Port)
+    public int? ItemId { get; set; }
+    
     [Required]
     [MaxLength(100)]
     public string Name { get; set; } = string.Empty;
@@ -55,6 +58,19 @@ public class InventoryItem : BaseEntity
     public virtual DeviceCategory DeviceCategory { get; set; } = null!;
     public virtual DeviceModel DeviceModel { get; set; } = null!;
     public virtual InventoryCategory InventoryCategory { get; set; } = null!;
+    public virtual Item? Item { get; set; }
     public virtual ICollection<StockMovement> StockMovements { get; set; } = new List<StockMovement>();
+    public virtual ICollection<SaleItem> SaleItems { get; set; } = new List<SaleItem>();
+    public virtual ICollection<InventoryTransaction> InventoryTransactions { get; set; } = new List<InventoryTransaction>();
+    
+    /// <summary>
+    /// Minimum stock level for low stock alerts
+    /// </summary>
+    public int MinStockLevel { get; set; } = 5;
+    
+    /// <summary>
+    /// Quantity to reorder when stock is low
+    /// </summary>
+    public int ReorderQuantity { get; set; } = 10;
 }
 

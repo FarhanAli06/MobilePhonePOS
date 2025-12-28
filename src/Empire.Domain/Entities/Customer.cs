@@ -38,5 +38,7 @@ public class Customer : BaseEntity
     // Navigation properties
     public virtual Shop Shop { get; set; } = null!;
     public virtual ICollection<Repair> Repairs { get; set; } = new List<Repair>();
+    public virtual ICollection<Sale> Sales { get; set; } = new List<Sale>();
+    public virtual ICollection<Device> Devices { get; set; } = new List<Device>();
 }
 

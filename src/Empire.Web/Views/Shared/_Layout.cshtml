@@ -76,6 +76,65 @@
             font-size: 0.75em;
             padding: 0.5em 0.75em;
         }
+        
+        /* Darker borders for better visual separation */
+        .card {
+            border: 2px solid #dee2e6 !important;
+        }
+        
+        .table {
+            border: 2px solid #dee2e6;
+        }
+        
+        .table thead th {
+            border-bottom: 2px solid #dee2e6 !important;
+        }
+        
+        .table td, .table th {
+            border-color: #dee2e6 !important;
+        }
+        
+        .form-control, .form-select {
+            border: 2px solid #ced4da !important;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: #667eea !important;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25) !important;
+        }
+        
+        .modal-content {
+            border: 2px solid #dee2e6 !important;
+        }
+        
+        .nav-tabs {
+            border-bottom: 2px solid #dee2e6 !important;
+        }
+        
+        .nav-tabs .nav-link {
+            border: 2px solid transparent !important;
+        }
+        
+        .nav-tabs .nav-link.active {
+            border-color: #dee2e6 #dee2e6 #fff !important;
+            border-width: 2px !important;
+        }
+        
+        .filter-tab {
+            border: 2px solid #dee2e6 !important;
+        }
+        
+        .filter-tab.active {
+            border-color: #667eea !important;
+        }
+        
+        hr {
+            border-top: 2px solid #dee2e6 !important;
+        }
+        
+        .list-group-item {
+            border: 2px solid #dee2e6 !important;
+        }
     </style>
     @await RenderSectionAsync("Styles", required: false)
 </head>
@@ -111,11 +170,29 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Inventories" ? "active" : "")" 
-                                   asp-controller="Inventories" asp-action="Index">
+                                <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Inventories" || ViewContext.RouteData.Values["Controller"]?.ToString() == "InventoryTransactions" ? "active" : "")" 
+                                   data-bs-toggle="collapse" href="#inventorySubmenu" role="button" aria-expanded="false" aria-controls="inventorySubmenu">
                                     <i class="fas fa-boxes me-2"></i>
                                     Inventory
                                 </a>
+                                <div class="collapse @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Inventories" || ViewContext.RouteData.Values["Controller"]?.ToString() == "InventoryTransactions" ? "show" : "")" id="inventorySubmenu">
+                                    <ul class="nav flex-column ms-3">
+                                        <li class="nav-item">
+                                            <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Inventories" ? "active" : "")" 
+                                               asp-controller="Inventories" asp-action="Index">
+                                                <i class="fas fa-box me-2"></i>
+                                                Inventory Items
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "InventoryTransactions" ? "active" : "")" 
+                                               asp-controller="InventoryTransactions" asp-action="Index">
+                                                <i class="fas fa-exchange-alt me-2"></i>
+                                                Stock Movements
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Devices" ? "active" : "")" 
@@ -138,11 +215,29 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link disabled" href="#" title="Coming Soon">
+                                <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Reports" ? "active" : "")" 
+                                   data-bs-toggle="collapse" href="#reportsSubmenu" role="button" aria-expanded="false" aria-controls="reportsSubmenu">
                                     <i class="fas fa-chart-bar me-2"></i>
                                     Reports
-                                    <small class="text-muted">(Coming Soon)</small>
                                 </a>
+                                <div class="collapse @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Reports" ? "show" : "")" id="reportsSubmenu">
+                                    <ul class="nav flex-column ms-3">
+                                        <li class="nav-item">
+                                            <a class="nav-link @(ViewContext.RouteData.Values["Action"]?.ToString() == "SalesReport" ? "active" : "")" 
+                                               asp-controller="Reports" asp-action="SalesReport">
+                                                <i class="fas fa-chart-line me-2"></i>
+                                                Sales Report
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link @(ViewContext.RouteData.Values["Action"]?.ToString() == "ProfitReport" ? "active" : "")" 
+                                               asp-controller="Reports" asp-action="ProfitReport">
+                                                <i class="fas fa-dollar-sign me-2"></i>
+                                                Profit Report
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
                             </li>
                         </ul>
                         
@@ -150,11 +245,29 @@
                         
                         <ul class="nav flex-column">
                             <li class="nav-item">
-                                <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "LookupManagement" ? "active" : "")" 
-                                   asp-controller="LookupManagement" asp-action="Index">
+                                <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "LookupManagement" || ViewContext.RouteData.Values["Controller"]?.ToString() == "Company" ? "active" : "")" 
+                                   data-bs-toggle="collapse" href="#lookupSubmenu" role="button" aria-expanded="false" aria-controls="lookupSubmenu">
                                     <i class="fas fa-cogs me-2"></i>
                                     Lookup Management
                                 </a>
+                                <div class="collapse @(ViewContext.RouteData.Values["Controller"]?.ToString() == "LookupManagement" || ViewContext.RouteData.Values["Controller"]?.ToString() == "Company" ? "show" : "")" id="lookupSubmenu">
+                                    <ul class="nav flex-column ms-3">
+                                        <li class="nav-item">
+                                            <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "LookupManagement" ? "active" : "")" 
+                                               asp-controller="LookupManagement" asp-action="Index">
+                                                <i class="fas fa-list me-2"></i>
+                                                General Lookups
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Company" ? "active" : "")" 
+                                               asp-controller="Company" asp-action="Index">
+                                                <i class="fas fa-building me-2"></i>
+                                                Companies
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Shop" ? "active" : "")" 
@@ -582,6 +695,10 @@
         };
     </script>
     @await RenderSectionAsync("Scripts", required: false)
+
+    <!-- Global Modals -->
+    @await Html.PartialAsync("_AddNewCustomerModal")
+    @await Html.PartialAsync("_AddNewRepairModal")
 </body>
 </html>
 

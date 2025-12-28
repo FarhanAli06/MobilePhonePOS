@@ -89,6 +89,17 @@ public class CustomerService : ICustomerService
         return true;
     }
 
+    public async Task<IEnumerable<CustomerDto>> SearchCustomersAsync(int shopId, string term)
+    {
+        if (string.IsNullOrWhiteSpace(term))
+        {
+            return Enumerable.Empty<CustomerDto>();
+        }
+
+        var customers = await _customerRepository.SearchCustomersAsync(shopId, term);
+        return customers.Select(MapToCustomerDto);
+    }
+
     private static CustomerDto MapToCustomerDto(Customer customer)
     {
         return new CustomerDto

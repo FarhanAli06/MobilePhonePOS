@@ -18,11 +18,6 @@ public class CreateRepairViewModel
     [Display(Name = "Device Model")]
     public int? DeviceModelId { get; set; }
 
-    [Required(ErrorMessage = "Issue is required")]
-    [StringLength(200, ErrorMessage = "Issue cannot exceed 200 characters")]
-    [Display(Name = "Issue")]
-    public string Issue { get; set; } = string.Empty;
-
     [StringLength(1000, ErrorMessage = "Description cannot exceed 1000 characters")]
     [Display(Name = "Description")]
     public string? Description { get; set; }
@@ -39,5 +34,11 @@ public class CreateRepairViewModel
     [Required(ErrorMessage = "Payment status is required")]
     [Display(Name = "Payment Status")]
     public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Unpaid;
+    
+    [Display(Name = "Company")]
+    public int? CompanyId { get; set; }
+    
+    [Display(Name = "Parts Required")]
+    public List<int> InventoryParts { get; set; } = new List<int>();
 }
 

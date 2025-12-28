@@ -15,7 +15,6 @@ public class RepairDto
     public int? DeviceModelId { get; set; }
     public string DeviceModel { get; set; } = string.Empty;
     public string RepairNumber { get; set; } = string.Empty;
-    public string Issue { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public string Comments { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
@@ -25,5 +24,6 @@ public class RepairDto
     public DateTime? CompletedDate { get; set; }
     public string CreatedByUser { get; set; } = string.Empty;
     public string? ModifiedByUser { get; set; }
+    public List<string> RepairPartNames { get; set; } = new List<string>();
 }
 

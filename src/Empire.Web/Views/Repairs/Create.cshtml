@@ -47,6 +47,15 @@
                         </div>
                         
                         <div class="col-md-6 mb-3">
+                            <label for="CompanyId" class="form-label">Company</label>
+                            <select id="CompanyId" name="CompanyId" class="form-select">
+                                <option value="">Select Company</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
                             <label for="BrandId" class="form-label">Brand</label>
                             <select asp-for="BrandId" id="BrandId" name="BrandId" class="form-select">
                                 <option value="">Select Brand</option>
@@ -74,25 +83,20 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label asp-for="Issue" class="form-label"></label>
-                        <input asp-for="Issue" class="form-control" list="issueList" placeholder="Brief description of the issue">
-                        <datalist id="issueList">
-                            <option value="Screen replacement" />
-                            <option value="Battery replacement" />
-                            <option value="Charging port replacement" />
-                            <option value="Back glass" />
-                            <option value="Phone service" />
-                        </datalist>
-                        <span asp-validation-for="Issue" class="text-danger"></span>
-                    </div>
-                    
-                    <div class="mb-3">
                         <label asp-for="Description" class="form-label"></label>
                         <textarea asp-for="Description" class="form-control" rows="3" 
                                   placeholder="Detailed description of the problem and diagnosis"></textarea>
                         <span asp-validation-for="Description" class="text-danger"></span>
                     </div>
                     
+                    <div class="mb-3">
+                        <label for="InventoryParts" class="form-label">Parts Required (from Inventory)</label>
+                        <select id="InventoryParts" name="InventoryParts" class="form-control" multiple style="height: 150px;">
+                            <option value="" disabled>Select brand, category, and model first</option>
+                        </select>
+                        <small class="form-text text-muted">Select multiple parts by holding Ctrl (Windows) or Cmd (Mac). Parts will be automatically deducted from inventory.</small>
+                        <div id="partsStockInfo" class="mt-2"></div>
+                    </div>
 
                     <div class="row">
                         <div class="col-md-6 mb-3">
@@ -118,7 +122,7 @@
                         <a asp-action="Index" class="btn btn-outline-secondary me-md-2">
                             Cancel
                         </a>
-                        <button type="submit" class="btn btn-primary">
+                        <button type="submit" class="btn btn-primary" onclick="return ensurePartsSelected();">
                             <i class="fas fa-save me-1"></i>
                             Create Repair
                         </button>
@@ -190,7 +194,7 @@
     <script>
         $(document).ready(function() {
             // Initialize Select2 for dropdowns
-            $('#CustomerId, #DeviceCategoryId, #DeviceModelId').select2({
+            $('#CustomerId, #DeviceCategoryId, #DeviceModelId, #CompanyId').select2({
                 theme: 'bootstrap-5',
                 allowClear: true,
                 placeholder: function() {
@@ -201,6 +205,7 @@
             // Load initial data
             loadBrands();
             loadDeviceCategories();
+            loadCompanies();
             
             // Setup cascading dropdown logic
             setupCascadingDropdowns();
@@ -254,6 +259,25 @@
             });
         }
         
+        function loadCompanies() {
+            var url = '@Url.Action("GetSelectionList", "Company")';
+            $.get(url, function(companies) {
+                const companySelect = $('#CompanyId');
+                companySelect.empty().append('<option value="">Select Company</option>');
+                
+                if (companies && companies.length > 0) {
+                    companies.forEach(function(company) {
+                        companySelect.append('<option value="' + company.id + '">' + company.name + '</option>');
+                    });
+                }
+                
+                companySelect.trigger('change.select2');
+                console.log('Loaded ' + companies.length + ' companies');
+            }).fail(function(xhr, status, error) {
+                console.error('Error loading companies:', error);
+            });
+        }
+        
         function loadDeviceModels(categoryId, brandId) {
             const modelSelect = $('#DeviceModelId');
             
@@ -291,8 +315,89 @@
             });
         }
         
+        function loadInventoryParts() {
+            const brandId = $('#BrandId').val();
+            const categoryId = $('#DeviceCategoryId').val();
+            const modelId = $('#DeviceModelId').val();
+            
+            const partsSelect = $('#InventoryParts');
+            const stockInfo = $('#partsStockInfo');
+            
+            // Clear previous data
+            partsSelect.empty();
+            stockInfo.empty();
+            
+            // If no brand or category selected, show message
+            if (!brandId || !categoryId) {
+                partsSelect.append('<option value="" disabled>Select brand and category first</option>');
+                return;
+            }
+            
+            // Show loading
+            partsSelect.append('<option value="" disabled>Loading parts...</option>');
+            
+            var url = '@Url.Action("GetInventoryParts", "Repairs")';
+            $.get(url, { brandId: brandId, categoryId: categoryId, modelId: modelId }, function(response) {
+                partsSelect.empty();
+                
+                if (response.success && response.data && response.data.length > 0) {
+                    let outOfStockCount = 0;
+                    
+                    response.data.forEach(function(part) {
+                        let optionText;
+                        const option = $('<option></option>').val(part.id);
+                        
+                        // Build display text with item type
+                        let displayName = part.name;
+                        if (part.itemType && part.itemType.trim() !== '') {
+                            displayName = '[' + part.itemType + '] ' + part.name;
+                        }
+                        
+                        // Disable if out of stock
+                        if (!part.inStock) {
+                            optionText = displayName + ' - OUT OF STOCK';
+                            option.prop('disabled', true);
+                            option.css('color', '#dc3545');
+                            outOfStockCount++;
+                        } else {
+                            optionText = displayName + ' - $' + part.price.toFixed(2) + ' (Stock: ' + part.quantity + ')';
+                            // Add notes if available
+                            if (part.notes && part.notes.trim() !== '') {
+                                optionText += ' | ' + part.notes;
+                            }
+                        }
+                        
+                        option.text(optionText);
+                        // Store notes and description as data attributes
+                        option.attr('data-notes', part.notes || '');
+                        option.attr('data-description', part.description || '');
+                        partsSelect.append(option);
+                    });
+                    
+                    // Show stock info
+                    if (outOfStockCount > 0) {
+                        stockInfo.html('<div class="alert alert-warning mb-0"><i class="fas fa-exclamation-triangle me-2"></i>' + outOfStockCount + ' item(s) out of stock</div>');
+                    } else {
+                        stockInfo.html('<div class="alert alert-success mb-0"><i class="fas fa-check-circle me-2"></i>All parts in stock</div>');
+                    }
+                    
+                    console.log('Loaded ' + response.data.length + ' parts (' + outOfStockCount + ' out of stock)');
+                } else {
+                    partsSelect.append('<option value="" disabled>No parts found for selected criteria</option>');
+                    stockInfo.html('<div class="alert alert-info mb-0"><i class="fas fa-info-circle me-2"></i>No inventory parts match the selected brand, category, and model</div>');
+                }
+
+            }).fail(function(xhr, status, error) {
+                console.error('Error loading inventory parts:', error);
+                partsSelect.empty().append('<option value="" disabled>Error loading parts</option>');
+                stockInfo.html('<div class="alert alert-danger mb-0"><i class="fas fa-times-circle me-2"></i>Error loading parts. Please try again.</div>');
+            });
+        }
+        
+
+        
         function setupCascadingDropdowns() {
-            // Brand change -> load models
+            // Brand change -> load models and parts
             $('#BrandId').change(function() {
                 const brandId = $(this).val();
                 const categoryId = $('#DeviceCategoryId').val();
@@ -302,9 +407,10 @@
                     // Clear models if brand is cleared
                     $('#DeviceModelId').empty().append('<option value="">Select Model</option>');
                 }
+                loadInventoryParts();
             });
             
-            // Category change -> load models
+            // Category change -> load models and parts
             $('#DeviceCategoryId').change(function() {
                 const categoryId = $(this).val();
                 const brandId = $('#BrandId').val();
@@ -314,7 +420,31 @@
                     // Clear models if category is cleared
                     $('#DeviceModelId').empty().append('<option value="">Select Model</option>');
                 }
+                loadInventoryParts();
             });
+            
+            // Model change -> load parts
+            $('#DeviceModelId').change(function() {
+                loadInventoryParts();
+            });
+            
+            // Parts dropdown is a standard multiselect (no Select2 for better visibility)
+        }
+        
+        // Ensure selected parts are included in form submission
+        function ensurePartsSelected() {
+            const partsSelect = document.getElementById('InventoryParts');
+            const selectedOptions = Array.from(partsSelect.selectedOptions);
+            
+            console.log('Selected parts count:', selectedOptions.length);
+            console.log('Selected part IDs:', selectedOptions.map(opt => opt.value));
+            
+            // Make sure all selected options are marked as selected
+            selectedOptions.forEach(option => {
+                option.selected = true;
+            });
+            
+            return true; // Allow form submission
         }
     </script>
 }

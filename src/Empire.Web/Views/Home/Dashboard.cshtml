@@ -97,6 +97,43 @@
     </div>
 </div>
 
+<!-- Daily Statistics -->
+<div class="row mb-4">
+    <div class="col-xl-6 col-md-6 mb-4">
+        <div class="card stat-card-success h-100">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-uppercase mb-1">Daily Sales</div>
+                        <div class="h5 mb-0 font-weight-bold">$@Model.DailySales.ToString("N2")</div>
+                        <div class="text-xs mt-1">Today's total sales</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-cash-register fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-6 col-md-6 mb-4">
+        <div class="card stat-card-info h-100">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-uppercase mb-1">Daily Profit</div>
+                        <div class="h5 mb-0 font-weight-bold">$@Model.DailyProfit.ToString("N2")</div>
+                        <div class="text-xs mt-1">Today's total profit</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-chart-line fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Recent Activity -->
 <div class="row">
     <div class="col-lg-6 mb-4">
@@ -207,9 +244,15 @@
                                 @foreach (var item in Model.LowStockItems)
                                 {
                                     <tr>
-                                        <td class="fw-semibold">@item.Name</td>
+                                        <td class="fw-semibold">
+                                            @item.Name
+                                            @if (!string.IsNullOrEmpty(item.DeviceBrand) || !string.IsNullOrEmpty(item.DeviceModel))
+                                            {
+                                                <br /><small class="text-muted">@item.DeviceBrand @item.DeviceModel</small>
+                                            }
+                                        </td>
                                         <td>
-                                            <span class="badge bg-secondary">@item.DeviceType</span>
+                                            <span class="badge bg-secondary">@item.DeviceType.ToString()</span>
                                         </td>
                                         <td>
                                             <span class="text-danger fw-bold">@item.Stock</span>

@@ -167,7 +167,7 @@ public class InventoryService : IInventoryService
 
     public async Task<IEnumerable<InventoryDto>> GetLowStockItemsAsync(int shopId)
     {
-        var inventories = await _inventoryRepository.GetLowStockItemsWithNotificationAsync(shopId);
+        var inventories = await _inventoryRepository.GetLowStockItemsAsync(shopId);
         var inventoryDtos = new List<InventoryDto>();
         foreach (var inventory in inventories)
         {
