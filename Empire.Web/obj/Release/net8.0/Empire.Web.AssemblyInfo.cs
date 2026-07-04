@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Empire.Web")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+bc8f09ff5741dea15a1b18ec4d5339d8df4f851d")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+37fa0e383c7ebefeb5f7bbb38289c1ae8673180f")]
 [assembly: System.Reflection.AssemblyProductAttribute("Empire.Web")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Empire.Web")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
