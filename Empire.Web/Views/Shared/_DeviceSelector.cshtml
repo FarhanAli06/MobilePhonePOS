@@ -1,0 +1,124 @@
+@* ─────────────────────────────────────────────────────────────────────────────
+   _DeviceSelector.cshtml  –  Generic cascading Brand → Category → Model → Parts
+   ─────────────────────────────────────────────────────────────────────────────
+   Usage (Razor):
+       @await Html.PartialAsync("_DeviceSelector", new ViewDataDictionary(ViewData)
+       {
+           { "SelectorId",       "repairDevice1" },          // unique id prefix (required)
+           { "ShowParts",        true  },                     // show parts step (default false)
+           { "ShowIssueInput",   true  },                     // show issue text box (default false)
+           { "HiddenBrandId",    "repairBrandId" },           // id of hidden input to write brandId into
+           { "HiddenCategoryId", "repairCategoryId" },
+           { "HiddenModelId",    "repairModelId" },
+       })
+
+   Alternatively, render it via JS:
+       EmpireDeviceSelector.create(containerId, options)
+   See /wwwroot/js/device-selector.js for the JS API.
+*@
+
+@{
+    var selectorId      = ViewData["SelectorId"]?.ToString()      ?? "deviceSelector";
+    var showParts       = (bool)(ViewData["ShowParts"]       ?? false);
+    var showIssueInput  = (bool)(ViewData["ShowIssueInput"]  ?? false);
+    var hiddenBrandId   = ViewData["HiddenBrandId"]?.ToString()   ?? "";
+    var hiddenCategoryId= ViewData["HiddenCategoryId"]?.ToString()?? "";
+    var hiddenModelId   = ViewData["HiddenModelId"]?.ToString()   ?? "";
+}
+
+<div class="empire-device-selector"
+     id="@(selectorId)-wrapper"
+     data-selector-id="@selectorId"
+     data-show-parts="@showParts.ToString().ToLower()"
+     data-show-issue="@showIssueInput.ToString().ToLower()"
+     data-hidden-brand="@hiddenBrandId"
+     data-hidden-category="@hiddenCategoryId"
+     data-hidden-model="@hiddenModelId">
+
+    @if (!string.IsNullOrEmpty(hiddenBrandId))
+    {
+        <input type="hidden" id="@hiddenBrandId"    name="@hiddenBrandId"    value="" />
+    }
+    @if (!string.IsNullOrEmpty(hiddenCategoryId))
+    {
+        <input type="hidden" id="@hiddenCategoryId" name="@hiddenCategoryId" value="" />
+    }
+    @if (!string.IsNullOrEmpty(hiddenModelId))
+    {
+        <input type="hidden" id="@hiddenModelId"    name="@hiddenModelId"    value="" />
+    }
+
+    <!-- ── Step 1 : Brand ──────────────────────────────────────────────── -->
+    <div class="eds-step eds-step--active" id="@(selectorId)-step1">
+        <h6 class="eds-step-title"><i class="fas fa-tag me-2"></i>Select Brand</h6>
+        <div class="eds-brand-grid" id="@(selectorId)-brands">
+            <div class="eds-loading"><i class="fas fa-spinner fa-spin me-2"></i>Loading brands…</div>
+        </div>
+    </div>
+
+    <!-- ── Step 2 : Category ───────────────────────────────────────────── -->
+    <div class="eds-step" id="@(selectorId)-step2">
+        <div class="eds-step-header">
+            <button type="button" class="eds-back-btn" onclick="EmpireDeviceSelector.goToStep('@selectorId',1)">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <h6 class="eds-step-title"><i class="fas fa-th-large me-2"></i>Select Device Type</h6>
+        </div>
+        <div class="eds-category-grid" id="@(selectorId)-categories">
+            <div class="eds-loading"><i class="fas fa-spinner fa-spin me-2"></i>Loading categories…</div>
+        </div>
+    </div>
+
+    <!-- ── Step 3 : Model ──────────────────────────────────────────────── -->
+    <div class="eds-step" id="@(selectorId)-step3">
+        <div class="eds-step-header">
+            <button type="button" class="eds-back-btn" onclick="EmpireDeviceSelector.goToStep('@selectorId',2)">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+            <h6 class="eds-step-title"><i class="fas fa-mobile-alt me-2"></i>Select Model</h6>
+        </div>
+        <div class="eds-model-grid" id="@(selectorId)-models">
+            <div class="eds-loading"><i class="fas fa-spinner fa-spin me-2"></i>Loading models…</div>
+        </div>
+    </div>
+
+    @if (showParts)
+    {
+        <!-- ── Step 4 : Parts ───────────────────────────────────────────── -->
+        <div class="eds-step" id="@(selectorId)-step4">
+            <div class="eds-step-header">
+                <button type="button" class="eds-back-btn" onclick="EmpireDeviceSelector.goToStep('@selectorId',3)">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <h6 class="eds-step-title"><i class="fas fa-tools me-2"></i>Select Parts</h6>
+            </div>
+            @if (showIssueInput)
+            {
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Device Issue / Problem</label>
+                    <input type="text" class="form-control"
+                           id="@(selectorId)-issue"
+                           placeholder="Describe the issue (e.g. cracked screen, battery replacement)"
+                           oninput="EmpireDeviceSelector.updateIssue('@selectorId', this.value)" />
+                </div>
+            }
+            <div class="eds-selected-banner" id="@(selectorId)-banner" style="display:none;"></div>
+            <div class="eds-parts-grid" id="@(selectorId)-parts">
+                <div class="eds-loading"><i class="fas fa-spinner fa-spin me-2"></i>Loading parts…</div>
+            </div>
+            <div id="@(selectorId)-selected-parts"></div>
+        </div>
+    }
+
+    <!-- ── Breadcrumb / selection summary ─────────────────────────────── -->
+    <div class="eds-breadcrumb mt-2" id="@(selectorId)-breadcrumb" style="display:none;">
+        <span class="eds-crumb" id="@(selectorId)-crumb-brand"></span>
+        <span class="eds-crumb-sep"><i class="fas fa-chevron-right"></i></span>
+        <span class="eds-crumb" id="@(selectorId)-crumb-category"></span>
+        <span class="eds-crumb-sep"><i class="fas fa-chevron-right"></i></span>
+        <span class="eds-crumb" id="@(selectorId)-crumb-model"></span>
+        <button type="button" class="eds-reset-btn ms-2" onclick="EmpireDeviceSelector.reset('@selectorId')" title="Reset selection">
+            <i class="fas fa-times-circle"></i>
+        </button>
+    </div>
+</div>

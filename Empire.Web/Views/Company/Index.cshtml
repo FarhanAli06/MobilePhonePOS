@@ -1,0 +1,260 @@
+@model IEnumerable<Empire.Web.DTOs.Company.CompanyDto>
+@{
+    ViewData["Title"] = "Company Management";
+}
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Company Management</h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createCompanyModal">
+                        <i class="fas fa-plus"></i> Add New Company
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <table id="companyTable" class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Rank</th>
+                            <th>Default</th>
+                            <th>Created Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var company in Model)
+                        {
+                            <tr data-id="@company.Id" data-name="@company.Name" data-rank="@company.Rank" data-isdefault="@company.IsDefault.ToString().ToLower()">
+                                <td>@company.Name</td>
+                                <td>@company.Rank</td>
+                                <td>
+                                    @if (company.IsDefault)
+                                    {
+                                        <span class="badge badge-success">Default</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-secondary">No</span>
+                                    }
+                                </td>
+                                <td>@company.CreatedDate.ToShortDateString()</td>
+                                <td>
+                                    <button class="btn btn-info btn-sm edit-btn" data-id="@company.Id">
+                                        <i class="fas fa-pencil-alt"></i> Edit
+                                    </button>
+                                    <button class="btn btn-danger btn-sm delete-btn" data-id="@company.Id">
+                                        <i class="fas fa-trash"></i> Delete
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Company Modal -->
+<div class="modal fade" id="createCompanyModal" tabindex="-1" role="dialog" aria-labelledby="createCompanyModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="createCompanyModalLabel">Add New Company</h5>
+            </div>
+            <form id="createCompanyForm" novalidate>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="createName">Company Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="createName" name="Name" required>
+                        <div class="invalid-feedback">Company name is required.</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="createRank">Rank (for sorting)</label>
+                        <input type="number" class="form-control" id="createRank" name="Rank" value="0" required>
+                    </div>
+                    <div class="form-group form-check">
+                        <input type="checkbox" class="form-check-input" id="createIsDefault" name="IsDefault">
+                        <label class="form-check-label" for="createIsDefault">Set as Default Company</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save Company</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Company Modal -->
+<div class="modal fade" id="editCompanyModal" tabindex="-1" role="dialog" aria-labelledby="editCompanyModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editCompanyModalLabel">Edit Company</h5>
+            </div>
+            <form id="editCompanyForm" novalidate>
+                <input type="hidden" id="editId" name="Id">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="editName">Company Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="editName" name="Name" required>
+                        <div class="invalid-feedback">Company name is required.</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="editRank">Rank (for sorting)</label>
+                        <input type="number" class="form-control" id="editRank" name="Rank" required>
+                    </div>
+                    <div class="form-group form-check">
+                        <input type="checkbox" class="form-check-input" id="editIsDefault" name="IsDefault">
+                        <label class="form-check-label" for="editIsDefault">Set as Default Company</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(function () {
+            $("#companyTable").DataTable({
+                "responsive": true, "lengthChange": false, "autoWidth": false,
+                "buttons": ["copy", "csv", "excel", "pdf", "print", "colvis"]
+            }).buttons().container().appendTo('#companyTable_wrapper .col-md-6:eq(0)');
+
+            // --- Create Company ---
+            $('#createCompanyForm').on('submit', function (e) {
+                e.preventDefault();
+                $('#createName').removeClass('is-invalid is-valid');
+                var name = $('#createName').val().trim();
+                if (!name) { $('#createName').addClass('is-invalid'); return; }
+                $('#createName').addClass('is-valid');
+                
+                var formData = {
+                    Name: name,
+                    Rank: parseInt($('#createRank').val()) || 0,
+                    IsDefault: $('#createIsDefault').is(':checked')
+                };
+
+                $.ajax({
+                    url: '@Url.Action("Create", "Company")',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(formData),
+                    headers: {
+                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            $('#createCompanyModal').modal('hide');
+                            showToast('success', 'Company created successfully!');
+                            setTimeout(function() { location.reload(); }, 1000);
+                        } else {
+                            showToast('error', 'Error: ' + response.message);
+                        }
+                    },
+                    error: function (xhr) {
+                        showToast('error', 'An error occurred during creation.');
+                        console.error(xhr);
+                    }
+                });
+            });
+
+            // --- Edit Company - Load Data ---
+            $('#companyTable').on('click', '.edit-btn', function () {
+                var id = $(this).data('id');
+                var row = $(this).closest('tr');
+                
+                $('#editId').val(id);
+                $('#editName').val(row.data('name'));
+                $('#editRank').val(row.data('rank'));
+                $('#editIsDefault').prop('checked', row.data('isdefault') === true);
+                
+                $('#editCompanyModal').modal('show');
+            });
+
+            // --- Edit Company - Save Changes ---
+            $('#editCompanyForm').on('submit', function (e) {
+                e.preventDefault();
+                $('#editName').removeClass('is-invalid is-valid');
+                var editName = $('#editName').val().trim();
+                if (!editName) { $('#editName').addClass('is-invalid'); return; }
+                $('#editName').addClass('is-valid');
+                
+                var formData = {
+                    Id: parseInt($('#editId').val()),
+                    Name: editName,
+                    Rank: parseInt($('#editRank').val()) || 0,
+                    IsDefault: $('#editIsDefault').is(':checked')
+                };
+
+                $.ajax({
+                    url: '@Url.Action("Update", "Company")',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(formData),
+                    headers: {
+                        'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    success: function (response) {
+                        if (response.success) {
+                            $('#editCompanyModal').modal('hide');
+                            showToast('success', 'Company updated successfully!');
+                            setTimeout(function() { location.reload(); }, 1000);
+                        } else {
+                            showToast('error', 'Error: ' + response.message);
+                        }
+                    },
+                    error: function (xhr) {
+                        showToast('error', 'An error occurred during update.');
+                        console.error(xhr);
+                    }
+                });
+            });
+
+            // --- Delete Company ---
+            $('#companyTable').on('click', '.delete-btn', function () {
+                var id = $(this).data('id');
+                
+                if (confirm('Are you sure you want to delete this company?')) {
+                    $.ajax({
+                        url: '@Url.Action("Delete", "Company")/' + id,
+                        type: 'POST',
+                        headers: {
+                            'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                        },
+                        success: function (response) {
+                            if (response.success) {
+                                alert('Company deleted successfully!');
+                                location.reload();
+                            } else {
+                                alert('Error: ' + response.message);
+                            }
+                        },
+                        error: function (xhr) {
+                            alert('An error occurred during deletion.');
+                            console.error(xhr);
+                        }
+                    });
+                }
+            });
+        });
+
+        function showToast(type, message) {
+            const bg = type === 'success' ? '#198754' : '#dc3545';
+            const toast = $(`<div style="position:fixed;bottom:20px;right:20px;z-index:9999;background:${bg};color:#fff;padding:12px 20px;border-radius:6px;box-shadow:0 4px 12px rgba(0,0,0,.2);font-size:14px;">${message}</div>`);
+            $('body').append(toast);
+            setTimeout(() => toast.fadeOut(400, function() { $(this).remove(); }), 3500);
+        }
+    </script>
+}

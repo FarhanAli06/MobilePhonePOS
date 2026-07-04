@@ -1,0 +1,174 @@
+@model Empire.Web.DTOs.User.UpdateUserRequestDto
+
+@{
+    ViewData["Title"] = "Edit User";
+    int userId = ViewBag.UserId ?? 0;
+    string username = ViewBag.Username ?? string.Empty;
+}
+
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-user-edit me-2"></i>Edit User: <span id="username-display">@username</span>
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <form asp-action="Edit" asp-route-id="@userId" id="editUserForm" method="post">
+                        @Html.AntiForgeryToken()
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Username</label>
+                                    <input type="text" class="form-control" id="username-input" value="@username" readonly />
+                                    <small class="form-text text-muted">Username cannot be changed</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="Email" class="form-label">Email *</label>
+                                    <input asp-for="Email" type="email" class="form-control" placeholder="Enter email address" />
+                                    <span asp-validation-for="Email" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="FirstName" class="form-label">First Name *</label>
+                                    <input asp-for="FirstName" class="form-control" placeholder="Enter first name" />
+                                    <span asp-validation-for="FirstName" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="LastName" class="form-label">Last Name *</label>
+                                    <input asp-for="LastName" class="form-control" placeholder="Enter last name" />
+                                    <span asp-validation-for="LastName" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="Phone" class="form-label">Phone</label>
+                                    <input asp-for="Phone" type="tel" class="form-control" placeholder="Enter phone number" />
+                                    <span asp-validation-for="Phone" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="NewPassword" class="form-label">New Password</label>
+                                    <input asp-for="NewPassword" type="password" class="form-control" placeholder="Leave blank to keep current password" />
+                                    <span asp-validation-for="NewPassword" class="text-danger"></span>
+                                    <small class="form-text text-muted">Leave blank to keep current password</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="ShopId" class="form-label">Shop *</label>
+                                    <select asp-for="ShopId" class="form-select" asp-items="ViewBag.Shops">
+                                        <option value="">Select a shop</option>
+                                    </select>
+                                    <span asp-validation-for="ShopId" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label asp-for="RoleId" class="form-label">Role *</label>
+                                    <select asp-for="RoleId" class="form-select" asp-items="ViewBag.Roles">
+                                        <option value="0">Select a role</option>
+                                    </select>
+                                    <span asp-validation-for="RoleId" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input asp-for="IsActive" class="form-check-input" type="checkbox" />
+                                <label asp-for="IsActive" class="form-check-label">
+                                    Active User
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="@Url.Action("Index")" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Back to Users
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Update User
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        $(document).ready(function() {
+            var userId = @userId;
+
+            // Email validation
+            $('#Email').on('blur', function() {
+                var email = $(this).val();
+                if (email) {
+                    $.get('@Url.Action("CheckEmail")', { email: email, id: userId }, function(data) {
+                        if (!data) {
+                            $('#Email').addClass('is-invalid');
+                            $('#Email').next('.text-danger').text('Email already exists');
+                        } else {
+                            $('#Email').removeClass('is-invalid');
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+}
+
+@section Styles {
+    <style>
+        .card {
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            border: 1px solid rgba(0, 0, 0, 0.125);
+        }
+        
+        .form-label {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 0 0.25rem rgba(33, 150, 243, 0.25) !important;
+        }
+        
+        .btn {
+            padding: 0.5rem 1rem;
+        }
+        
+        .is-invalid {
+            border-color: #dc3545;
+        }
+        
+        input[readonly] {
+            background-color: #f8f9fa;
+        }
+    </style>
+}
+

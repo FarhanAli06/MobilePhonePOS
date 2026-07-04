@@ -1,0 +1,15 @@
+C:\Users\User\Downloads\EmpireFix_v54\EmpireV37\Empire.Application\bin\Release\net8.0\Empire.Application.deps.json
+C:\Users\User\Downloads\EmpireFix_v54\EmpireV37\Empire.Application\bin\Release\net8.0\Empire.Application.dll
+C:\Users\User\Downloads\EmpireFix_v54\EmpireV37\Empire.Application\bin\Release\net8.0\Empire.Application.pdb
+C:\Users\User\Downloads\EmpireFix_v54\EmpireV37\Empire.Application\bin\Release\net8.0\Empire.Domain.dll
+C:\Users\User\Downloads\EmpireFix_v54\EmpireV37\Empire.Application\bin\Release\net8.0\Empire.Domain.pdb
+C:\Users\User\Downloads\EmpireFix_v54\EmpireV37\Empire.Application\obj\Release\net8.0\Empire.Application.csproj.AssemblyReference.cache
+C:\Users\User\Downloads\EmpireFix_v54\EmpireV37\Empire.Application\obj\Release\net8.0\Empire.Application.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\User\Downloads\EmpireFix_v54\EmpireV37\Empire.Application\obj\Release\net8.0\Empire.Application.AssemblyInfoInputs.cache
+C:\Users\User\Downloads\EmpireFix_v54\EmpireV37\Empire.Application\obj\Release\net8.0\Empire.Application.AssemblyInfo.cs
+C:\Users\User\Downloads\EmpireFix_v54\EmpireV37\Empire.Application\obj\Release\net8.0\Empire.Application.csproj.CoreCompileInputs.cache
+C:\Users\User\Downloads\EmpireFix_v54\EmpireV37\Empire.Application\obj\Release\net8.0\Empire.A.05BBC5B6.Up2Date
+C:\Users\User\Downloads\EmpireFix_v54\EmpireV37\Empire.Application\obj\Release\net8.0\Empire.Application.dll
+C:\Users\User\Downloads\EmpireFix_v54\EmpireV37\Empire.Application\obj\Release\net8.0\refint\Empire.Application.dll
+C:\Users\User\Downloads\EmpireFix_v54\EmpireV37\Empire.Application\obj\Release\net8.0\Empire.Application.pdb
+C:\Users\User\Downloads\EmpireFix_v54\EmpireV37\Empire.Application\obj\Release\net8.0\ref\Empire.Application.dll

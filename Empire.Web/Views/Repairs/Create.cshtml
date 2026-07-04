@@ -1,0 +1,1234 @@
+@{
+    ViewData["Title"] = "New Repair Order";
+    Layout = "_Layout";
+}
+
+@section Styles {
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <style>
+        :root {
+            --primary: #2196f3;
+            --primary-dark: #1976d2;
+            --secondary: #4caf50;
+            --danger: #f44336;
+            --warning: #ff9800;
+            --purple: #9c27b0;
+            --orange: #ff9800;
+            --teal: #009688;
+            --bg-light: #f8f9fa;
+            --text-dark: #1a1a1a;
+            --text-light: #666666;
+            --border: #e0e0e0;
+            --shadow: 0 4px 12px rgba(0,0,0,0.1);
+            --radius: 8px;
+        }
+        .btn { padding:12px 24px; border:none; border-radius:var(--radius); font-size:16px; font-weight:600; cursor:pointer; transition:0.3s; display:inline-flex; align-items:center; gap:8px; }
+        .btn-primary { background:var(--primary); color:white; }
+        .btn-primary:hover { background:var(--primary-dark); }
+        .btn-secondary { background:var(--bg-light); color:var(--text-dark); border:1px solid var(--border); }
+        .btn-secondary:hover { background:#e9ecef; }
+        .btn-success { background:var(--secondary); color:white; }
+        .btn-success:hover { background:#388e3c; }
+        .btn-danger { background:var(--danger); color:white; }
+        .btn-danger:hover { background:#d32f2f; }
+        .repair-page { padding:5px; max-width:1400px; }
+        .form-section { background:white; border-radius:var(--radius); padding:10px; margin-bottom:15px; box-shadow:var(--shadow); border-left:4px solid var(--primary); }
+        .section-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; padding-bottom:5px; border-bottom:2px solid var(--bg-light); }
+        .section-title { font-size:20px; font-weight:600; display:flex; align-items:center; gap:10px; }
+        .section-title i { color:var(--primary); }
+        .form-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:20px; margin-bottom:20px; }
+        .form-group { display:flex; flex-direction:column; gap:8px; }
+        .form-label { font-weight:500; font-size:14px; color:var(--text-dark); }
+        .form-input,.form-select,.form-textarea { padding:12px; border:1px solid var(--border); border-radius:var(--radius); font-size:16px; font-family:'Inter',sans-serif; }
+        .form-input:focus,.form-select:focus,.form-textarea:focus { outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(33,150,243,0.1); }
+        .form-textarea { resize:vertical; min-height:100px; }
+        .device-card { background:white; border-radius:var(--radius); padding:20px; margin-bottom:20px; box-shadow:0 2px 8px rgba(0,0,0,0.08); border:1px solid var(--border); }
+        .device-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; padding-bottom:15px; border-bottom:2px solid var(--bg-light); }
+        .device-number { font-weight:600; color:var(--primary); font-size:18px; }
+        .remove-device { background:var(--danger); color:white; border:none; padding:8px 15px; border-radius:var(--radius); cursor:pointer; display:flex; align-items:center; gap:5px; font-size:14px; }
+        .brand-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:15px; margin-bottom:20px; }
+        .brand-card { background:white; padding:15px; border-radius:var(--radius); text-align:center; cursor:pointer; border:2px solid transparent; transition:0.3s; box-shadow:0 2px 5px rgba(0,0,0,0.05); }
+        .brand-card:hover { transform:translateY(-3px); box-shadow:0 5px 15px rgba(0,0,0,0.1); }
+        .brand-card.active { border-color:var(--primary); background:rgba(33,150,243,0.05); }
+        .brand-icon { width:50px; height:50px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; color:white; font-size:24px; }
+        .brand-name { font-weight:600; font-size:14px; }
+        .categories-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:15px; margin-bottom:20px; }
+        .category-card { background:white; padding:20px 15px; border-radius:var(--radius); text-align:center; cursor:pointer; border:2px solid transparent; transition:0.3s; box-shadow:0 2px 5px rgba(0,0,0,0.05); }
+        .category-card:hover { transform:translateY(-3px); box-shadow:0 5px 10px rgba(0,0,0,0.1); }
+        .category-card.active { border-color:var(--primary); background:rgba(33,150,243,0.05); }
+        .category-icon { font-size:32px; margin-bottom:10px; color:var(--primary); }
+        .category-name { font-weight:600; font-size:14px; }
+        .models-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:15px; margin-bottom:20px; }
+        .model-card { background:white; padding:15px; border-radius:var(--radius); text-align:center; cursor:pointer; border:2px solid transparent; transition:0.3s; box-shadow:0 2px 5px rgba(0,0,0,0.05); }
+        .model-card:hover { transform:translateY(-3px); box-shadow:0 5px 10px rgba(0,0,0,0.1); }
+        .model-card.active { border-color:var(--primary); background:rgba(33,150,243,0.05); }
+        .model-icon { font-size:28px; margin-bottom:10px; }
+        .model-name { font-weight:600; font-size:13px; margin-bottom:5px; }
+        .model-year { font-size:11px; color:var(--text-light); }
+        .parts-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:20px; margin-bottom:30px; }
+        .part-card { background:white; border-radius:var(--radius); padding:20px; border:1px solid var(--border); transition:0.3s; box-shadow:0 2px 8px rgba(0,0,0,0.05); }
+        .part-card:hover { transform:translateY(-5px); box-shadow:0 8px 16px rgba(0,0,0,0.1); }
+        .selected-part-item { display:flex; align-items:center; justify-content:space-between; padding:15px; background:white; border-radius:var(--radius); border:1px solid var(--border); margin-bottom:10px; transition:0.2s; }
+        .selected-part-item:hover { background:#f8f9fa; border-color:var(--primary); }
+        .payment-methods-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:15px; margin-top:20px; margin-bottom:20px; }
+        .payment-method-card { background:white; padding:20px 15px; border-radius:var(--radius); text-align:center; cursor:pointer; border:2px solid transparent; transition:0.3s; box-shadow:0 2px 5px rgba(0,0,0,0.05); }
+        .payment-method-card:hover { transform:translateY(-3px); box-shadow:0 5px 10px rgba(0,0,0,0.1); }
+        .payment-method-card.active { border-color:var(--primary); background:rgba(33,150,243,0.05); }
+        .payment-method-icon { font-size:32px; margin-bottom:10px; }
+        .payment-method-name { font-weight:600; font-size:14px; margin-bottom:5px; }
+        .payment-method-desc { font-size:11px; color:var(--text-light); }
+        .status-options { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:15px; margin-top:20px; }
+        .status-option { border:2px solid var(--border); border-radius:var(--radius); text-align:center; cursor:pointer; transition:0.3s; }
+        .status-option:hover { transform:translateY(-2px); box-shadow:0 4px 8px rgba(0,0,0,0.1); }
+        .status-option.active { border-color:var(--primary); background:rgba(33,150,243,0.05); }
+        .status-icon { font-size:32px; margin-bottom:10px; }
+        .status-name { font-weight:600; margin-bottom:5px; }
+        .status-desc { font-size:12px; color:var(--text-light); }
+        .payment-summary { background:#f8f9fa; border-radius:var(--radius); padding:20px; margin-top:20px; }
+        .payment-row { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); }
+        .payment-row:last-child { border-bottom:none; font-weight:600; font-size:18px; color:var(--primary); }
+        .payment-row.total { margin-top:10px; padding-top:15px; border-top:2px solid var(--border); }
+        .payment-row.balance { background:rgba(255,152,0,0.1); padding:12px; border-radius:var(--radius); margin-top:5px; }
+        .payment-history { margin-top:25px; }
+        .payment-history-item { display:flex; justify-content:space-between; align-items:center; padding:12px; background:white; border:1px solid var(--border); border-radius:var(--radius); margin-bottom:10px; }
+        .payment-history-info { flex:1; }
+        .payment-history-method { font-weight:600; margin-bottom:5px; font-size:14px; }
+        .payment-history-details { font-size:12px; color:var(--text-light); }
+        .payment-history-amount { font-weight:600; font-size:16px; }
+        .action-buttons { display:flex; gap:15px; justify-content:flex-end; margin-top:30px; padding-top:20px; border-top:1px solid var(--border); }
+        .payment-details-section { margin-top:25px; padding-top:25px; border-top:2px solid var(--bg-light); }
+        .payment-details-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:15px; margin-top:15px; }
+        .payment-action-buttons { display:flex; gap:10px; margin-top:20px; flex-wrap:wrap; }
+        .payment-action-btn { padding:10px 20px; border:none; border-radius:var(--radius); font-size:14px; cursor:pointer; display:flex; align-items:center; gap:5px; }
+        .add-device-btn { width:100%; padding:15px; border:2px dashed var(--border); border-radius:var(--radius); background:none; color:var(--text-light); font-size:16px; cursor:pointer; transition:0.3s; display:flex; align-items:center; justify-content:center; gap:10px; }
+        .add-device-btn:hover { border-color:var(--primary); color:var(--primary); background:rgba(33,150,243,0.05); }
+        .repair-id { font-size:14px; color:var(--text-light); background:var(--bg-light); padding:5px 15px; border-radius:20px; font-family:monospace; }
+        .device-issue-input { width:100%; padding:12px; border:1px solid var(--border); border-radius:var(--radius); font-size:14px; margin-top:10px; }
+        .device-issue-input:focus { outline:none; border-color:var(--primary); }
+        .chip { background:var(--bg-light); padding:5px 15px; border-radius:20px; font-size:14px; color:var(--text-light); }
+        /* Shared section-card styles (matches Edit page) */
+        .section-card { background:white; border-radius:var(--radius); box-shadow:0 2px 8px rgba(0,0,0,.06); margin-bottom:16px; overflow:hidden; }
+        .section-header { padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; font-weight:600; font-size:.82rem; text-transform:uppercase; letter-spacing:.04em; color:var(--primary); background:#f8fbff; }
+        .section-header i { font-size:16px; }
+        .section-body { padding:14px 16px; }
+        .device-step { display:none; }
+        .device-step.active { display:block; animation:fadeIn 0.3s ease; }
+        @@keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+        .status-pending { color:var(--warning); }
+        .status-in-progress { color:var(--primary); }
+        .status-waiting { color:var(--orange); }
+        .status-completed { color:var(--secondary); }
+        .status-cancelled { color:var(--danger); }
+        .status-ready { color:var(--purple); }
+        .payment-unpaid { color:var(--danger); }
+        .payment-partial { color:var(--warning); }
+        .payment-paid { color:var(--secondary); }
+        @@media (max-width:768px) {
+            .repair-page { padding:20px 15px; }
+            .form-grid { grid-template-columns:1fr; }
+            .brand-grid { grid-template-columns:repeat(3,1fr); }
+            .categories-grid,.models-grid,.payment-methods-grid { grid-template-columns:repeat(2,1fr); }
+            .action-buttons,.payment-action-buttons { flex-direction:column; }
+        }
+    </style>
+}
+
+<div class="repair-page">
+    <!-- Page Header -->
+    <div class="section-header">
+        <div>
+            <h1 style="font-size:24px;font-weight:700;margin-bottom:5px;">New Repair Order</h1>
+            <div class="repair-id">Repair ID: <span id="repairId">#REP-00123</span></div>
+        </div>
+        <div style="display:flex;gap:10px;">
+            <button class="btn btn-secondary" onclick="saveRepair()">
+                <i class="material-icons">save</i> Save Draft
+            </button>
+            <button class="btn btn-primary" onclick="previewRepair()">
+                <i class="material-icons">preview</i> Preview
+            </button>
+        </div>
+    </div>
+
+    <!-- SECTION 1: Customer Information -->
+    <div class="form-section">
+        <div class="section-header">
+            <div class="section-title">
+                <i class="material-icons">person_add</i>
+                <span>Customer Information</span>
+            </div>
+        </div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Customer Name *</label>
+                <div style="display:flex;gap:8px;align-items:flex-start;">
+                    <select class="form-input" id="customerName" required style="flex:1;">
+                        <option value="">Select or search customer...</option>
+                    </select>
+                    <button type="button" class="btn btn-primary btn-sm" style="height:46px;padding:0 14px;white-space:nowrap;font-size:13px;" data-bs-toggle="modal" data-bs-target="#addNewCustomerModal" title="Add New Customer">
+                        <i class="material-icons" style="font-size:18px;vertical-align:middle;">person_add</i>
+                    </button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Phone Number</label>
+                <input type="tel" class="form-input" id="customerPhone" placeholder="Enter phone number (optional)">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Email Address</label>
+                <input type="email" class="form-input" id="customerEmail" placeholder="Enter email">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Address</label>
+                <input type="text" class="form-input" id="customerAddress" placeholder="Enter address">
+            </div>
+        </div>
+    </div>
+
+    <!-- SECTION 2: Device Selection -->
+    <div class="form-section">
+        <div class="section-header">
+            <div class="section-title">
+                <i class="material-icons">devices</i>
+                <span>Devices for Repair</span>
+            </div>
+            <span class="chip" id="deviceCount">1 device added</span>
+        </div>
+        <div id="devicesContainer"></div>
+        <button class="add-device-btn" onclick="addDeviceSection()">
+            <i class="material-icons">add</i> Add Another Device
+        </button>
+    </div>
+
+    <!-- SECTION 3: Repair Notes -->
+    <div class="form-section">
+        <div class="section-title" style="margin-bottom:20px;">
+            <i class="material-icons">notes</i>
+            <span>Repair Notes &amp; Diagnosis</span>
+        </div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Problem Description *</label>
+                <textarea class="form-textarea" id="problemDescription" placeholder="Describe the issue reported by the customer..." rows="3"></textarea>
+            </div>
+            <div class="form-group" style="display:none;">
+                <label class="form-label">Technician Diagnosis</label>
+                <textarea class="form-textarea" id="technicianDiagnosis" placeholder="Technician's findings and diagnosis..." rows="3"></textarea>
+            </div>
+        </div>
+        <div class="form-group" style="margin-top:20px;display:none;">
+            <label class="form-label">Additional Notes</label>
+            <textarea class="form-textarea" id="additionalNotes" placeholder="Any additional notes or special instructions..." rows="2"></textarea>
+        </div>
+    </div>
+
+    <!-- SECTION 4: Repair Status -->
+    <div class="form-section">
+        <div class="section-title" style="margin-bottom:20px;">
+            <i class="material-icons">track_changes</i>
+            <span>Repair Status</span>
+        </div>
+        <div class="status-options" id="repairStatusOptions">
+            <div class="status-option active" onclick="selectRepairStatus('pending', this)">
+                <div class="status-icon status-pending"><i class="material-icons">schedule</i></div>
+                <div class="status-name status-pending">Pending</div>
+                <div class="status-desc">Awaiting repair</div>
+            </div>
+            <div class="status-option" onclick="selectRepairStatus('in-progress', this)">
+                <div class="status-icon status-in-progress"><i class="material-icons">build</i></div>
+                <div class="status-name status-in-progress">In Progress</div>
+                <div class="status-desc">Currently being repaired</div>
+            </div>
+            <div class="status-option" onclick="selectRepairStatus('waiting', this)">
+                <div class="status-icon status-waiting"><i class="material-icons">hourglass_empty</i></div>
+                <div class="status-name status-waiting">Waiting Parts</div>
+                <div class="status-desc">Waiting for parts</div>
+            </div>
+            <div class="status-option" onclick="selectRepairStatus('ready', this)">
+                <div class="status-icon status-ready"><i class="material-icons">check_circle</i></div>
+                <div class="status-name status-ready">Ready</div>
+                <div class="status-desc">Ready for pickup</div>
+            </div>
+            <div class="status-option" onclick="selectRepairStatus('completed', this)">
+                <div class="status-icon status-completed"><i class="material-icons">done_all</i></div>
+                <div class="status-name status-completed">Completed</div>
+                <div class="status-desc">Returned to customer</div>
+            </div>
+            <div class="status-option" onclick="selectRepairStatus('cancelled', this)">
+                <div class="status-icon status-cancelled"><i class="material-icons">cancel</i></div>
+                <div class="status-name status-cancelled">Cancelled</div>
+                <div class="status-desc">Repair cancelled</div>
+            </div>
+        </div>
+        <div class="form-group" style="margin-top:20px;">
+            <label class="form-label">Estimated Completion Date</label>
+            <input type="date" class="form-input" id="estimatedCompletion">
+        </div>
+    </div>
+
+    <!-- SECTION 5: Payment -->
+    <div class="form-section">
+        <div class="section-title" style="margin-bottom:20px;">
+            <i class="material-icons">payments</i>
+            <span>Payment Information</span>
+        </div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Service Charge ($)</label>
+                <input type="number" class="form-input" id="serviceCharge" value="0" min="0" step="0.01" onchange="calculateTotal()">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Diagnostic Fee ($)</label>
+                <input type="number" class="form-input" id="diagnosticFee" value="0" min="0" step="0.01" onchange="calculateTotal()">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Discount ($)</label>
+                <input type="number" class="form-input" id="discount" value="0" min="0" step="0.01" onchange="calculateTotal()">
+            </div>
+            <!-- Tax UI Component -->
+            <div class="form-group">
+                <label class="form-label">Tax</label>
+                <div class="tax-toggle-group" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <div class="btn-group btn-group-sm" role="group">
+                        <input type="radio" class="btn-check" name="taxMode" id="taxModeExempt" value="exempt" checked onchange="onTaxModeChange()">
+                        <label class="btn btn-outline-secondary" for="taxModeExempt"><i class="material-icons" style="font-size:14px;vertical-align:middle;">block</i> Exempt</label>
+                        <input type="radio" class="btn-check" name="taxMode" id="taxModeApply" value="apply" onchange="onTaxModeChange()">
+                        <label class="btn btn-outline-primary" for="taxModeApply"><i class="material-icons" style="font-size:14px;vertical-align:middle;">percent</i> Apply</label>
+                    </div>
+                    <div id="taxRateWrapper" style="display:none;flex:1;min-width:100px;">
+                        <div class="input-group input-group-sm">
+                            <input type="number" class="form-input" id="taxRate" value="10.25" min="0" max="100" step="0.01" onchange="calculateTotal()" style="border-radius:4px 0 0 4px;">
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" id="taxRateHidden" value="0">
+            </div>
+        </div>
+        <!-- Payment Status -->
+        <div class="status-options" style="grid-template-columns:repeat(3,1fr);margin-top:30px;">
+            <div class="status-option active" onclick="selectPaymentStatus('unpaid', this)">
+                <div class="status-icon payment-unpaid"><i class="material-icons">money_off</i></div>
+                <div class="status-name payment-unpaid">Unpaid</div>
+                <div class="status-desc">No payment received</div>
+            </div>
+            <div class="status-option" onclick="selectPaymentStatus('partial', this)">
+                <div class="status-icon payment-partial"><i class="material-icons">attach_money</i></div>
+                <div class="status-name payment-partial">Partial</div>
+                <div class="status-desc">Partial payment</div>
+            </div>
+            <div class="status-option" onclick="selectPaymentStatus('paid', this)">
+                <div class="status-icon payment-paid"><i class="material-icons">paid</i></div>
+                <div class="status-name payment-paid">Paid</div>
+                <div class="status-desc">Fully paid</div>
+            </div>
+        </div>
+        <!-- Payment / Refund Entry Form (shown when partial/paid) -->
+        <div class="payment-details-section" id="paymentMethodSection" style="display:none;">
+            <!-- Type toggle -->
+            <div style="margin-bottom:12px;">
+                <div class="btn-group" role="group">
+                    <input type="radio" class="btn-check" name="createTxnType" id="createTxnTypePayment" value="Payment" checked>
+                    <label class="btn btn-outline-success btn-sm" for="createTxnTypePayment"><i class="material-icons" style="font-size:13px;vertical-align:middle;">arrow_downward</i> Payment</label>
+                    <input type="radio" class="btn-check" name="createTxnType" id="createTxnTypeRefund" value="Refund">
+                    <label class="btn btn-outline-danger btn-sm" for="createTxnTypeRefund"><i class="material-icons" style="font-size:13px;vertical-align:middle;">arrow_upward</i> Refund</label>
+                </div>
+            </div>
+            <h3 style="margin-bottom:12px;font-size:15px;">Select Payment Method</h3>
+            <div class="payment-methods-grid" id="paymentMethods"></div>
+            <div id="paymentDetails" style="display:none;">
+                <div class="payment-details-grid">
+                    <div class="form-group">
+                        <label class="form-label">Amount ($)</label>
+                        <input type="number" class="form-input" id="amountPaid" min="0" step="0.01" placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Reference / Transaction ID</label>
+                        <input type="text" class="form-input" id="paymentReference" placeholder="e.g. Zelle ref, check #">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Notes</label>
+                        <input type="text" class="form-input" id="paymentNotesTxn" placeholder="Optional">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Date</label>
+                        <input type="date" class="form-input" id="paymentDate">
+                    </div>
+                </div>
+                <div class="payment-action-buttons">
+                    <button class="payment-action-btn" id="btnCreateAddTxn" style="background:var(--secondary);color:white;" onclick="addPayment()">
+                        <i class="material-icons">add</i> Add Payment
+                    </button>
+                    <button class="payment-action-btn" style="background:var(--primary);color:white;" onclick="markAsPaid()">
+                        <i class="material-icons">check_circle</i> Mark as Paid in Full
+                    </button>
+                    <button class="payment-action-btn" style="background:var(--danger);color:white;" onclick="clearPaymentForm()">
+                        <i class="material-icons">clear</i> Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Payment / Refund Ledger -->
+        <div class="payment-history" id="paymentHistory" style="display:none;">
+            <h3 style="margin-bottom:12px;font-size:15px;">Payment Ledger</h3>
+            <div id="paymentHistoryList"></div>
+        </div>
+        <!-- Payment Summary -->
+        <div class="payment-summary">
+            <div class="payment-row"><span>Parts Total:</span><span id="partsTotal">$0.00</span></div>
+            <div class="payment-row"><span>Service Charge:</span><span id="serviceTotal">$49.99</span></div>
+            <div class="payment-row"><span>Diagnostic Fee:</span><span id="diagnosticTotal">$19.99</span></div>
+            <div class="payment-row"><span>Discount:</span><span id="discountTotal">-$0.00</span></div>
+            <div class="payment-row"><span>Tax (<span id="taxRateDisplay">8.5</span>%):</span><span id="taxTotal">$0.00</span></div>
+            <div class="payment-row total"><span>GRAND TOTAL:</span><span id="grandTotal">$69.98</span></div>
+            <div class="payment-row"><span>Total Paid:</span><span id="totalPaidDisplay">$0.00</span></div>
+            <div class="payment-row" id="refundedRow" style="display:none;"><span>Total Refunded:</span><span id="totalRefundedDisplay" style="color:#e53935;">-$0.00</span></div>
+            <div class="payment-row balance" id="balanceRow"><span>BALANCE DUE:</span><span id="balanceDue">$69.98</span></div>
+        </div>
+        <div class="form-group" style="margin-top:20px;">
+            <label class="form-label">Payment Notes</label>
+            <textarea class="form-textarea" id="paymentNotes" placeholder="Payment details, terms, or special arrangements..." rows="2"></textarea>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <button class="btn btn-secondary" onclick="resetForm()">
+            <i class="material-icons">clear</i> Clear Form
+        </button>
+        <button class="btn btn-primary" onclick="saveRepair()">
+            <i class="material-icons">save</i> Save as Draft
+        </button>
+        <button class="btn btn-success" onclick="submitRepair()">
+            <i class="material-icons">check_circle</i> Submit Repair Order
+        </button>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- Loads all dropdown data (brands, categories, models, parts, payment methods) from backend API -->
+    <script src="~/js/repair-data-loader.js"></script>
+
+    <script>
+        // ── State ─────────────────────────────────────────────────────────────────
+        let deviceCounter = 1;
+        let repairStatus = 'pending';
+        let paymentStatus = 'unpaid';
+        let deviceStates = {};
+        let paymentHistoryItems = [];
+        let totalPaid = 0;
+        let totalRefunded = 0;
+        let selectedPaymentMethod = null;
+
+        // ── Render callbacks invoked by repair-data-loader after data is fetched ──
+        function renderBrands() {
+            document.querySelectorAll('[id$="-brands"]').forEach(function(grid) {
+                var deviceId = grid.id.replace('-brands', '');
+                grid.innerHTML = buildBrandCards(deviceId);
+            });
+        }
+        function renderDeviceCategories() { /* categories rendered on-demand */ }
+        function renderPaymentMethods() {
+            var container = document.getElementById('paymentMethods');
+            if (!container) return;
+            var methods = (window.repairData && window.repairData.paymentMethods) ? window.repairData.paymentMethods : [];
+            if (!methods.length) return;
+            container.innerHTML = methods.map(function(m) {
+                return '<div class="payment-method-card" onclick="selectPaymentMethod(\'' + m.id + '\')">'
+                    + '<div class="payment-method-icon"><i class="material-icons">' + (m.icon || 'payments') + '</i></div>'
+                    + '<div class="payment-method-name">' + m.name + '</div>'
+                    + '<div class="payment-method-desc">' + (m.description || '') + '</div>'
+                    + '</div>';
+            }).join('');
+        }
+
+        // ── Helpers ───────────────────────────────────────────────────────────────
+        function getBrands() { return (window.repairData && window.repairData.brands) ? window.repairData.brands : []; }
+        function getDeviceCategories() { return (window.repairData && window.repairData.deviceCategories) ? window.repairData.deviceCategories : []; }
+        function getPaymentMethods() { return (window.repairData && window.repairData.paymentMethods) ? window.repairData.paymentMethods : []; }
+
+        function buildBrandCards(deviceId) {
+            var brands = getBrands();
+            if (!brands.length) return '<p style="color:var(--text-light);padding:10px;">Loading brands...</p>';
+            return brands.map(function(b) {
+                return '<div class="brand-card" onclick="selectBrand(\'' + deviceId + '\', \'' + b.id + '\', event)">'
+                    + '<div class="brand-icon" style="background:' + (b.color || '#757575') + '">'
+                    + '<i class="' + (b.icon || 'fas fa-mobile-alt') + '"></i></div>'
+                    + '<div class="brand-name">' + b.name + '</div></div>';
+            }).join('');
+        }
+
+        function adjustColor(hex, amount) {
+            var num = parseInt((hex || '#757575').replace('#', ''), 16);
+            var r = Math.min(255, Math.max(0, (num >> 16) + amount));
+            var g = Math.min(255, Math.max(0, ((num >> 8) & 0xff) + amount));
+            var b = Math.min(255, Math.max(0, (num & 0xff) + amount));
+            return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+        }
+
+        function getPartIcon(name) {
+            var n = (name || '').toLowerCase();
+            if (n.includes('screen') || n.includes('display') || n.includes('lcd')) return '📱';
+            if (n.includes('battery')) return '🔋';
+            if (n.includes('camera')) return '📷';
+            if (n.includes('charging') || n.includes('port') || n.includes('usb')) return '🔌';
+            if (n.includes('speaker') || n.includes('audio')) return '🔊';
+            if (n.includes('back') || n.includes('glass') || n.includes('cover')) return '🪟';
+            if (n.includes('button') || n.includes('power') || n.includes('volume')) return '🔘';
+            if (n.includes('motherboard') || n.includes('board') || n.includes('logic')) return '🖥️';
+            return '🔧';
+        }
+
+        function showNotification(message, type) {
+            var colors = { success: 'var(--secondary)', warning: 'var(--warning)', error: 'var(--danger)', info: 'var(--primary)' };
+            var icons = { success: 'check_circle', warning: 'warning', error: 'error', info: 'info' };
+            var n = document.createElement('div');
+            n.style.cssText = 'position:fixed;top:20px;right:20px;background:' + (colors[type] || colors.info) + ';color:white;padding:15px 20px;border-radius:var(--radius);box-shadow:var(--shadow);z-index:9999;display:flex;align-items:center;gap:10px;';
+            n.innerHTML = '<i class="material-icons">' + (icons[type] || 'info') + '</i><span>' + message + '</span>';
+            document.body.appendChild(n);
+            setTimeout(function() { n.remove(); }, 3000);
+        }
+
+        // ── Page Init ─────────────────────────────────────────────────────────────
+        function initializeRepairsPage() {
+            document.getElementById('repairId').textContent = '#REP-' + Math.floor(10000 + Math.random() * 90000);
+            var pd = document.getElementById('paymentDate');
+            if (pd) pd.value = new Date().toISOString().split('T')[0];
+            var ec = document.getElementById('estimatedCompletion');
+            if (ec) { var d = new Date(); d.setDate(d.getDate() + 7); ec.value = d.toISOString().split('T')[0]; }
+            addDeviceSection();
+            renderPaymentMethods();
+            calculateTotal();
+        }
+
+        // ── Device Sections ───────────────────────────────────────────────────────
+        function addDeviceSection() {
+            var container = document.getElementById('devicesContainer');
+            var selectorId = 'repairDevice' + deviceCounter;
+            var containerId = selectorId + '-container';
+            deviceStates[selectorId] = { step: 1, brand: null, brandName: '', category: null, categoryName: '', model: null, modelName: '', issue: '', selectedParts: [] };
+
+            var card = document.createElement('div');
+            card.className = 'device-card';
+            card.id = selectorId + '-card';
+            card.innerHTML = '<div class="device-header">'
+                + '<div class="device-number">Device ' + deviceCounter + '</div>'
+                + (deviceCounter > 1 ? '<button class="remove-device" onclick="removeDevice(\'' + selectorId + '\')">'  
+                    + '<i class="material-icons">delete</i> Remove</button>' : '')
+                + '</div>'
+                + '<div id="' + containerId + '"></div>';
+            container.appendChild(card);
+
+            // Create the generic selector with parts enabled
+            EmpireDeviceSelector.create(containerId, {
+                selectorId:      selectorId,
+                showParts:       true,
+                showIssueInput:  true,
+                onModelSelected: function(detail) {
+                    var st = deviceStates[detail.selectorId];
+                    if (st) {
+                        st.brand     = detail.brandId;
+                        st.brandName = detail.brandName;
+                        st.category  = detail.categoryId;
+                        st.categoryName = detail.categoryName;
+                        st.model     = detail.modelId;
+                        st.modelName = detail.modelName;
+                    }
+                },
+                onPartToggled: function(detail) {
+                    var st = deviceStates[detail.selectorId];
+                    if (st) {
+                        st.selectedParts = detail.selectedParts.map(function(p) {
+                            return { id: p.id, name: p.name, price: parseFloat(p.price || 0), quantity: 1 };
+                        });
+                        calculateTotal();
+                    }
+                }
+            });
+
+            // Keep issue updates in sync
+            document.addEventListener('eds:issueUpdated', function(e) {
+                if (e.detail.selectorId === selectorId) {
+                    var st = deviceStates[selectorId];
+                    if (st) st.issue = e.detail.issue;
+                }
+            });
+            // Keep reset in sync
+            document.addEventListener('eds:reset', function(e) {
+                if (e.detail.selectorId === selectorId) {
+                    var st = deviceStates[selectorId];
+                    if (st) { st.brand = null; st.category = null; st.model = null; st.modelName = ''; st.selectedParts = []; calculateTotal(); }
+                }
+            });
+
+            deviceCounter++;
+            updateDeviceCount();
+        }
+
+        function removeDevice(selectorId) {
+            var el = document.getElementById(selectorId + '-card');
+            if (el) { el.remove(); delete deviceStates[selectorId]; updateDeviceCount(); calculateTotal(); }
+        }
+
+        function updateDeviceCount() {
+            var c = document.querySelectorAll('.device-card').length;
+            document.getElementById('deviceCount').textContent = c + ' device' + (c !== 1 ? 's' : '') + ' added';
+        }
+
+        function goToStep(deviceId, step) {
+            if (deviceStates[deviceId]) deviceStates[deviceId].step = step;
+            [1, 2, 3, 4].forEach(function(i) {
+                var el = document.getElementById(deviceId + '-step' + i);
+                if (el) el.style.display = i === step ? 'block' : 'none';
+            });
+        }
+
+        // ── Brand → Category → Model → Parts ─────────────────────────────────────
+        function selectBrand(deviceId, brandId, evt) {
+            var state = deviceStates[deviceId];
+            state.brand = brandId; state.category = null; state.model = null; state.selectedParts = [];
+            document.querySelectorAll('#' + deviceId + '-brands .brand-card').forEach(function(c) { c.classList.remove('active'); });
+            if (evt && evt.target) evt.target.closest('.brand-card').classList.add('active');
+            loadCategories(deviceId);
+        }
+
+        function loadCategories(deviceId) {
+            var categories = getDeviceCategories();
+            var step2 = document.getElementById(deviceId + '-step2');
+            step2.innerHTML = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:15px;">'
+                + '<button class="btn btn-secondary" onclick="goToStep(\'' + deviceId + '\',1)" style="padding:8px 12px;"><i class="material-icons">arrow_back</i></button>'
+                + '<h3 style="font-size:16px;">Select Device Type</h3></div>'
+                + '<div class="categories-grid" id="' + deviceId + '-categories">'
+                + (categories.length ? categories.map(function(c) {
+                    return '<div class="category-card" onclick="selectCategory(\'' + deviceId + '\',\'' + c.id + '\',event)">'
+                        + '<i class="material-icons category-icon">' + (c.icon || 'devices_other') + '</i>'
+                        + '<div class="category-name">' + c.name + '</div></div>';
+                }).join('') : '<p style="color:var(--text-light);">Loading categories...</p>')
+                + '</div>';
+            goToStep(deviceId, 2);
+        }
+
+        function selectCategory(deviceId, categoryId, evt) {
+            var state = deviceStates[deviceId];
+            state.category = categoryId; state.model = null; state.selectedParts = [];
+            document.querySelectorAll('#' + deviceId + '-categories .category-card').forEach(function(c) { c.classList.remove('active'); });
+            if (evt && evt.target) evt.target.closest('.category-card').classList.add('active');
+            loadModels(deviceId, state.brand, categoryId);
+        }
+
+        async function loadModels(deviceId, brandId, categoryId) {
+            var step3 = document.getElementById(deviceId + '-step3');
+            step3.innerHTML = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:15px;">'
+                + '<button class="btn btn-secondary" onclick="goToStep(\'' + deviceId + '\',2)" style="padding:8px 12px;"><i class="material-icons">arrow_back</i></button>'
+                + '<h3 style="font-size:16px;">Select Model</h3></div>'
+                + '<div class="models-grid" id="' + deviceId + '-models">'
+                + '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text-light);"><i class="material-icons" style="font-size:32px;">sync</i><p>Loading models...</p></div>'
+                + '</div>';
+            goToStep(deviceId, 3);
+            var models = [];
+            try { models = await window.repairData.loadDeviceModels(brandId, categoryId); } catch(e) { console.error(e); }
+            var grid = document.getElementById(deviceId + '-models');
+            if (!grid) return;
+            grid.innerHTML = models.length ? models.map(function(m) {
+                return '<div class="model-card" onclick="selectModel(\'' + deviceId + '\',\'' + m.id + '\',\'' + (m.name || '').replace(/'/g, "\\'") + '\',event)">'
+                    + '<div class="model-icon">' + (m.icon || '📱') + '</div>'
+                    + '<div class="model-name">' + m.name + '</div>'
+                    + (m.year ? '<div class="model-year">' + m.year + '</div>' : '')
+                    + '</div>';
+            }).join('') : '<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text-light);">'
+                + '<i class="material-icons" style="font-size:48px;margin-bottom:10px;">devices_other</i>'
+                + '<p>No models found.</p>'
+                + '<button class="btn btn-secondary" style="margin-top:10px;" onclick="manuallyAddModel(\'' + deviceId + '\')">'
+                + '<i class="material-icons">add</i> Add Manually</button></div>';
+        }
+
+        function selectModel(deviceId, modelId, modelName, evt) {
+            var state = deviceStates[deviceId];
+            state.model = modelId; state.modelName = modelName;
+            document.querySelectorAll('#' + deviceId + '-models .model-card').forEach(function(c) { c.classList.remove('active'); });
+            if (evt && evt.target) evt.target.closest('.model-card').classList.add('active');
+            loadParts(deviceId, state.brand, state.category, modelId);
+        }
+
+        async function loadParts(deviceId, brandId, categoryId, modelId) {
+            var state = deviceStates[deviceId];
+            var brands = getBrands();
+            var brand = brands.find(function(b) { return String(b.id) === String(brandId); }) || { name: brandId, color: '#757575', icon: 'fas fa-mobile-alt' };
+            var step4 = document.getElementById(deviceId + '-step4');
+            // Parts section — same section-card structure as Edit page
+            step4.innerHTML = '<div class="d-flex align-items-center gap-2 mb-3">'
+                + '<button class="btn btn-sm btn-outline-secondary" onclick="goToStep(\'' + deviceId + '\',3)" style="padding:6px 10px;"><i class="material-icons" style="font-size:16px;vertical-align:middle;">arrow_back</i></button>'
+                + '<span class="fw-semibold" style="font-size:.9rem;color:var(--primary);"><i class="material-icons" style="font-size:16px;vertical-align:middle;margin-right:4px;">smartphone</i>' + brand.name + ' &mdash; ' + (state.modelName || 'Selected model') + '</span></div>'
+                + '<div class="mb-3"><label class="form-label fw-semibold">Device Issue / Problem</label>'
+                + '<input type="text" class="form-control form-control-sm device-issue-input" placeholder="Describe the issue (e.g. cracked screen, battery replacement)" oninput="updateDeviceIssue(\'' + deviceId + '\',this.value)" value="' + (state.issue || '') + '"></div>'
+                + '<div class="section-card repair-parts-section">'
+                + '<div class="section-header"><i class="material-icons">build</i>Parts Used</div>'
+                + '<div class="section-body">'
+                + '<div id="' + deviceId + '-parts-loading" class="text-center text-muted py-3"><i class="material-icons" style="font-size:36px;opacity:.4;">inventory_2</i><p class="mt-1 mb-0 small">Loading parts from inventory…</p></div>'
+                + '<div id="' + deviceId + '-parts-grid" class="parts-grid"></div>'
+                + '<div id="' + deviceId + '-no-parts" class="text-center text-muted py-3" style="display:none;"><i class="material-icons" style="font-size:36px;opacity:.4;">inventory_2</i><p class="mt-1 mb-0 small">No standard parts available for this model.</p></div>'
+                + '<div id="' + deviceId + '-custom-part-card" style="display:none;background:white;border-radius:var(--radius);padding:14px;border:2px dashed var(--border);text-align:center;margin-top:12px;">'
+                + '<div style="font-size:32px;margin-bottom:8px;color:var(--text-light);"><i class="material-icons">add_circle</i></div>'
+                + '<div style="font-weight:600;font-size:14px;margin-bottom:6px;">Need a different part?</div>'
+                + '<p style="color:var(--text-light);margin-bottom:12px;font-size:13px;">Add custom parts not in standard inventory</p>'
+                + '<button class="btn btn-sm btn-outline-secondary w-100" onclick="addCustomPart(\'' + deviceId + '\')" ><i class="material-icons" style="font-size:14px;vertical-align:middle;">add</i> Add Custom Part</button></div>'
+                + '<div id="' + deviceId + '-selected-parts-section" style="display:none;margin-top:16px;padding-top:14px;border-top:2px solid var(--border);">'
+                + '<div class="d-flex justify-content-between align-items-center mb-2">'
+                + '<strong style="font-size:.9rem;"><i class="material-icons" style="font-size:16px;vertical-align:middle;">shopping_cart</i> Selected Parts</strong>'
+                + '<span class="badge bg-primary" id="' + deviceId + '-parts-count">0 parts</span></div>'
+                + '<div id="' + deviceId + '-selected-parts-list"></div></div>'
+                + '</div></div>';
+            goToStep(deviceId, 4);
+            var parts = [];
+            try { parts = await window.repairData.loadInventoryParts(brandId, categoryId, modelId); } catch(e) { console.error(e); }
+            var loadingEl = document.getElementById(deviceId + '-parts-loading');
+            var gridEl = document.getElementById(deviceId + '-parts-grid');
+            var noPartsEl = document.getElementById(deviceId + '-no-parts');
+            var customEl = document.getElementById(deviceId + '-custom-part-card');
+            var selectedSection = document.getElementById(deviceId + '-selected-parts-section');
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (customEl) customEl.style.display = 'block';
+            if (selectedSection) selectedSection.style.display = 'block';
+            if (parts.length > 0) {
+                if (gridEl) {
+                    gridEl.style.display = 'grid';
+                    gridEl.innerHTML = parts.map(function(p) {
+                        var availStock = p.stock != null ? p.stock : (p.quantity || 0);
+                        var stockColor = availStock === 0 ? '#dc3545' : (availStock <= 3 ? '#fd7e14' : '#28a745');
+                        var stockLabel = availStock === 0 ? '\u26a0 Out of Stock' : (availStock + ' in stock');
+                        var sellPrice  = parseFloat(p.wholesalePrice || p.price || p.retailPrice || 0);
+                        var costPrice  = parseFloat(p.costPrice || 0);
+                        var skuText    = p.sku ? '<div style="font-size:11px;color:#888;text-align:center;margin-bottom:4px;letter-spacing:0.5px;">SKU: ' + p.sku + '</div>' : '';
+                        // Price breakdown: Cost Price (grey) | Sell Price (green, prominent)
+                        var priceBlock = '<div style="border:1px solid #e9ecef;border-radius:8px;padding:10px 12px;margin-bottom:12px;background:#f8f9fa;">'
+                            + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
+                            + '<span style="font-size:12px;color:#6c757d;font-weight:500;">Cost Price</span>'
+                            + '<span style="font-size:13px;font-weight:600;color:#495057;">$' + costPrice.toFixed(2) + '</span></div>'
+                            + '<div style="border-top:1px dashed #dee2e6;padding-top:6px;display:flex;justify-content:space-between;align-items:center;">'
+                            + '<span style="font-size:12px;color:#6c757d;font-weight:500;">Sell Price</span>'
+                            + '<span style="font-size:16px;font-weight:700;color:#198754;">$' + sellPrice.toFixed(2) + '</span></div>'
+                            + '</div>';
+                        var disabledAttr = availStock === 0 ? ' disabled' : '';
+                        var disabledStyle = availStock === 0 ? 'opacity:0.5;pointer-events:none;' : '';
+                        // Quantity input: user can type any number OR use +/- buttons; max enforced on Add
+                        var qtyBlock = '<div style="margin-bottom:12px;' + disabledStyle + '">'
+                            + '<label style="font-size:11px;color:#6c757d;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Quantity</label>'
+                            + '<div style="display:flex;align-items:center;gap:6px;">'
+                            + '<button type="button" onclick="adjustPartQty(\'' + deviceId + '\',\'' + p.id + '\',-1)" style="width:36px;height:36px;border:1px solid #dee2e6;border-radius:6px;background:#f8f9fa;cursor:pointer;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0;"' + disabledAttr + '><i class="material-icons" style="font-size:18px;">remove</i></button>'
+                            + '<input type="number" id="' + deviceId + '-part-' + p.id + '" value="1" min="1" max="' + (availStock > 0 ? availStock : 1) + '" data-stock="' + availStock + '" placeholder="Qty" style="flex:1;text-align:center;padding:8px 4px;border:2px solid #dee2e6;border-radius:6px;font-size:16px;font-weight:700;min-width:0;"' + disabledAttr + '>'
+                            + '<button type="button" onclick="adjustPartQty(\'' + deviceId + '\',\'' + p.id + '\',1)" style="width:36px;height:36px;border:none;border-radius:6px;background:#0d6efd;color:white;cursor:pointer;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0;"' + disabledAttr + '><i class="material-icons" style="font-size:18px;">add</i></button>'
+                            + '</div>'
+                            + (availStock > 0 ? '<div style="font-size:11px;color:#6c757d;margin-top:4px;text-align:right;">Max: ' + availStock + '</div>' : '')
+                            + '</div>';
+                        return '<div class="part-card" style="position:relative;' + (availStock === 0 ? 'opacity:0.65;' : '') + '">'
+                            + '<div style="font-size:44px;text-align:center;margin-bottom:8px;height:56px;display:flex;align-items:center;justify-content:center;">' + getPartIcon(p.name) + '</div>'
+                            + '<div style="font-weight:700;font-size:14px;margin-bottom:4px;text-align:center;line-height:1.3;">' + p.name + '</div>'
+                            + skuText
+                            + '<div style="text-align:center;margin-bottom:10px;">'
+                            + '<span style="background:' + stockColor + ';color:white;padding:3px 10px;border-radius:12px;font-weight:600;font-size:12px;">' + stockLabel + '</span>'
+                            + '</div>'
+                            + priceBlock
+                            + qtyBlock
+                            + '<button type="button" class="btn btn-primary" style="width:100%;font-size:13px;padding:9px;' + disabledStyle + '" onclick="addPart(\'' + deviceId + '\',\'' + p.id + '\',\'' + (p.name || '').replace(/'/g, "\\'") + '\',' + sellPrice + ',' + availStock + ')"' + disabledAttr + '>'
+                            + '<i class="material-icons" style="font-size:16px;vertical-align:middle;">add_shopping_cart</i> '
+                            + (availStock === 0 ? 'Out of Stock' : 'Add to Repair') + '</button></div>';
+                    }).join('');
+                }
+            } else {
+                if (noPartsEl) noPartsEl.style.display = 'block';
+            }
+            updateSelectedPartsList(deviceId);
+        }
+
+        // ── Parts Management ──────────────────────────────────────────────────────
+        function addPart(deviceId, partId, partName, price, maxStock) {
+            var state = deviceStates[deviceId];
+            var qInput = document.getElementById(deviceId + '-part-' + partId);
+            var qty = parseInt(qInput ? qInput.value : 1) || 1;
+            if (qty < 1) { showNotification('Please enter a quantity of at least 1 for ' + partName, 'warning'); return; }
+            // Stock validation
+            var stock = maxStock != null ? maxStock : (qInput ? parseInt(qInput.getAttribute('data-stock') || qInput.max) : 99);
+            var alreadySelected = 0;
+            var existing = state.selectedParts.findIndex(function(p) { return String(p.id) === String(partId); });
+            if (existing !== -1) alreadySelected = state.selectedParts[existing].quantity;
+            if ((alreadySelected + qty) > stock) {
+                showNotification('Cannot add ' + qty + ' × ' + partName + '. Only ' + (stock - alreadySelected) + ' unit(s) available in stock.', 'error');
+                return;
+            }
+            if (existing !== -1) { state.selectedParts[existing].quantity += qty; }
+            else { state.selectedParts.push({ id: partId, name: partName, price: price, quantity: qty, maxStock: stock }); }
+            if (qInput) qInput.value = 1; // reset to 1 (not 0) so next add is ready
+            updateSelectedPartsList(deviceId);
+            calculateTotal();
+            showNotification('Added ' + qty + ' \u00d7 ' + partName, 'success');
+        }
+
+        function adjustPartQty(deviceId, partId, delta) {
+            var input = document.getElementById(deviceId + '-part-' + partId);
+            if (!input) return;
+            var maxStock = parseInt(input.getAttribute('data-stock') || input.max) || 999;
+            var newVal = Math.max(1, Math.min(maxStock, (parseInt(input.value) || 1) + delta));
+            input.value = newVal;
+        }
+
+        function removePart(deviceId, partId) {
+            var state = deviceStates[deviceId];
+            var idx = state.selectedParts.findIndex(function(p) { return String(p.id) === String(partId); });
+            if (idx !== -1) {
+                var name = state.selectedParts[idx].name;
+                state.selectedParts.splice(idx, 1);
+                updateSelectedPartsList(deviceId);
+                calculateTotal();
+                showNotification('Removed ' + name, 'success');
+            }
+        }
+
+        function adjustSelectedPartQty(deviceId, partId, delta) {
+            var state = deviceStates[deviceId];
+            var part = state.selectedParts.find(function(p) { return String(p.id) === String(partId); });
+            if (part) {
+                var newQty = part.quantity + delta;
+                if (newQty < 1) return;
+                if (part.maxStock != null && newQty > part.maxStock) {
+                    showNotification('Cannot exceed available stock (' + part.maxStock + ') for ' + part.name, 'warning');
+                    return;
+                }
+                part.quantity = newQty;
+                updateSelectedPartsList(deviceId);
+                calculateTotal();
+            }
+        }
+
+        function updateSelectedPartsList(deviceId) {
+            var state = deviceStates[deviceId];
+            var listEl = document.getElementById(deviceId + '-selected-parts-list');
+            var countEl = document.getElementById(deviceId + '-parts-count');
+            if (!listEl) return;
+            var total = state.selectedParts.reduce(function(s, p) { return s + p.quantity; }, 0);
+            if (countEl) countEl.textContent = total + ' part' + (total !== 1 ? 's' : '');
+            if (!state.selectedParts.length) {
+                listEl.innerHTML = '<div style="text-align:center;padding:40px 20px;color:var(--text-light);"><i class="material-icons" style="font-size:48px;margin-bottom:15px;opacity:0.5;">inventory</i><h4>No parts selected yet</h4></div>';
+                return;
+            }
+            listEl.innerHTML = state.selectedParts.map(function(p) {
+                return '<div class="selected-part-item">'
+                    + '<div style="display:flex;align-items:center;gap:15px;">'
+                    + '<div style="font-size:24px;color:var(--primary);">' + getPartIcon(p.name) + '</div>'
+                    + '<div><div style="font-weight:600;margin-bottom:5px;font-size:14px;">' + p.name + '</div>'
+                    + '<div style="font-size:13px;color:var(--text-light);">$' + p.price.toFixed(2) + ' each</div></div></div>'
+                    + '<div style="display:flex;align-items:center;gap:15px;">'
+                    + '<div style="display:flex;align-items:center;gap:10px;">'
+                    + '<button onclick="adjustSelectedPartQty(\'' + deviceId + '\',\'' + p.id + '\',-1)" style="width:32px;height:32px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-light);cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="material-icons" style="font-size:16px;">remove</i></button>'
+                    + '<div style="min-width:40px;text-align:center;font-weight:600;font-size:16px;padding:5px 10px;background:white;border-radius:var(--radius);">' + p.quantity + '</div>'
+                    + '<button onclick="adjustSelectedPartQty(\'' + deviceId + '\',\'' + p.id + '\',1)" style="width:32px;height:32px;border:none;border-radius:var(--radius);background:var(--primary);color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="material-icons" style="font-size:16px;">add</i></button>'
+                    + '</div>'
+                    + '<div style="font-weight:600;color:var(--primary);min-width:80px;text-align:right;">$' + (p.price * p.quantity).toFixed(2) + '</div>'
+                    + '<button onclick="removePart(\'' + deviceId + '\',\'' + p.id + '\')" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:5px;display:flex;align-items:center;"><i class="material-icons">delete</i></button>'
+                    + '</div></div>';
+            }).join('');
+        }
+
+        function updateDeviceIssue(deviceId, issue) { if (deviceStates[deviceId]) deviceStates[deviceId].issue = issue; }
+
+        function addCustomPart(deviceId) {
+            var name = prompt('Enter custom part name:');
+            if (!name) return;
+            var price = parseFloat(prompt('Enter price:'));
+            if (isNaN(price) || price <= 0) { alert('Please enter a valid price'); return; }
+            var qty = parseInt(prompt('Enter quantity:', '1')) || 1;
+            deviceStates[deviceId].selectedParts.push({ id: 'custom-' + Date.now(), name: name, price: price, quantity: qty, custom: true });
+            updateSelectedPartsList(deviceId);
+            calculateTotal();
+            showNotification('Added custom part: ' + name, 'success');
+        }
+
+        function manuallyAddModel(deviceId) {
+            var name = prompt('Enter model name:');
+            if (!name) return;
+            var state = deviceStates[deviceId];
+            state.model = 'custom'; state.modelName = name;
+            loadParts(deviceId, state.brand, state.category, 'custom');
+        }
+
+        // ── Status Selection ──────────────────────────────────────────────────────
+        function selectRepairStatus(status, el) {
+            repairStatus = status;
+            document.querySelectorAll('#repairStatusOptions .status-option').forEach(function(o) { o.classList.remove('active'); });
+            if (el) el.classList.add('active');
+        }
+
+        function selectPaymentStatus(status, el) {
+            paymentStatus = status;
+            document.querySelectorAll('.status-option[onclick*="selectPaymentStatus"]').forEach(function(o) { o.classList.remove('active'); });
+            if (el) el.classList.add('active');
+            var pmSection = document.getElementById('paymentMethodSection');
+            var phSection = document.getElementById('paymentHistory');
+            if (status !== 'unpaid') {
+                pmSection.style.display = 'block';
+                phSection.style.display = paymentHistoryItems.length > 0 ? 'block' : 'none';
+            } else {
+                pmSection.style.display = 'none';
+                phSection.style.display = 'none';
+                clearPaymentForm();
+            }
+        }
+
+        // ── Payment Methods ───────────────────────────────────────────────────────
+        function selectPaymentMethod(methodId) {
+            var methods = getPaymentMethods();
+            selectedPaymentMethod = methods.find(function(m) { return String(m.id) === String(methodId); });
+            document.querySelectorAll('.payment-method-card').forEach(function(c) { c.classList.remove('active'); });
+            var card = document.querySelector('.payment-method-card[onclick*="\'' + methodId + '\'"]');
+            if (card) card.classList.add('active');
+            document.getElementById('paymentDetails').style.display = 'block';
+            if (paymentStatus === 'paid') {
+                document.getElementById('amountPaid').value = document.getElementById('grandTotal').textContent.replace('$', '');
+            }
+        }
+
+        function addPayment() {
+            var amount = parseFloat(document.getElementById('amountPaid').value) || 0;
+            var ref = (document.getElementById('paymentReference').value || '').trim();
+            var notes = (document.getElementById('paymentNotesTxn') ? document.getElementById('paymentNotesTxn').value : '') || '';
+            var date = document.getElementById('paymentDate').value;
+            var isRefund = document.getElementById('createTxnTypeRefund') && document.getElementById('createTxnTypeRefund').checked;
+            if (!selectedPaymentMethod) { alert('Please select a payment method first'); return; }
+            if (amount <= 0) { alert('Please enter a valid amount'); return; }
+            var methodName = selectedPaymentMethod.name;
+            var methodIcon = selectedPaymentMethod.icon || 'payments';
+            var txnType = isRefund ? 'Refund' : 'Payment';
+            paymentHistoryItems.push({ id: Date.now(), type: txnType, method: methodName, icon: methodIcon, amount: amount, reference: ref || null, notes: notes || null, date: date || new Date().toISOString().split('T')[0] });
+            if (isRefund) { totalRefunded += amount; } else { totalPaid += amount; }
+            calculateTotal();
+            updatePaymentHistoryUI();
+            clearPaymentForm();
+            showNotification((isRefund ? 'Refund' : 'Payment') + ' of $' + amount.toFixed(2) + ' added via ' + methodName, 'success');
+        }
+
+        function markAsPaid() {
+            var grand = parseFloat(document.getElementById('grandTotal').textContent.replace('$', ''));
+            if (!selectedPaymentMethod) { alert('Please select a payment method first'); return; }
+            var net = totalPaid - totalRefunded;
+            if (net < grand) {
+                document.getElementById('amountPaid').value = (grand - net).toFixed(2);
+                if (document.getElementById('createTxnTypePayment')) document.getElementById('createTxnTypePayment').checked = true;
+                addPayment();
+            } else { alert('Payment already completed'); }
+        }
+
+        function removePayment(paymentId) {
+            if (!confirm('Remove this transaction?')) return;
+            var idx = paymentHistoryItems.findIndex(function(p) { return p.id === paymentId; });
+            if (idx !== -1) {
+                var removed = paymentHistoryItems[idx];
+                if ((removed.type || 'Payment') === 'Refund') { totalRefunded -= removed.amount; } else { totalPaid -= removed.amount; }
+                paymentHistoryItems.splice(idx, 1);
+                calculateTotal(); updatePaymentHistoryUI();
+                showNotification('Transaction removed', 'success');
+            }
+        }
+
+        function updatePaymentHistoryUI() {
+            var container = document.getElementById('paymentHistoryList');
+            var section = document.getElementById('paymentHistory');
+            if (!paymentHistoryItems.length) { section.style.display = 'none'; return; }
+            section.style.display = 'block';
+            container.innerHTML = paymentHistoryItems.map(function(p) {
+                var isRef = (p.type || 'Payment') === 'Refund';
+                var typeColor = isRef ? '#e53935' : '#28a745';
+                var typeBg = isRef ? '#fff5f5' : '#f0fff4';
+                var typeBorder = isRef ? '#ffcdd2' : '#c3e6cb';
+                var typeLabel = isRef ? 'REFUND' : 'PAYMENT';
+                var dateStr = p.date ? new Date(p.date).toLocaleDateString() : '';
+                return '<div class="payment-history-item" style="background:' + typeBg + ';border-color:' + typeBorder + ';border:1px solid ' + typeBorder + ';border-radius:8px;margin-bottom:8px;">'
+                    + '<div class="payment-history-info">'
+                    + '<div style="font-weight:700;font-size:.78rem;color:' + typeColor + ';">' + typeLabel + '</div>'
+                    + '<div class="payment-history-method" style="color:' + typeColor + ';"><i class="material-icons" style="font-size:14px;vertical-align:middle;">' + (p.icon || 'payments') + '</i> ' + p.method + '</div>'
+                    + (p.reference ? '<div class="payment-history-details">Ref: ' + p.reference + '</div>' : '')
+                    + (p.notes ? '<div class="payment-history-details">' + p.notes + '</div>' : '')
+                    + (dateStr ? '<div class="payment-history-details">' + dateStr + '</div>' : '')
+                    + '</div>'
+                    + '<div class="payment-history-amount" style="color:' + typeColor + ';">$' + p.amount.toFixed(2)
+                    + '<button onclick="removePayment(' + p.id + ')" title="Remove" style="background:none;border:none;color:var(--danger);margin-left:8px;cursor:pointer;"><i class="material-icons" style="font-size:15px;">delete</i></button></div>'
+                    + '</div>';
+            }).join('');
+        }
+
+        function clearPaymentForm() {
+            var a = document.getElementById('amountPaid'); if (a) a.value = '';
+            var r = document.getElementById('paymentReference'); if (r) r.value = '';
+            selectedPaymentMethod = null;
+            document.querySelectorAll('.payment-method-card').forEach(function(c) { c.classList.remove('active'); });
+            var d = document.getElementById('paymentDetails'); if (d) d.style.display = 'none';
+        }
+
+        // ── Totals ────────────────────────────────────────────────────────────────
+        function calculateTotal() {
+            var partsTotal = 0;
+            Object.values(deviceStates).forEach(function(s) { s.selectedParts.forEach(function(p) { partsTotal += p.price * p.quantity; }); });
+            var service = parseFloat(document.getElementById('serviceCharge').value) || 0;
+            var diag = parseFloat(document.getElementById('diagnosticFee').value) || 0;
+            var disc = parseFloat(document.getElementById('discount').value) || 0;
+            var taxRate = parseFloat(document.getElementById('taxRateHidden').value) || 0;
+            var subtotal = partsTotal + service + diag;
+            var tax = subtotal * (taxRate / 100);
+            var grand = subtotal + tax - disc;
+            var net = totalPaid - totalRefunded;
+            var balance = Math.max(0, grand - net);
+            var overpaid = Math.max(0, net - grand);
+            document.getElementById('partsTotal').textContent = '$' + partsTotal.toFixed(2);
+            document.getElementById('serviceTotal').textContent = '$' + service.toFixed(2);
+            document.getElementById('diagnosticTotal').textContent = '$' + diag.toFixed(2);
+            document.getElementById('discountTotal').textContent = '-$' + disc.toFixed(2);
+            document.getElementById('taxRateDisplay').textContent = taxRate.toFixed(2);
+            document.getElementById('taxTotal').textContent = '$' + tax.toFixed(2);
+            document.getElementById('grandTotal').textContent = '$' + grand.toFixed(2);
+            document.getElementById('totalPaidDisplay').textContent = '$' + totalPaid.toFixed(2);
+            // Refunded row
+            var refRow = document.getElementById('refundedRow');
+            if (refRow) { refRow.style.display = totalRefunded > 0 ? 'flex' : 'none'; }
+            var refDisp = document.getElementById('totalRefundedDisplay');
+            if (refDisp) refDisp.textContent = '-$' + totalRefunded.toFixed(2);
+            // Balance / overpaid
+            if (overpaid > 0) {
+                document.getElementById('balanceDue').textContent = '$' + overpaid.toFixed(2);
+                document.getElementById('balanceRow').querySelector('span:first-child').textContent = 'OVERPAID:';
+                document.getElementById('balanceRow').style.display = 'flex';
+            } else {
+                document.getElementById('balanceDue').textContent = '$' + balance.toFixed(2);
+                document.getElementById('balanceRow').querySelector('span:first-child').textContent = 'BALANCE DUE:';
+                document.getElementById('balanceRow').style.display = balance > 0 ? 'flex' : 'none';
+            }
+        }
+
+        // ── Form Submission ───────────────────────────────────────────────────────
+        function validateForm() {
+            if (!document.getElementById('customerName').value) { alert('Please select a customer'); return false; }
+            return true;
+        }
+
+        // Tax mode toggle handler (Exempt / Apply)
+        function onTaxModeChange() {
+            var mode = document.querySelector('input[name="taxMode"]:checked').value;
+            var wrapper = document.getElementById('taxRateWrapper');
+            var hidden  = document.getElementById('taxRateHidden');
+            if (mode === 'apply') {
+                wrapper.style.display = 'flex';
+                hidden.value = document.getElementById('taxRate').value || '10.25';
+            } else {
+                wrapper.style.display = 'none';
+                hidden.value = '0';
+            }
+            calculateTotal();
+        }
+
+        function generateRepairSummary() {
+            var brands = getBrands();
+            var cats = getDeviceCategories();
+            return {
+                repairId: document.getElementById('repairId').textContent,
+                customer: { id: document.getElementById('customerName').value, phone: document.getElementById('customerPhone').value, email: document.getElementById('customerEmail').value, address: document.getElementById('customerAddress').value },
+                devices: Object.entries(deviceStates).map(function(entry) {
+                    var s = entry[1];
+                    return { brand: (brands.find(function(b) { return String(b.id) === String(s.brand); }) || {}).name || s.brand, category: (cats.find(function(c) { return String(c.id) === String(s.category); }) || {}).name || s.category, model: s.modelName || s.model, issue: s.issue, parts: s.selectedParts };
+                }),
+                notes: { problem: document.getElementById('problemDescription').value, diagnosis: document.getElementById('technicianDiagnosis').value, additional: document.getElementById('additionalNotes').value },
+                repairStatus: repairStatus, paymentStatus: paymentStatus,
+                payment: { total: parseFloat(document.getElementById('grandTotal').textContent.replace('$', '')), paid: totalPaid, history: paymentHistoryItems },
+                estimatedCompletion: document.getElementById('estimatedCompletion').value,
+                createdAt: new Date().toISOString()
+            };
+        }
+
+        // Build the JSON payload for the SaveRepairJson endpoint
+        function buildRepairPayload(isDraft) {
+            var s = generateRepairSummary();
+            // Collect all selected parts across all device sections
+            var allParts = [];
+            Object.values(deviceStates).forEach(function(state) {
+                (state.selectedParts || []).forEach(function(p) {
+                    if (!p.custom) {
+                        var existing = allParts.findIndex(function(x) { return String(x.inventoryItemId) === String(p.id); });
+                        if (existing !== -1) { allParts[existing].quantity += p.quantity; }
+                        else { allParts.push({ inventoryItemId: parseInt(p.id), quantity: p.quantity, partName: p.name, unitPrice: p.price }); }
+                    }
+                });
+            });
+            // Use first device's brand/category/model for the repair record
+            var firstDevice = Object.values(deviceStates)[0] || {};
+            var descParts = [];
+            Object.values(deviceStates).forEach(function(state) {
+                if (state.issue) descParts.push(state.issue);
+            });
+            var notes = s.notes || {};
+            var description = descParts.join('; ') || (notes.problem || '') + (notes.diagnosis ? ' | ' + notes.diagnosis : '') + (notes.additional ? ' | ' + notes.additional : '');
+            // Map paymentHistoryItems to the server DTO format
+            var payments = [];
+            if (!isDraft) {
+                (s.payment.history || []).forEach(function(h) {
+                    if (h.amount > 0) {
+                        payments.push({
+                            type:          h.type || 'Payment',
+                            amount:        h.amount,
+                            paymentMethod: h.method || h.paymentMethod || 'Cash',
+                            reference:     h.reference || null,
+                            notes:         h.notes || null,
+                            paidAt:        h.date ? (h.date.indexOf('T') !== -1 ? h.date : h.date + 'T00:00:00') : null
+                        });
+                    }
+                });
+            }
+            return {
+                customerId: parseInt(s.customer.id) || 0,
+                brandId: parseInt(firstDevice.brand) || 0,
+                deviceCategoryId: parseInt(firstDevice.category) || 0,
+                deviceModelId: parseInt(firstDevice.model) || 0,
+                description: description.trim(),
+                comments: notes.additional || '',
+                cost: s.payment.total,
+                amountPaid: isDraft ? 0 : s.payment.paid,
+                paymentStatus: isDraft ? 'Unpaid' : (paymentStatus === 'paid' ? 'Paid' : (paymentStatus === 'partial' ? 'Partial' : 'Unpaid')),
+                companyId: 0,
+                parts: allParts,
+                payments: payments
+            };
+        }
+
+        async function postRepairToServer(payload) {
+            var resp = await fetch('/Repairs/SaveRepairJson', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                body: JSON.stringify(payload)
+            });
+            if (!resp.ok) throw new Error('Server returned ' + resp.status);
+            return await resp.json();
+        }
+
+        function saveRepair() {
+            if (!validateForm()) return;
+            var payload = buildRepairPayload(false);
+            showNotification('Saving repair…', 'info');
+            postRepairToServer(payload).then(function(result) {
+                if (result.success) {
+                    showNotification('Repair #' + (result.repairNumber || result.repairId) + ' saved successfully!', 'success');
+                    setTimeout(function() { window.location.href = '/Repairs'; }, 1500);
+                } else {
+                    showNotification('Save failed: ' + result.message, 'error');
+                }
+            }).catch(function(err) {
+                showNotification('Save failed: ' + err.message, 'error');
+            });
+        }
+
+        function submitRepair() {
+            if (!validateForm()) return;
+            if (!confirm('Submit this repair order?')) return;
+            var payload = buildRepairPayload(false);
+            showNotification('Submitting repair order…', 'info');
+            postRepairToServer(payload).then(function(result) {
+                if (result.success) {
+                    showNotification('Repair #' + (result.repairNumber || result.repairId) + ' submitted successfully!', 'success');
+                    setTimeout(function() { window.location.href = '/Repairs'; }, 1500);
+                } else {
+                    showNotification('Submit failed: ' + result.message, 'error');
+                }
+            }).catch(function(err) {
+                showNotification('Submit failed: ' + err.message, 'error');
+            });
+        }
+
+        function previewRepair() {
+            if (!validateForm()) return;
+            var s = generateRepairSummary();
+            var modal = document.createElement('div');
+            modal.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;';
+            modal.onclick = function(e) { if (e.target === modal) modal.remove(); };
+            modal.innerHTML = '<div style="max-width:600px;width:100%;background:white;border-radius:8px;padding:30px;position:relative;">'
+                + '<button onclick="this.closest(\'[style*=fixed]\').remove()" style="position:absolute;top:15px;right:15px;background:none;border:none;font-size:24px;cursor:pointer;">&times;</button>'
+                + '<h2 style="margin-bottom:20px;color:var(--primary);">Repair Order Preview</h2>'
+                + '<div style="background:#f8f9fa;padding:20px;border-radius:8px;margin-bottom:20px;">'
+                + '<div style="display:flex;justify-content:space-between;margin-bottom:10px;"><span>Repair ID:</span><span style="font-weight:600;">' + s.repairId + '</span></div>'
+                + '<div style="display:flex;justify-content:space-between;"><span>Phone:</span><span>' + s.customer.phone + '</span></div></div>'
+                + '<div style="background:#f8f9fa;padding:20px;border-radius:8px;margin-bottom:20px;"><h4 style="margin-bottom:15px;">Devices (' + s.devices.length + ')</h4>'
+                + s.devices.map(function(d, i) { return '<div style="margin-bottom:10px;"><div style="font-weight:600;">Device ' + (i+1) + ': ' + d.brand + ' ' + (d.model||'') + '</div><div style="font-size:14px;color:#666;">' + (d.category||'') + ' \u2014 ' + (d.issue||'No issue specified') + '</div>' + (d.parts.length ? '<div style="font-size:13px;margin-top:5px;">Parts: ' + d.parts.map(function(p) { return p.quantity + '\u00d7 ' + p.name; }).join(', ') + '</div>' : '') + '</div>'; }).join('')
+                + '</div><div style="background:#f8f9fa;padding:20px;border-radius:8px;margin-bottom:20px;"><h4 style="margin-bottom:15px;">Payment</h4>'
+                + '<div style="display:flex;justify-content:space-between;margin-bottom:10px;"><span>Total:</span><span>$' + s.payment.total.toFixed(2) + '</span></div>'
+                + '<div style="display:flex;justify-content:space-between;font-weight:600;"><span>Balance:</span><span>$' + (s.payment.total - s.payment.paid).toFixed(2) + '</span></div></div>'
+                + '<div style="display:flex;gap:10px;justify-content:flex-end;">'
+                + '<button class="btn btn-secondary" onclick="this.closest(\'[style*=fixed]\').remove()">Close</button>'
+                + '<button class="btn btn-success" onclick="submitRepair();this.closest(\'[style*=fixed]\').remove()"><i class="material-icons">check_circle</i> Submit</button></div></div>';
+            document.body.appendChild(modal);
+        }
+
+        function resetForm() {
+            if (!confirm('Clear the entire form?')) return;
+            ['customerPhone', 'customerEmail', 'customerAddress', 'problemDescription', 'technicianDiagnosis', 'additionalNotes', 'paymentNotes'].forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
+            document.getElementById('customerName').value = '';
+            document.getElementById('devicesContainer').innerHTML = '';
+            deviceCounter = 1; deviceStates = {};
+            addDeviceSection();
+            document.getElementById('serviceCharge').value = '0';
+            document.getElementById('diagnosticFee').value = '0';
+            document.getElementById('discount').value = '0';
+            document.getElementById('taxRate').value = '10.25';
+            document.getElementById('taxRateHidden').value = '0';
+            document.getElementById('taxModeExempt').checked = true;
+            document.getElementById('taxRateWrapper').style.display = 'none';
+            paymentHistoryItems = []; totalPaid = 0; selectedPaymentMethod = null;
+            clearPaymentForm();
+            updatePaymentHistoryUI();
+            document.getElementById('repairId').textContent = '#REP-' + Math.floor(10000 + Math.random() * 90000);
+            var d = new Date(); d.setDate(d.getDate() + 7);
+            document.getElementById('estimatedCompletion').value = d.toISOString().split('T')[0];
+            calculateTotal();
+            showNotification('Form cleared', 'success');
+        }
+
+        // ── Bootstrap ─────────────────────────────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', function () {
+            // Wait until repair-data-loader.js has finished all async fetches
+            // (brands, categories, etc.) before initialising the page.
+            var tryInit = function() {
+                if (!window.repairData) { setTimeout(tryInit, 50); return; }
+                window.repairData.ready.then(function() { initializeRepairsPage(); });
+            };
+            tryInit();
+        });
+    </script>
+
+    <!-- Select2 for Customer Dropdown -->
+    <script>
+        $(document).ready(function () {
+            $('#customerName').select2({
+                placeholder: 'Select or search customer...',
+                allowClear: true,
+                width: '100%',
+                ajax: {
+                    url: '/Repairs/GetCustomers',
+                    dataType: 'json',
+                    delay: 250,
+                    data: function(params) { return { searchTerm: params.term || '' }; },
+                    processResults: function(data) {
+                        return {
+                            results: (data.success && data.data) ? data.data.map(function(c) {
+                                return { id: c.id, text: c.firstName + ' ' + c.lastName + (c.phone ? ' \u2014 ' + c.phone : ''), customer: c };
+                            }) : []
+                        };
+                    },
+                    cache: true
+                },
+                minimumInputLength: 0
+            });
+            $('#customerName').on('select2:select', function(e) {
+                var c = e.params.data.customer;
+                if (c) { $('#customerPhone').val(c.phone || ''); $('#customerEmail').val(c.email || ''); $('#customerAddress').val(c.address || ''); }
+            });
+            $('#customerName').on('select2:clear', function() {
+                $('#customerPhone, #customerEmail, #customerAddress').val('');
+            });
+        });
+    </script>
+}

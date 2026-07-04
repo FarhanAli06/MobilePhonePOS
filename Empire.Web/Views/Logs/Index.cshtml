@@ -1,0 +1,528 @@
+@{
+    ViewData["Title"] = "Request Logs";
+    Layout = "_Layout";
+}
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     REQUEST LOGS VIEWER
+     Displays every API request captured by RequestLoggingMiddleware.
+     Supports: pagination, column search, date range, method/status filters.
+═══════════════════════════════════════════════════════════════════════════ -->
+
+<div class="container-fluid px-4">
+
+    <!-- ── Page header ──────────────────────────────────────────────────── -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h2 class="mb-0 fw-bold text-dark">
+                <i class="fas fa-stream me-2 text-primary"></i>Request Logs
+            </h2>
+            <p class="text-muted mb-0 small">Every incoming API request and outgoing Web→API call, persisted to SQL.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary btn-sm" id="btnRefresh" title="Refresh">
+                <i class="fas fa-sync-alt me-1"></i>Refresh
+            </button>
+            <button class="btn btn-outline-danger btn-sm" id="btnPurge" title="Purge old logs">
+                <i class="fas fa-trash-alt me-1"></i>Purge Old Logs
+            </button>
+        </div>
+    </div>
+
+    <!-- ── Summary cards ────────────────────────────────────────────────── -->
+    <div class="row g-3 mb-4" id="summaryCards">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center py-3">
+                    <div class="fs-4 fw-bold text-primary" id="cardTotal">—</div>
+                    <div class="text-muted small">Total Requests</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center py-3">
+                    <div class="fs-4 fw-bold text-danger" id="cardErrors">—</div>
+                    <div class="text-muted small">Errors (4xx/5xx)</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center py-3">
+                    <div class="fs-4 fw-bold text-success" id="cardAvgMs">—</div>
+                    <div class="text-muted small">Avg Response (ms)</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center py-3">
+                    <div class="fs-4 fw-bold text-info" id="cardSlow">—</div>
+                    <div class="text-muted small">Slow (&gt;1 s)</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Filter bar ────────────────────────────────────────────────────── -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body py-3">
+            <div class="row g-2 align-items-end">
+                <div class="col-12 col-sm-6 col-md-2">
+                    <label class="form-label small fw-semibold mb-1">Source</label>
+                    <select class="form-select form-select-sm" id="filterSource">
+                        <option value="">All</option>
+                        <option value="API">API</option>
+                        <option value="WEB">WEB</option>
+                    </select>
+                </div>
+                <div class="col-12 col-sm-6 col-md-2">
+                    <label class="form-label small fw-semibold mb-1">Method</label>
+                    <select class="form-select form-select-sm" id="filterMethod">
+                        <option value="">All</option>
+                        <option value="GET">GET</option>
+                        <option value="POST">POST</option>
+                        <option value="PUT">PUT</option>
+                        <option value="DELETE">DELETE</option>
+                    </select>
+                </div>
+                <div class="col-12 col-sm-6 col-md-2">
+                    <label class="form-label small fw-semibold mb-1">Status</label>
+                    <select class="form-select form-select-sm" id="filterStatus">
+                        <option value="">All</option>
+                        <option value="200">200 OK</option>
+                        <option value="201">201 Created</option>
+                        <option value="400">400 Bad Request</option>
+                        <option value="401">401 Unauthorized</option>
+                        <option value="403">403 Forbidden</option>
+                        <option value="404">404 Not Found</option>
+                        <option value="500">500 Server Error</option>
+                        <option value="errors">Errors only (4xx/5xx)</option>
+                    </select>
+                </div>
+                <div class="col-12 col-sm-6 col-md-2">
+                    <label class="form-label small fw-semibold mb-1">Path contains</label>
+                    <input type="text" class="form-control form-control-sm" id="filterPath" placeholder="e.g. repairs">
+                </div>
+                <div class="col-12 col-sm-6 col-md-2">
+                    <label class="form-label small fw-semibold mb-1">Username</label>
+                    <input type="text" class="form-control form-control-sm" id="filterUsername" placeholder="e.g. admin">
+                </div>
+                <div class="col-12 col-sm-6 col-md-2">
+                    <label class="form-label small fw-semibold mb-1">Date from</label>
+                    <input type="date" class="form-control form-control-sm" id="filterFrom">
+                </div>
+                <div class="col-12 col-sm-6 col-md-2">
+                    <label class="form-label small fw-semibold mb-1">Date to</label>
+                    <input type="date" class="form-control form-control-sm" id="filterTo">
+                </div>
+                <div class="col-12 col-sm-6 col-md-2">
+                    <label class="form-label small fw-semibold mb-1">Page size</label>
+                    <select class="form-select form-select-sm" id="filterPageSize">
+                        <option value="25">25</option>
+                        <option value="50" selected>50</option>
+                        <option value="100">100</option>
+                        <option value="200">200</option>
+                    </select>
+                </div>
+                <div class="col-12 col-sm-6 col-md-2 d-flex gap-2">
+                    <button class="btn btn-primary btn-sm flex-fill" id="btnApplyFilter">
+                        <i class="fas fa-search me-1"></i>Search
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm" id="btnClearFilter" title="Clear filters">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Data table ────────────────────────────────────────────────────── -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0" id="logsTable">
+                    <thead class="table-dark">
+                        <tr>
+                            <th style="width:160px">Time (UTC)</th>
+                            <th style="width:55px">Source</th>
+                            <th style="width:65px">Method</th>
+                            <th>Path</th>
+                            <th style="width:70px">Status</th>
+                            <th style="width:80px">Elapsed</th>
+                            <th style="width:110px">User</th>
+                            <th style="width:70px">Shop</th>
+                            <th style="width:90px">IP</th>
+                            <th style="width:50px">Detail</th>
+                        </tr>
+                    </thead>
+                    <tbody id="logsTableBody">
+                        <tr>
+                            <td colspan="10" class="text-center py-4 text-muted">
+                                <i class="fas fa-spinner fa-spin me-2"></i>Loading logs…
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ── Pagination ──────────────────────────────────────────────── -->
+        <div class="card-footer d-flex align-items-center justify-content-between py-2 bg-light">
+            <div class="text-muted small" id="paginationInfo">—</div>
+            <nav>
+                <ul class="pagination pagination-sm mb-0" id="paginationControls"></ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     DETAIL MODAL
+═══════════════════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="logDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-info-circle me-2"></i>Log Entry Detail
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="logDetailBody">
+                <!-- populated by JS -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     PURGE MODAL
+═══════════════════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="purgeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-trash-alt me-2 text-danger"></i>Purge Old Logs</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Delete all log entries older than:</p>
+                <div class="input-group">
+                    <input type="number" class="form-control" id="purgeDays" value="90" min="1" max="3650">
+                    <span class="input-group-text">days</span>
+                </div>
+                <p class="text-muted small mt-2">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="btnConfirmPurge">
+                    <i class="fas fa-trash-alt me-1"></i>Purge
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    'use strict';
+
+    // ── State ─────────────────────────────────────────────────────────────────
+    let currentPage = 1;
+    let totalPages  = 1;
+    let allItems    = [];
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    function statusBadge(code) {
+        if (code >= 500) return `<span class="badge bg-danger">${code}</span>`;
+        if (code >= 400) return `<span class="badge bg-warning text-dark">${code}</span>`;
+        if (code >= 300) return `<span class="badge bg-info text-dark">${code}</span>`;
+        return `<span class="badge bg-success">${code}</span>`;
+    }
+
+    function methodBadge(m) {
+        const colours = { GET: 'primary', POST: 'success', PUT: 'warning', DELETE: 'danger', PATCH: 'info' };
+        const c = colours[m] || 'secondary';
+        return `<span class="badge bg-${c}">${m}</span>`;
+    }
+
+    function elapsedBadge(ms) {
+        if (ms >= 2000) return `<span class="text-danger fw-bold">${ms} ms</span>`;
+        if (ms >= 500)  return `<span class="text-warning fw-bold">${ms} ms</span>`;
+        return `<span class="text-muted">${ms} ms</span>`;
+    }
+
+    function fmtDate(iso) {
+        if (!iso) return '—';
+        const d = new Date(iso);
+        return d.toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'medium' });
+    }
+
+    function esc(s) {
+        if (!s) return '';
+        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function getFilters() {
+        const statusVal = document.getElementById('filterStatus').value;
+        return {
+            pageNumber : currentPage,
+            pageSize   : parseInt(document.getElementById('filterPageSize').value, 10),
+            source     : document.getElementById('filterSource').value || null,
+            method     : document.getElementById('filterMethod').value || null,
+            path       : document.getElementById('filterPath').value.trim() || null,
+            username   : document.getElementById('filterUsername').value.trim() || null,
+            statusCode : (statusVal && statusVal !== 'errors') ? parseInt(statusVal, 10) : null,
+            errorsOnly : statusVal === 'errors' ? true : null,
+            from       : document.getElementById('filterFrom').value || null,
+            to         : document.getElementById('filterTo').value || null
+        };
+    }
+
+    function buildUrl(filters) {
+        const base = window.WEB_BASE_URL + '/Logs/GetLogs';
+        const params = new URLSearchParams();
+        Object.entries(filters).forEach(([k, v]) => {
+            if (v !== null && v !== undefined) params.append(k, v);
+        });
+        return `${base}?${params.toString()}`;
+    }
+
+    // ── Load data ─────────────────────────────────────────────────────────────
+
+    async function loadLogs() {
+        const tbody = document.getElementById('logsTableBody');
+        tbody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading…</td></tr>';
+
+        try {
+            const filters = getFilters();
+            const resp = await fetch(buildUrl(filters));
+            const json = await resp.json();
+
+            if (!json.success || !json.data) {
+                tbody.innerHTML = `<tr><td colspan="10" class="text-center py-3 text-danger">Failed to load logs: ${esc(json.message)}</td></tr>`;
+                return;
+            }
+
+            const data = json.data;
+            totalPages = data.totalPages || 1;
+            allItems   = data.items || [];
+
+            updateSummaryCards(data);
+            renderTable(allItems);
+            renderPagination(data.pageNumber, data.totalPages, data.totalCount, data.pageSize);
+
+        } catch (err) {
+            tbody.innerHTML = `<tr><td colspan="10" class="text-center py-3 text-danger">Error: ${esc(err.message)}</td></tr>`;
+        }
+    }
+
+    // ── Render table ──────────────────────────────────────────────────────────
+
+    function renderTable(items) {
+        const tbody = document.getElementById('logsTableBody');
+        if (!items.length) {
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center py-4 text-muted">No log entries found.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = items.map((log, i) => `
+            <tr class="${log.isError ? 'table-danger' : ''}">
+                <td class="small text-nowrap">${fmtDate(log.requestedAtUtc)}</td>
+                <td><span class="badge bg-secondary">${esc(log.source)}</span></td>
+                <td>${methodBadge(log.httpMethod)}</td>
+                <td class="small text-break" style="max-width:260px" title="${esc(log.path)}${esc(log.queryString || '')}">
+                    ${esc(log.path)}${log.queryString ? `<span class="text-muted">${esc(log.queryString)}</span>` : ''}
+                </td>
+                <td>${statusBadge(log.statusCode)}</td>
+                <td>${elapsedBadge(log.elapsedMilliseconds)}</td>
+                <td class="small">${esc(log.username) || '<span class="text-muted">—</span>'}</td>
+                <td class="small">${log.shopId ?? '<span class="text-muted">—</span>'}</td>
+                <td class="small text-nowrap">${esc(log.ipAddress) || '—'}</td>
+                <td>
+                    <button class="btn btn-outline-secondary btn-sm py-0 px-1"
+                            onclick="showDetail(${i})" title="View detail">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // ── Detail modal ──────────────────────────────────────────────────────────
+
+    window.showDetail = function(index) {
+        const log = allItems[index];
+        if (!log) return;
+
+        const prettyJson = (s) => {
+            if (!s) return '<em class="text-muted">—</em>';
+            try { return '<pre class="mb-0 small">' + esc(JSON.stringify(JSON.parse(s), null, 2)) + '</pre>'; }
+            catch { return '<pre class="mb-0 small">' + esc(s) + '</pre>'; }
+        };
+
+        document.getElementById('logDetailBody').innerHTML = `
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <table class="table table-sm table-bordered mb-0">
+                        <tr><th class="bg-light" style="width:140px">ID</th><td>${log.id}</td></tr>
+                        <tr><th class="bg-light">Time (UTC)</th><td>${fmtDate(log.requestedAtUtc)}</td></tr>
+                        <tr><th class="bg-light">Source</th><td>${esc(log.source)}</td></tr>
+                        <tr><th class="bg-light">Method</th><td>${methodBadge(log.httpMethod)}</td></tr>
+                        <tr><th class="bg-light">Path</th><td class="text-break">${esc(log.path)}</td></tr>
+                        <tr><th class="bg-light">Query</th><td class="text-break">${esc(log.queryString) || '—'}</td></tr>
+                        <tr><th class="bg-light">Status</th><td>${statusBadge(log.statusCode)}</td></tr>
+                        <tr><th class="bg-light">Elapsed</th><td>${elapsedBadge(log.elapsedMilliseconds)}</td></tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-sm table-bordered mb-0">
+                        <tr><th class="bg-light" style="width:140px">User ID</th><td>${esc(log.userId) || '—'}</td></tr>
+                        <tr><th class="bg-light">Username</th><td>${esc(log.username) || '—'}</td></tr>
+                        <tr><th class="bg-light">Shop ID</th><td>${log.shopId ?? '—'}</td></tr>
+                        <tr><th class="bg-light">IP Address</th><td>${esc(log.ipAddress) || '—'}</td></tr>
+                        <tr><th class="bg-light">User Agent</th><td class="small text-break">${esc(log.userAgent) || '—'}</td></tr>
+                    </table>
+                </div>
+                <div class="col-12">
+                    <ul class="nav nav-tabs" id="detailTabs">
+                        <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#tabReqBody">Request Body</a></li>
+                        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabResBody">Response Body</a></li>
+                        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#tabHeaders">Headers</a></li>
+                        ${log.errorMessage ? '<li class="nav-item"><a class="nav-link text-danger" data-bs-toggle="tab" href="#tabError">Error</a></li>' : ''}
+                    </ul>
+                    <div class="tab-content border border-top-0 p-3 bg-light rounded-bottom">
+                        <div class="tab-pane fade show active" id="tabReqBody">${prettyJson(log.requestBody)}</div>
+                        <div class="tab-pane fade" id="tabResBody">${prettyJson(log.responseBody)}</div>
+                        <div class="tab-pane fade" id="tabHeaders"><pre class="mb-0 small">${esc(log.requestHeaders) || '—'}</pre></div>
+                        ${log.errorMessage ? `<div class="tab-pane fade" id="tabError"><pre class="mb-0 small text-danger">${esc(log.errorMessage)}</pre></div>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        new bootstrap.Modal(document.getElementById('logDetailModal')).show();
+    };
+
+    // ── Summary cards ─────────────────────────────────────────────────────────
+
+    function updateSummaryCards(data) {
+        const items = data.items || [];
+        document.getElementById('cardTotal').textContent  = data.totalCount.toLocaleString();
+        document.getElementById('cardErrors').textContent = items.filter(l => l.isError).length;
+        const avgMs = items.length ? Math.round(items.reduce((s, l) => s + l.elapsedMilliseconds, 0) / items.length) : 0;
+        document.getElementById('cardAvgMs').textContent  = avgMs;
+        document.getElementById('cardSlow').textContent   = items.filter(l => l.elapsedMilliseconds >= 1000).length;
+    }
+
+    // ── Pagination ────────────────────────────────────────────────────────────
+
+    function renderPagination(page, total, totalCount, pageSize) {
+        const info = document.getElementById('paginationInfo');
+        const start = Math.min((page - 1) * pageSize + 1, totalCount);
+        const end   = Math.min(page * pageSize, totalCount);
+        info.textContent = `Showing ${start}–${end} of ${totalCount.toLocaleString()} entries`;
+
+        const ul = document.getElementById('paginationControls');
+        ul.innerHTML = '';
+
+        const addPage = (label, p, disabled, active) => {
+            const li = document.createElement('li');
+            li.className = `page-item${disabled ? ' disabled' : ''}${active ? ' active' : ''}`;
+            const a = document.createElement('a');
+            a.className = 'page-link';
+            a.href = '#';
+            a.innerHTML = label;
+            if (!disabled && !active) a.addEventListener('click', e => { e.preventDefault(); currentPage = p; loadLogs(); });
+            li.appendChild(a);
+            ul.appendChild(li);
+        };
+
+        addPage('&laquo;', 1,        page <= 1,     false);
+        addPage('&lsaquo;', page - 1, page <= 1,    false);
+
+        const range = 2;
+        for (let p = Math.max(1, page - range); p <= Math.min(total, page + range); p++) {
+            addPage(p, p, false, p === page);
+        }
+
+        addPage('&rsaquo;', page + 1, page >= total, false);
+        addPage('&raquo;',  total,    page >= total, false);
+    }
+
+    // ── Purge ─────────────────────────────────────────────────────────────────
+
+    document.getElementById('btnPurge').addEventListener('click', () => {
+        new bootstrap.Modal(document.getElementById('purgeModal')).show();
+    });
+
+    document.getElementById('btnConfirmPurge').addEventListener('click', async () => {
+        const days = parseInt(document.getElementById('purgeDays').value, 10);
+        try {
+            const resp = await fetch(`${window.WEB_BASE_URL}/Logs/Purge?days=${days}`, { method: 'DELETE' });
+            const json = await resp.json();
+            bootstrap.Modal.getInstance(document.getElementById('purgeModal'))?.hide();
+            if (json.success) {
+                showToast(`Purged log entries older than ${days} days.`, 'success');
+                currentPage = 1;
+                loadLogs();
+            } else {
+                showToast(json.message || 'Purge failed.', 'danger');
+            }
+        } catch (err) {
+            showToast('Error: ' + err.message, 'danger');
+        }
+    });
+
+    // ── Toast helper ──────────────────────────────────────────────────────────
+
+    function showToast(msg, type) {
+        const container = document.getElementById('toastContainer') || (() => {
+            const el = document.createElement('div');
+            el.id = 'toastContainer';
+            el.style.cssText = 'position:fixed;bottom:1rem;right:1rem;z-index:9999';
+            document.body.appendChild(el);
+            return el;
+        })();
+
+        const toast = document.createElement('div');
+        toast.className = `toast align-items-center text-white bg-${type} border-0 show`;
+        toast.setAttribute('role', 'alert');
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">${esc(msg)}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>`;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    }
+
+    // ── Wire up controls ──────────────────────────────────────────────────────
+
+    document.getElementById('btnApplyFilter').addEventListener('click', () => { currentPage = 1; loadLogs(); });
+    document.getElementById('btnRefresh').addEventListener('click', () => loadLogs());
+    document.getElementById('btnClearFilter').addEventListener('click', () => {
+        ['filterSource','filterMethod','filterStatus','filterPath','filterUsername','filterFrom','filterTo']
+            .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+        document.getElementById('filterPageSize').value = '50';
+        currentPage = 1;
+        loadLogs();
+    });
+
+    // Allow pressing Enter in text inputs to trigger search
+    ['filterPath','filterUsername'].forEach(id => {
+        document.getElementById(id).addEventListener('keydown', e => {
+            if (e.key === 'Enter') { currentPage = 1; loadLogs(); }
+        });
+    });
+
+    // ── Initial load ──────────────────────────────────────────────────────────
+    loadLogs();
+
+})();
+</script>
+}

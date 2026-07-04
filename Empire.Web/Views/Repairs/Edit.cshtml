@@ -1,0 +1,971 @@
+@model EditRepairViewModel
+@{
+    ViewData["Title"] = "Edit Repair";
+}
+
+@section Styles {
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<style>
+    :root {
+        --primary:#2196F3; --secondary:#607D8B; --success:#4CAF50; --danger:#f44336;
+        --warning:#FF9800; --info:#00BCD4; --text-dark:#2c3e50; --text-light:#6c757d;
+        --border:#dee2e6; --bg-light:#f8f9fa; --radius:10px;
+    }
+    body { font-family:'Inter',sans-serif; background:#f0f2f5; }
+    .page-header { background:white; border-radius:var(--radius); padding:16px 20px; margin-bottom:16px; box-shadow:0 2px 8px rgba(0,0,0,.06); display:flex; justify-content:space-between; align-items:center; }
+    .page-header h4 { margin:0; font-size:1.1rem; font-weight:700; color:var(--text-dark); }
+    .edit-layout { display:grid; grid-template-columns:1fr 380px; gap:16px; align-items:start; }
+    .section-card { background:white; border-radius:var(--radius); box-shadow:0 2px 8px rgba(0,0,0,.06); margin-bottom:16px; overflow:hidden; }
+    .section-header { padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; font-weight:600; font-size:.82rem; text-transform:uppercase; letter-spacing:.04em; color:var(--primary); background:#f8fbff; }
+    .section-header i { font-size:16px; }
+    .section-body { padding:14px 16px; }
+    .form-label { font-size:.82rem; font-weight:500; color:var(--text-dark); margin-bottom:4px; display:block; }
+    .form-control, .form-select { font-size:.85rem; padding:6px 10px; border-radius:6px; }
+    .form-control:focus, .form-select:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(33,150,243,.1); }
+    /* Parts grid */
+    .parts-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:14px; margin-bottom:16px; }
+    .part-card { background:white; border-radius:var(--radius); padding:14px; border:1px solid var(--border); transition:.2s; box-shadow:0 2px 6px rgba(0,0,0,.05); }
+    .part-card:hover { transform:translateY(-3px); box-shadow:0 6px 14px rgba(0,0,0,.1); }
+    .selected-part-item { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; background:white; border-radius:8px; border:1px solid var(--border); margin-bottom:8px; }
+    .selected-part-item:hover { background:#f8f9fa; border-color:var(--primary); }
+    /* Status options */
+    .status-options { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+    .status-option { padding:8px 14px; border-radius:8px; cursor:pointer; border:2px solid var(--border); background:white; text-align:center; font-size:.8rem; font-weight:500; transition:.2s; min-width:90px; }
+    .status-option:hover { border-color:var(--primary); }
+    .status-option.active { border-color:var(--primary); background:rgba(33,150,243,.08); }
+    .status-option .status-icon { font-size:20px; margin-bottom:4px; }
+    /* Payment */
+    .payment-methods-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(110px,1fr)); gap:10px; margin-bottom:14px; }
+    .payment-method-card { background:white; padding:12px 10px; border-radius:8px; text-align:center; cursor:pointer; border:2px solid var(--border); transition:.2s; font-size:.8rem; }
+    .payment-method-card:hover { border-color:var(--primary); }
+    .payment-method-card.active { border-color:var(--primary); background:rgba(33,150,243,.07); }
+    .payment-method-icon { font-size:26px; margin-bottom:6px; }
+    .payment-history-item { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; background:#f8f9fa; border-radius:8px; margin-bottom:8px; border:1px solid var(--border); }
+    .payment-summary { background:#f8f9fa; border-radius:8px; padding:12px 14px; margin-top:12px; }
+    .payment-row { display:flex; justify-content:space-between; padding:4px 0; font-size:.85rem; }
+    .payment-row.total { font-weight:700; font-size:.95rem; border-top:2px solid var(--border); padding-top:8px; margin-top:4px; }
+    .payment-row.balance { color:var(--danger); font-weight:700; }
+    .payment-row.remaining-hint { color:var(--warning); font-weight:600; font-size:.82rem; background:rgba(255,152,0,.08); padding:6px 8px; border-radius:6px; margin-top:4px; }
+    /* Print */
+    @@media print {
+        .no-print { display:none !important; }
+        .print-only { display:block !important; }
+        body { background:white; }
+        .page-header, .section-card { box-shadow:none; border:1px solid #ccc; }
+    }
+    .print-only { display:none; }
+    /* Notification */
+    #editNotification { position:fixed; top:20px; right:20px; z-index:9999; min-width:280px; display:none; }
+</style>
+}
+
+<!-- Notification toast -->
+<div id="editNotification" class="alert no-print" role="alert"></div>
+
+<!-- Page header -->
+<div class="page-header no-print">
+    <h4>
+        <i class="fas fa-edit me-2 text-primary"></i>Edit Repair
+        <small class="text-muted ms-2" style="font-size:.85rem;">@Model.CustomerName</small>
+    </h4>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="printRepair()">
+            <i class="fas fa-print me-1"></i>Print
+        </button>
+        <a asp-action="Index" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-arrow-left me-1"></i>Back
+        </a>
+    </div>
+</div>
+
+<!-- Print header (hidden on screen) -->
+<div class="print-only mb-3">
+    <h3>Repair Ticket — @Model.CustomerName</h3>
+    <p>Repair #<strong id="printRepairNum"></strong> &nbsp;|&nbsp; Date: @DateTime.Now.ToString("MMM dd, yyyy")</p>
+    <hr/>
+</div>
+
+<div class="edit-layout">
+    <!-- ── LEFT COLUMN ─────────────────────────────────────────────── -->
+    <div>
+        <!-- Section 1: Device -->
+        <div class="section-card">
+            <div class="section-header"><i class="material-icons">smartphone</i>Device Selection</div>
+            <div class="section-body">
+                <input type="hidden" id="editBrandId"    value="@(Model.BrandId ?? 0)" />
+                <input type="hidden" id="editCategoryId" value="@(Model.DeviceCategoryId ?? 0)" />
+                <input type="hidden" id="editModelId"    value="@(Model.DeviceModelId ?? 0)" />
+                <div id="editDeviceSelectorContainer"></div>
+            </div>
+        </div>
+
+        <!-- Section 2: Parts (shared partial) -->
+        @await Html.PartialAsync("_RepairPartsSection", null,
+            new ViewDataDictionary(ViewData) { { "prefix", "edit" } })
+
+        <!-- Section 3: Issue & Notes -->
+        <div class="section-card">
+            <div class="section-header"><i class="material-icons">notes</i>Issue &amp; Notes</div>
+            <div class="section-body">
+                <div class="mb-2">
+                    <label class="form-label">Issue Description</label>
+                    <textarea id="editDescription" class="form-control form-control-sm" rows="3"
+                              placeholder="Describe the issue…">@Model.Description</textarea>
+                </div>
+                <div>
+                    <label class="form-label">Comments / Notes</label>
+                    <textarea id="editComments" class="form-control form-control-sm" rows="2"
+                              placeholder="Additional comments or notes">@Model.Comments</textarea>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 4: Status & Cost -->
+        <div class="section-card">
+            <div class="section-header"><i class="material-icons">track_changes</i>Status &amp; Pricing</div>
+            <div class="section-body">
+                <label class="form-label mb-2">Repair Status</label>
+                <div class="status-options" id="repairStatusOptions">
+                    @foreach (var s in new[] {
+                        ("pending","Pending","schedule","secondary"),
+                        ("in-progress","In Progress","build","primary"),
+                        ("waiting","Waiting Parts","hourglass_empty","warning"),
+                        ("ready","Ready Pickup","check_circle","info"),
+                        ("completed","Completed","done_all","success"),
+                        ("cancelled","Cancelled","cancel","danger"),
+                        ("on-hold","On Hold","pause_circle","secondary"),
+                        ("unrepairable","Unrepairable","block","dark"),
+                        ("abandoned","Abandoned","person_off","secondary")
+                    }) {
+                        <div class="status-option" data-status="@s.Item1" onclick="selectStatus('@s.Item1', this)">
+                            <div class="status-icon"><i class="material-icons text-@s.Item4">@s.Item3</i></div>
+                            <div>@s.Item2</div>
+                        </div>
+                    }
+                </div>
+                <div class="row g-2 mt-1">
+                    <div class="col-md-6">
+                        <label class="form-label">Service/Labor Charge ($)</label>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">$</span>
+                            <input type="number" id="editCost" class="form-control form-control-sm"
+                                   step="0.01" min="0" max="99999.99"
+                                   value="@Model.Cost.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 5: Payment Ledger -->
+        <div class="section-card">
+            <div class="section-header"><i class="material-icons">payments</i>Payment Ledger</div>
+            <div class="section-body">
+
+                <!-- Payment status picker -->
+                <label class="form-label mb-2">Overall Payment Status</label>
+                <div class="status-options" id="paymentStatusOptions">
+                    <div class="status-option" data-pstatus="unpaid" onclick="selectPaymentStatus('unpaid',this)">
+                        <div class="status-icon"><i class="material-icons text-danger">money_off</i></div>
+                        <div>Unpaid</div>
+                    </div>
+                    <div class="status-option" data-pstatus="partial" onclick="selectPaymentStatus('partial',this)">
+                        <div class="status-icon"><i class="material-icons text-warning">payments</i></div>
+                        <div>Partial</div>
+                    </div>
+                    <div class="status-option" data-pstatus="paid" onclick="selectPaymentStatus('paid',this)">
+                        <div class="status-icon"><i class="material-icons text-success">paid</i></div>
+                        <div>Paid</div>
+                    </div>
+                    <div class="status-option" data-pstatus="refunded" onclick="selectPaymentStatus('refunded',this)">
+                        <div class="status-icon"><i class="material-icons text-info">undo</i></div>
+                        <div>Refunded</div>
+                    </div>
+                </div>
+
+                <!-- Add Payment / Refund Form -->
+                <div id="paymentMethodSection">
+                    <div class="d-flex align-items-center justify-content-between mb-2 mt-3">
+                        <strong class="small">Add Transaction</strong>
+                        <!-- Type toggle: Payment vs Refund -->
+                        <div class="btn-group btn-group-sm" role="group">
+                            <input type="radio" class="btn-check" name="txnType" id="txnTypePayment" value="Payment" checked>
+                            <label class="btn btn-outline-success" for="txnTypePayment"><i class="material-icons" style="font-size:14px;vertical-align:middle;">arrow_downward</i> Payment</label>
+                            <input type="radio" class="btn-check" name="txnType" id="txnTypeRefund" value="Refund">
+                            <label class="btn btn-outline-danger" for="txnTypeRefund"><i class="material-icons" style="font-size:14px;vertical-align:middle;">arrow_upward</i> Refund</label>
+                        </div>
+                    </div>
+
+                    <!-- Method grid -->
+                    <label class="form-label">Select Method</label>
+                    <div class="payment-methods-grid" id="editPaymentMethods"></div>
+
+                    <!-- Entry fields (shown after method selected) -->
+                    <div id="editPaymentDetails" style="display:none;">
+                        <div class="row g-2 mb-2">
+                            <div class="col-md-3">
+                                <label class="form-label">Amount ($)</label>
+                                <input type="number" id="editAmountPaid" class="form-control form-control-sm" min="0" step="0.01" placeholder="0.00">
+                                <div id="remainingHint" class="small text-warning mt-1" style="display:none;"></div>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Reference / Txn ID</label>
+                                <input type="text" id="editPaymentRef" class="form-control form-control-sm" placeholder="Optional">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Notes</label>
+                                <input type="text" id="editPaymentNotes" class="form-control form-control-sm" placeholder="Optional">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Date</label>
+                                <input type="date" id="editPaymentDate" class="form-control form-control-sm">
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button type="button" class="btn btn-sm btn-success" onclick="editAddPayment()" id="btnAddTxn">
+                                <i class="fas fa-plus me-1"></i>Add Payment
+                            </button>
+                            <button type="button" class="btn btn-sm btn-primary" onclick="editMarkPaid()">
+                                <i class="fas fa-check-circle me-1"></i>Mark as Paid in Full
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment / Refund Ledger -->
+                <div id="editPaymentHistory" style="margin-top:16px;">
+                    <div class="d-flex align-items-center justify-content-between mb-2">
+                        <strong class="small">Transaction History</strong>
+                        <span id="ledgerLoadingSpinner" class="spinner-border spinner-border-sm text-primary" style="display:none;"></span>
+                    </div>
+                    <div id="editPaymentHistoryList"></div>
+                </div>
+
+                <!-- Edit Payment Modal (inline) -->
+                <div id="editPaymentModal" style="display:none;background:#f8f9fa;border:1px solid var(--border);border-radius:8px;padding:14px;margin-top:10px;">
+                    <strong class="small d-block mb-2">Edit Transaction</strong>
+                    <input type="hidden" id="editModalPaymentId">
+                    <div class="row g-2 mb-2">
+                        <div class="col-md-3">
+                            <label class="form-label">Method</label>
+                            <select id="editModalMethod" class="form-select form-select-sm"></select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Amount ($)</label>
+                            <input type="number" id="editModalAmount" class="form-control form-control-sm" min="0" step="0.01">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Reference</label>
+                            <input type="text" id="editModalRef" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Notes</label>
+                            <input type="text" id="editModalNotes" class="form-control form-control-sm">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label">Date</label>
+                            <input type="date" id="editModalDate" class="form-control form-control-sm">
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-primary" onclick="saveEditPaymentModal()"><i class="fas fa-save me-1"></i>Save</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="closeEditPaymentModal()">Cancel</button>
+                    </div>
+                </div>
+
+                <!-- Balance Summary -->
+                <div class="payment-summary mt-3">
+                    <div class="payment-row"><span>Parts Total:</span><span id="sumPartsTotal">$0.00</span></div>
+                    <div class="payment-row"><span>Service / Labor:</span><span id="sumRepairCost">$0.00</span></div>
+                    <div class="payment-row total"><span>GRAND TOTAL:</span><span id="sumGrandTotal">$0.00</span></div>
+                    <div class="payment-row" style="color:#28a745;"><span>Total Paid (in):</span><span id="sumTotalPaid">$0.00</span></div>
+                    <div class="payment-row" style="color:#e53935;"><span>Total Refunded (out):</span><span id="sumTotalRefunded">$0.00</span></div>
+                    <div class="payment-row balance" id="sumBalanceRow" style="display:none;">
+                        <span>BALANCE DUE:</span><span id="sumBalance">$0.00</span>
+                    </div>
+                    <div class="payment-row" id="sumOverpaidRow" style="display:none;color:#1976d2;">
+                        <span>OVERPAID / CREDIT:</span><span id="sumOverpaid">$0.00</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Save button -->
+        <div class="d-flex justify-content-end gap-2 mb-4 no-print">
+            <a asp-action="Index" class="btn btn-sm btn-outline-secondary">Cancel</a>
+            <button type="button" id="saveEditBtn" class="btn btn-sm btn-primary" onclick="saveEditRepair()">
+                <i class="fas fa-save me-1"></i>Update Repair
+            </button>
+        </div>
+    </div>
+
+    <!-- ── RIGHT COLUMN ────────────────────────────────────────────── -->
+    <div>
+        <!-- Repair info card -->
+        <div class="section-card mb-3">
+            <div class="section-header"><i class="material-icons">info</i>Repair Info</div>
+            <div class="section-body">
+                <div class="small text-muted mb-1">Repair ID</div>
+                <div class="fw-bold mb-2">#@Model.Id</div>
+                <div class="small text-muted mb-1">Customer</div>
+                <div class="fw-bold mb-2">@Model.CustomerName</div>
+                <div class="small text-muted mb-1">Current Status</div>
+                <div class="mb-2"><span class="badge bg-primary">@Model.Status</span></div>
+                <div class="small text-muted mb-1">Payment Status</div>
+                <div><span class="badge bg-warning text-dark">@Model.PaymentStatus</span></div>
+            </div>
+        </div>
+
+        <!-- Status guide -->
+        <div class="section-card mb-3 no-print">
+            <div class="section-header"><i class="material-icons">help_outline</i>Status Guide</div>
+            <div class="section-body p-2">
+                @foreach (var g in new[] {
+                    ("bg-secondary","Pending","Awaiting repair"),
+                    ("bg-primary","In Progress","Being worked on"),
+                    ("bg-warning","Waiting Parts","Awaiting delivery"),
+                    ("bg-info","Ready Pickup","Notify customer"),
+                    ("bg-success","Completed","Finished & collected"),
+                    ("bg-danger","Cancelled","Repair cancelled"),
+                    ("bg-secondary","On Hold","Temporarily paused"),
+                    ("bg-dark","Unrepairable","Cannot be fixed"),
+                    ("bg-secondary","Abandoned","Not collected")
+                }) {
+                    <div class="d-flex align-items-center mb-1">
+                        <span class="badge @g.Item1 me-2" style="min-width:100px;font-size:.72rem;">@g.Item2</span>
+                        <small class="text-muted">@g.Item3</small>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/device-selector.js"></script>
+    <script src="~/js/repair-data-loader.js"></script>
+    <script>
+    (function () {
+        'use strict';
+
+        /* ── State ─────────────────────────────────────────────────── */
+        var repairId         = @Model.Id;
+        var initialBrand     = @(Model.BrandId.HasValue    ? Model.BrandId.ToString()           : "0");
+        var initialCat       = @(Model.DeviceCategoryId.HasValue ? Model.DeviceCategoryId.ToString() : "0");
+        var initialModel     = @(Model.DeviceModelId.HasValue   ? Model.DeviceModelId.ToString()    : "0");
+        var currentStatus    = '@Html.Raw(Model.Status)';
+        var currentPay       = '@Html.Raw(Model.PaymentStatus)';
+        // Grand total stored in DB — used to split parts cost vs service charge on load
+        var initialGrandTotal = @Model.Cost.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+
+        var selectedParts          = [];   // { id, name, price, quantity, maxStock }
+        // Ledger: loaded from API — each entry: { id, type, amount, paymentMethod, reference, notes, paidAt, createdByUser }
+        var ledgerItems            = [];
+        var editTotalPaid          = 0;   // sum of Payment entries
+        var editTotalRefunded      = 0;   // sum of Refund entries
+        var selectedPaymentMethod  = null;
+        var editPayStatus          = 'unpaid';
+        var availablePaymentMethods = [
+            { id:1, name:'Cash',         icon:'payments',              color:'#4CAF50' },
+            { id:2, name:'Card',         icon:'credit_card',           color:'#2196F3' },
+            { id:3, name:'Zelle',        icon:'send',                  color:'#6A1B9A' },
+            { id:4, name:'Venmo',        icon:'account_balance_wallet',color:'#3D5AFE' },
+            { id:5, name:'Check',        icon:'receipt',               color:'#795548' },
+            { id:6, name:'Bank Transfer',icon:'account_balance',       color:'#00897B' }
+        ];
+
+        /* ── Init ──────────────────────────────────────────────────── */
+        document.addEventListener('DOMContentLoaded', function () {
+            initDeviceSelector();
+            initStatusPicker();
+            initPaymentStatusPicker();
+            setDefaultPaymentDate();
+            loadPaymentMethods();
+            loadLedgerFromServer();
+            // NOTE: calculateSummary() is called inside loadLedgerFromServer's success callback
+            // after the ledger data has been fetched. Do NOT call it here prematurely.
+            // Update Add button label when type toggle changes
+            document.querySelectorAll('input[name="txnType"]').forEach(function(r) {
+                r.addEventListener('change', function() {
+                    var isRefund = document.getElementById('txnTypeRefund').checked;
+                    var btn = document.getElementById('btnAddTxn');
+                    btn.className = 'btn btn-sm ' + (isRefund ? 'btn-danger' : 'btn-success');
+                    btn.innerHTML = '<i class="fas fa-' + (isRefund ? 'minus' : 'plus') + ' me-1"></i>' + (isRefund ? 'Add Refund' : 'Add Payment');
+                    updateRemainingHint();
+                });
+            });
+        });
+
+        /* ── Device Selector ───────────────────────────────────────── */
+        function initDeviceSelector() {
+            EmpireDeviceSelector.create('editDeviceSelectorContainer', {
+                selectorId:      'editRepairDevice',
+                showParts:       false,
+                showIssueInput:  false,
+                hiddenBrand:     'editBrandId',
+                hiddenCategory:  'editCategoryId',
+                hiddenModel:     'editModelId',
+                onModelSelected: function (d) {
+                    loadPartsForDevice(d.brandId, d.categoryId, d.modelId);
+                }
+            });
+            if (initialBrand && initialCat && initialModel) {
+                EmpireDeviceSelector.setValue('editRepairDevice', initialBrand, initialCat, initialModel);
+                loadPartsForDevice(initialBrand, initialCat, initialModel);
+            }
+        }
+
+        /* ── Parts Loading ─────────────────────────────────────────── */
+        function loadPartsForDevice(brandId, categoryId, modelId) {
+            var grid    = document.getElementById('edit-partsGrid');
+            var loading = document.getElementById('edit-partsLoadingMsg');
+            var noMsg   = document.getElementById('edit-partsNoMsg');
+            grid.innerHTML = '';
+            loading.style.display = 'block';
+            noMsg.style.display   = 'none';
+
+            $.get('@Url.Action("GetInventoryParts", "Repairs")',
+                { brandId: brandId, categoryId: categoryId, modelId: modelId || '' },
+                function (resp) {
+                    loading.style.display = 'none';
+                    if (!resp.success || !resp.data.length) {
+                        noMsg.style.display = 'block';
+                        return;
+                    }
+                    // Load existing repair parts to pre-select
+                    $.get('@Url.Action("GetRepairParts", "Repairs")', { repairId: repairId }, function (partsResp) {
+                        var existingIds = {};
+                        var existingQty = {};
+                        if (partsResp.success) {
+                            partsResp.data.forEach(function (p) {
+                                existingIds[String(p.inventoryItemId)] = true;
+                                existingQty[String(p.inventoryItemId)] = p.quantity;
+                            });
+                        }
+                        renderPartsGrid(resp.data, existingIds, existingQty);
+                    }).fail(function () { renderPartsGrid(resp.data, {}, {}); });
+                }
+            ).fail(function () {
+                loading.style.display = 'none';
+                noMsg.style.display   = 'block';
+            });
+        }
+
+        function renderPartsGrid(parts, existingIds, existingQty) {
+            var grid = document.getElementById('edit-partsGrid');
+            grid.innerHTML = parts.map(function (p) {
+                // For pre-selected parts, add back the already-used qty so the button isn't disabled
+                var rawStock    = p.stock != null ? p.stock : (p.quantity || 0);
+                var alreadyUsed = existingQty[String(p.id)] || 0;
+                var stock       = rawStock + alreadyUsed;
+                var stockColor  = stock === 0 ? '#dc3545' : (stock <= 3 ? '#fd7e14' : '#28a745');
+                var stockLabel  = stock === 0 ? '⚠ Out of Stock' : (stock + ' in stock');
+                var sellPrice   = parseFloat(p.wholesalePrice || p.price || p.retailPrice || 0);
+                var costPrice   = parseFloat(p.costPrice || 0);
+                var skuText     = p.sku ? '<div style="font-size:11px;color:#888;text-align:center;margin-bottom:4px;">SKU: ' + p.sku + '</div>' : '';
+                var priceBlock  = '<div style="border:1px solid #e9ecef;border-radius:6px;padding:8px;margin-bottom:10px;background:#f8f9fa;text-align:center;">'
+                    + (costPrice > 0 ? '<div style="font-size:11px;color:#888;">Cost: $' + costPrice.toFixed(2) + '</div>' : '')
+                    + '<div style="font-size:16px;font-weight:700;color:#28a745;">$' + sellPrice.toFixed(2) + '</div>'
+                    + '<div style="font-size:11px;color:#888;">Sell Price</div></div>';
+                var initQty     = existingQty[String(p.id)] || 1;
+                var qtyBlock    = '<div style="margin-bottom:10px;">'
+                    + '<label style="font-size:11px;color:#666;display:block;margin-bottom:4px;">Quantity</label>'
+                    + '<div style="display:flex;align-items:center;gap:6px;">'
+                    + '<button type="button" onclick="adjustEditQty(\'' + p.id + '\',-1)" style="width:32px;height:32px;border:1px solid #dee2e6;border-radius:6px;background:#f8f9fa;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;"' + (stock===0?' disabled':'') + '><i class="material-icons" style="font-size:16px;">remove</i></button>'
+                    + '<input type="number" id="editQty-' + p.id + '" value="' + initQty + '" min="1" max="' + (stock>0?stock:1) + '" data-stock="' + stock + '" style="flex:1;text-align:center;padding:6px 4px;border:2px solid #dee2e6;border-radius:6px;font-size:14px;font-weight:700;min-width:0;"' + (stock===0?' disabled':'') + '>'
+                    + '<button type="button" onclick="adjustEditQty(\'' + p.id + '\',1)" style="width:32px;height:32px;border:none;border-radius:6px;background:#0d6efd;color:white;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;"' + (stock===0?' disabled':'') + '><i class="material-icons" style="font-size:16px;">add</i></button>'
+                    + '</div>'
+                    + (stock > 0 ? '<div style="font-size:11px;color:#6c757d;margin-top:3px;text-align:right;">Max: ' + stock + '</div>' : '')
+                    + '</div>';
+                var isPreSelected = existingIds[String(p.id)];
+                var btnStyle = stock === 0 ? 'opacity:.5;cursor:not-allowed;' : '';
+                return '<div class="part-card" style="' + (stock===0?'opacity:.65;':'') + '">'
+                    + '<div style="font-size:36px;text-align:center;margin-bottom:6px;">' + getPartIcon(p.name) + '</div>'
+                    + '<div style="font-weight:700;font-size:13px;margin-bottom:3px;text-align:center;line-height:1.3;">' + p.name + '</div>'
+                    + skuText
+                    + '<div style="text-align:center;margin-bottom:8px;"><span style="background:' + stockColor + ';color:white;padding:2px 8px;border-radius:10px;font-weight:600;font-size:11px;">' + stockLabel + '</span></div>'
+                    + priceBlock
+                    + qtyBlock
+                    + '<button type="button" class="btn btn-sm btn-primary w-100" style="font-size:12px;' + btnStyle + '" onclick="editAddPart(\'' + p.id + '\',\'' + (p.name||'').replace(/'/g,"\\'") + '\',' + sellPrice + ',' + stock + ')"' + (stock===0?' disabled':'') + '>'
+                    + '<i class="material-icons" style="font-size:14px;vertical-align:middle;">add_shopping_cart</i> '
+                    + (isPreSelected ? 'Update Qty' : (stock===0?'Out of Stock':'Add to Repair')) + '</button></div>';
+            }).join('');
+
+            // Auto-add pre-existing parts to selectedParts
+            parts.forEach(function (p) {
+                if (existingIds[String(p.id)]) {
+                    var qty = existingQty[String(p.id)] || 1;
+                    var price = parseFloat(p.wholesalePrice || p.price || p.retailPrice || 0);
+                    var rawStock = p.stock != null ? p.stock : (p.quantity || 0);
+                    var effectiveStock = rawStock + qty; // add back already-used qty
+                    if (!selectedParts.find(function(x){return String(x.id)===String(p.id);})) {
+                        selectedParts.push({ id: String(p.id), name: p.name, price: price, quantity: qty, maxStock: effectiveStock });
+                    }
+                }
+            });
+            updateSelectedPartsList();
+            // Recalculate service charge = grand total - parts total (avoid double-counting)
+            var loadedPartsTotal = selectedParts.reduce(function(s,p){return s+p.price*p.quantity;},0);
+            var serviceCharge = Math.max(0, initialGrandTotal - loadedPartsTotal);
+            document.getElementById('editCost').value = serviceCharge.toFixed(2);
+            calculateSummary();
+        }
+
+        function getPartIcon(name) {
+            var n = (name||'').toLowerCase();
+            if (n.includes('screen')||n.includes('display')||n.includes('lcd')) return '📱';
+            if (n.includes('battery')) return '🔋';
+            if (n.includes('camera')) return '📷';
+            if (n.includes('speaker')||n.includes('audio')) return '🔊';
+            if (n.includes('charge')||n.includes('port')) return '🔌';
+            if (n.includes('back')||n.includes('cover')||n.includes('housing')) return '📦';
+            if (n.includes('button')||n.includes('power')||n.includes('volume')) return '🔘';
+            return '🔧';
+        }
+
+        window.adjustEditQty = function(partId, delta) {
+            var input = document.getElementById('editQty-' + partId);
+            if (!input) return;
+            var v = parseInt(input.value) || 1;
+            var max = parseInt(input.max) || 99;
+            input.value = Math.max(1, Math.min(max, v + delta));
+        }
+
+        window.editAddPart = function(partId, partName, price, maxStock) {
+            var qInput = document.getElementById('editQty-' + partId);
+            var qty = parseInt(qInput ? qInput.value : 1) || 1;
+            var stock = maxStock != null ? maxStock : 99;
+            var existing = selectedParts.findIndex(function(p){return String(p.id)===String(partId);});
+            if (qty > stock) {
+                showNotif('Cannot add ' + qty + ' × ' + partName + '. Only ' + stock + ' unit(s) available.', 'warning');
+                return;
+            }
+            if (existing !== -1) {
+                // Replace quantity (not accumulate) — user set the qty in the card input
+                selectedParts[existing].quantity = qty;
+                selectedParts[existing].maxStock = stock;
+                showNotif('Updated ' + partName + ' to qty ' + qty, 'success');
+            } else {
+                selectedParts.push({ id: String(partId), name: partName, price: price, quantity: qty, maxStock: stock });
+                showNotif('Added ' + qty + ' × ' + partName, 'success');
+            }
+            if (qInput) qInput.value = qty;
+            updateSelectedPartsList();
+            calculateSummary();
+        }
+
+        window.editRemovePart = function(partId) {
+            var idx = selectedParts.findIndex(function(p){return String(p.id)===String(partId);});
+            if (idx !== -1) {
+                var name = selectedParts[idx].name;
+                selectedParts.splice(idx, 1);
+                updateSelectedPartsList();
+                calculateSummary();
+                showNotif('Removed ' + name, 'info');
+            }
+        }
+
+        function updateSelectedPartsList() {
+            var sec  = document.getElementById('edit-selectedSection');
+            var list = document.getElementById('edit-selectedPartsList');
+            var cnt  = document.getElementById('edit-partsCount');
+            if (!selectedParts.length) { sec.style.display = 'none'; return; }
+            sec.style.display = 'block';
+            cnt.textContent = selectedParts.length + ' part' + (selectedParts.length>1?'s':'');
+            list.innerHTML = selectedParts.map(function(p) {
+                return '<div class="selected-part-item">'
+                    + '<div style="flex:1;"><strong style="font-size:.85rem;">' + p.name + '</strong>'
+                    + '<div style="font-size:.75rem;color:#888;">$' + p.price.toFixed(2) + ' each = <strong>$' + (p.quantity*p.price).toFixed(2) + '</strong></div></div>'
+                    + '<div style="display:flex;align-items:center;gap:6px;margin:0 8px;">'
+                    + '<button type="button" onclick="changeSelectedQty(\'' + p.id + '\',-1)" style="width:26px;height:26px;border:1px solid #dee2e6;border-radius:4px;background:#f8f9fa;cursor:pointer;font-size:14px;line-height:1;">−</button>'
+                    + '<input type="number" id="selQty-' + p.id + '" value="' + p.quantity + '" min="1" max="' + (p.maxStock||99) + '" onchange="changeSelectedQtyDirect(\'' + p.id + '\',this.value)" style="width:44px;text-align:center;border:1px solid #dee2e6;border-radius:4px;padding:2px 4px;font-size:13px;font-weight:700;">'
+                    + '<button type="button" onclick="changeSelectedQty(\'' + p.id + '\',1)" style="width:26px;height:26px;border:none;border-radius:4px;background:#0d6efd;color:white;cursor:pointer;font-size:14px;line-height:1;">+</button>'
+                    + '</div>'
+                    + '<button onclick="editRemovePart(\'' + p.id + '\')" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:4px;"><i class="material-icons" style="font-size:18px;">delete</i></button>'
+                    + '</div>';
+            }).join('');
+        }
+
+        window.changeSelectedQty = function(partId, delta) {
+            var idx = selectedParts.findIndex(function(p){return String(p.id)===String(partId);});
+            if (idx === -1) return;
+            var p = selectedParts[idx];
+            var newQty = Math.max(1, Math.min(p.maxStock || 99, p.quantity + delta));
+            p.quantity = newQty;
+            var input = document.getElementById('selQty-' + partId);
+            if (input) input.value = newQty;
+            calculateSummary();
+        };
+
+        window.changeSelectedQtyDirect = function(partId, val) {
+            var idx = selectedParts.findIndex(function(p){return String(p.id)===String(partId);});
+            if (idx === -1) return;
+            var p = selectedParts[idx];
+            var newQty = Math.max(1, Math.min(p.maxStock || 99, parseInt(val) || 1));
+            p.quantity = newQty;
+            var input = document.getElementById('selQty-' + partId);
+            if (input) input.value = newQty;
+            calculateSummary();
+        };
+
+        /* ── Status Pickers ────────────────────────────────────────── */
+        function initStatusPicker() {
+            var mapped = currentStatus.toLowerCase()
+                .replace('inprogress','in-progress')
+                .replace('waitingparts','waiting')
+                .replace('readyforpickup','ready')
+                .replace('onhold','on-hold');
+            document.querySelectorAll('#repairStatusOptions .status-option').forEach(function(el) {
+                if (el.dataset.status === mapped) el.classList.add('active');
+            });
+        }
+
+        window.selectStatus = function(status, el) {
+            document.querySelectorAll('#repairStatusOptions .status-option').forEach(function(o){o.classList.remove('active');});
+            if (el) el.classList.add('active');
+        };
+
+        function getSelectedStatus() {
+            var el = document.querySelector('#repairStatusOptions .status-option.active');
+            return el ? el.dataset.status : 'pending';
+        }
+
+        function initPaymentStatusPicker() {
+            var mapped = currentPay.toLowerCase();
+            document.querySelectorAll('#paymentStatusOptions .status-option').forEach(function(el) {
+                if (el.dataset.pstatus === mapped) el.classList.add('active');
+            });
+            editPayStatus = mapped;
+        }
+
+        window.selectPaymentStatus = function(status, el) {
+            editPayStatus = status;
+            document.querySelectorAll('#paymentStatusOptions .status-option').forEach(function(o){o.classList.remove('active');});
+            if (el) el.classList.add('active');
+            calculateSummary();
+        };
+
+        /* ── Payment Methods ───────────────────────────────────────── */
+        function loadPaymentMethods() {
+            var container = document.getElementById('editPaymentMethods');
+            function renderMethods(methods) {
+                availablePaymentMethods = methods;
+                container.innerHTML = methods.map(function(m) {
+                    return '<div class="payment-method-card" onclick="editSelectMethod(' + JSON.stringify(m) + ',this)">'
+                        + '<div class="payment-method-icon"><i class="material-icons" style="font-size:26px;color:' + (m.color||'#607D8B') + ';">' + (m.icon||'payments') + '</i></div>'
+                        + '<div style="font-size:.78rem;font-weight:600;">' + m.name + '</div></div>';
+                }).join('');
+                // Populate edit-modal method dropdown
+                var sel = document.getElementById('editModalMethod');
+                if (sel) sel.innerHTML = methods.map(function(m){ return '<option value="'+m.name+'">'+m.name+'</option>'; }).join('');
+            }
+            $.get('@Url.Action("GetPaymentMethods", "Repairs")', function(resp) {
+                if (resp && resp.success && resp.data && resp.data.length) {
+                    renderMethods(resp.data.map(function(m) {
+                        return { id: m.id || m.value, name: m.name || m.displayName, icon: m.icon || 'payments', color: m.color || '#607D8B' };
+                    }));
+                } else { renderMethods(availablePaymentMethods); }
+            }).fail(function() { renderMethods(availablePaymentMethods); });
+        }
+
+        window.editSelectMethod = function(method, el) {
+            selectedPaymentMethod = method;
+            document.querySelectorAll('.payment-method-card').forEach(function(c){c.classList.remove('active');});
+            if (el) el.classList.add('active');
+            document.getElementById('editPaymentDetails').style.display = 'block';
+            updateRemainingHint();
+            var isRefund = document.getElementById('txnTypeRefund').checked;
+            if (!isRefund && editPayStatus === 'paid') {
+                var grand = getGrandTotal();
+                document.getElementById('editAmountPaid').value = Math.max(0, grand - (editTotalPaid - editTotalRefunded)).toFixed(2);
+            }
+        };
+
+        function updateRemainingHint() {
+            var hint = document.getElementById('remainingHint');
+            var grand = getGrandTotal();
+            var net = editTotalPaid - editTotalRefunded;
+            var remaining = Math.max(0, grand - net);
+            var isRefund = document.getElementById('txnTypeRefund') && document.getElementById('txnTypeRefund').checked;
+            if (!isRefund && remaining > 0) {
+                hint.style.display = 'block';
+                hint.textContent = 'Remaining balance: $' + remaining.toFixed(2);
+                document.getElementById('editAmountPaid').placeholder = remaining.toFixed(2);
+            } else {
+                hint.style.display = 'none';
+                document.getElementById('editAmountPaid').placeholder = '0.00';
+            }
+        }
+
+        /* ── Ledger: Load from server ────────────────────────────────────────── */
+        function loadLedgerFromServer() {
+            document.getElementById('ledgerLoadingSpinner').style.display = 'inline-block';
+            $.get('@Url.Action("GetRepairPayments", "Repairs")', { repairId: repairId }, function(resp) {
+                document.getElementById('ledgerLoadingSpinner').style.display = 'none';
+                ledgerItems = (resp && resp.success && resp.data) ? resp.data : [];
+                recalcTotals();
+                renderLedger();
+                calculateSummary();
+                updateRemainingHint();
+            }).fail(function() {
+                document.getElementById('ledgerLoadingSpinner').style.display = 'none';
+                ledgerItems = []; renderLedger();
+            });
+        }
+
+        function recalcTotals() {
+            editTotalPaid = 0; editTotalRefunded = 0;
+            ledgerItems.forEach(function(p) {
+                if ((p.type || 'Payment').toLowerCase() === 'refund') editTotalRefunded += parseFloat(p.amount) || 0;
+                else editTotalPaid += parseFloat(p.amount) || 0;
+            });
+        }
+
+        function renderLedger() {
+            var container = document.getElementById('editPaymentHistoryList');
+            if (!ledgerItems.length) {
+                container.innerHTML = '<div class="text-muted small text-center py-3">No transactions recorded yet.</div>';
+                return;
+            }
+            container.innerHTML = ledgerItems.map(function(p) {
+                var isRefund  = (p.type || 'Payment').toLowerCase() === 'refund';
+                var typeColor = isRefund ? '#e53935' : '#28a745';
+                var typeBg    = isRefund ? '#fff5f5' : '#f0fff4';
+                var typeBorder= isRefund ? '#ffcdd2' : '#c3e6cb';
+                var typeIcon  = isRefund ? 'arrow_upward' : 'arrow_downward';
+                var typeLabel = isRefund ? 'REFUND' : 'PAYMENT';
+                var mObj      = availablePaymentMethods.find(function(m){ return m.name === p.paymentMethod; }) || {};
+                var mIcon     = mObj.icon  || 'payments';
+                var mColor    = mObj.color || '#607D8B';
+                var dateStr   = p.paidAt ? new Date(p.paidAt).toLocaleDateString() : '';
+                return '<div class="payment-history-item" style="background:'+typeBg+';border-color:'+typeBorder+';" id="ledger-row-'+p.id+'">'
+                    + '<div style="display:flex;align-items:center;gap:10px;">'
+                    + '<i class="material-icons" style="color:'+typeColor+';font-size:18px;">'+typeIcon+'</i>'
+                    + '<div>'
+                    + '<div style="font-weight:700;font-size:.8rem;color:'+typeColor+';">'+typeLabel+'</div>'
+                    + '<div style="font-weight:600;font-size:.85rem;"><i class="material-icons" style="font-size:13px;vertical-align:middle;color:'+mColor+';">'+mIcon+'</i> '+p.paymentMethod+'</div>'
+                    + (p.reference ? '<div style="font-size:.72rem;color:#888;">Ref: '+p.reference+'</div>' : '')
+                    + (p.notes     ? '<div style="font-size:.72rem;color:#888;">'+p.notes+'</div>' : '')
+                    + (dateStr     ? '<div style="font-size:.72rem;color:#aaa;">'+dateStr+'</div>' : '')
+                    + (p.createdByUser ? '<div style="font-size:.7rem;color:#bbb;">By: '+p.createdByUser+'</div>' : '')
+                    + '</div></div>'
+                    + '<div style="display:flex;align-items:center;gap:6px;">'
+                    + '<strong style="color:'+typeColor+';font-size:1rem;">$'+parseFloat(p.amount).toFixed(2)+'</strong>'
+                    + '<button onclick="openEditPaymentModal('+p.id+')" title="Edit" style="background:none;border:none;color:#1976d2;cursor:pointer;padding:2px;"><i class="material-icons" style="font-size:16px;">edit</i></button>'
+                    + '<button onclick="deleteLedgerEntry('+p.id+')" title="Delete" style="background:none;border:none;color:var(--danger);cursor:pointer;padding:2px;"><i class="material-icons" style="font-size:16px;">delete</i></button>'
+                    + '</div></div>';
+            }).join('');
+        }
+
+        /* ── Add Payment / Refund ──────────────────────────────────────────────── */
+        window.editAddPayment = function() {
+            var amount   = parseFloat(document.getElementById('editAmountPaid').value) || 0;
+            var ref      = document.getElementById('editPaymentRef').value.trim();
+            var notes    = document.getElementById('editPaymentNotes').value.trim();
+            var date     = document.getElementById('editPaymentDate').value;
+            var isRefund = document.getElementById('txnTypeRefund').checked;
+            if (!selectedPaymentMethod) { showNotif('Please select a payment method first', 'warning'); return; }
+            if (amount <= 0) { showNotif('Please enter a valid amount', 'warning'); return; }
+            var payload = {
+                repairId: repairId, type: isRefund ? 'Refund' : 'Payment',
+                amount: amount, paymentMethod: selectedPaymentMethod.name,
+                reference: ref || null, notes: notes || null,
+                paidAt: date ? date + 'T00:00:00' : null
+            };
+            var btn = document.getElementById('btnAddTxn');
+            btn.disabled = true;
+            $.ajax({
+                url: '@Url.Action("AddRepairPayment", "Repairs")', type: 'POST',
+                contentType: 'application/json', data: JSON.stringify(payload),
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                success: function(resp) {
+                    btn.disabled = false;
+                    if (resp && resp.success) {
+                        ledgerItems.push(resp.data);
+                        recalcTotals(); renderLedger(); calculateSummary(); updateRemainingHint();
+                        document.getElementById('editAmountPaid').value = '';
+                        document.getElementById('editPaymentRef').value = '';
+                        document.getElementById('editPaymentNotes').value = '';
+                        showNotif((isRefund?'Refund':'Payment') + ' of $' + amount.toFixed(2) + ' recorded via ' + selectedPaymentMethod.name, 'success');
+                    } else { showNotif(resp.message || 'Failed to save transaction', 'danger'); }
+                },
+                error: function() { btn.disabled = false; showNotif('Network error — please try again', 'danger'); }
+            });
+        };
+
+        window.editMarkPaid = function() {
+            if (!selectedPaymentMethod) { showNotif('Please select a payment method first', 'warning'); return; }
+            var net = editTotalPaid - editTotalRefunded;
+            var remaining = Math.max(0, getGrandTotal() - net);
+            if (remaining <= 0) { showNotif('Payment already completed', 'info'); return; }
+            document.getElementById('editAmountPaid').value = remaining.toFixed(2);
+            document.getElementById('txnTypePayment').checked = true;
+            editAddPayment();
+        };
+
+        /* ── Delete Ledger Entry ────────────────────────────────────────────────── */
+        window.deleteLedgerEntry = function(paymentId) {
+            if (!confirm('Delete this transaction? This cannot be undone.')) return;
+            $.ajax({
+                url: '@Url.Action("DeleteRepairPayment", "Repairs")', type: 'POST',
+                contentType: 'application/json', data: JSON.stringify({ paymentId: paymentId }),
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                success: function(resp) {
+                    if (resp && resp.success) {
+                        ledgerItems = ledgerItems.filter(function(p){ return p.id !== paymentId; });
+                        recalcTotals(); renderLedger(); calculateSummary(); updateRemainingHint();
+                        showNotif('Transaction deleted', 'success');
+                    } else { showNotif(resp.message || 'Delete failed', 'danger'); }
+                },
+                error: function() { showNotif('Network error', 'danger'); }
+            });
+        };
+
+        /* ── Edit Ledger Entry (inline modal) ───────────────────────────────────── */
+        window.openEditPaymentModal = function(paymentId) {
+            var p = ledgerItems.find(function(x){ return x.id === paymentId; });
+            if (!p) return;
+            document.getElementById('editModalPaymentId').value = paymentId;
+            document.getElementById('editModalMethod').value   = p.paymentMethod;
+            document.getElementById('editModalAmount').value   = parseFloat(p.amount).toFixed(2);
+            document.getElementById('editModalRef').value      = p.reference || '';
+            document.getElementById('editModalNotes').value    = p.notes || '';
+            document.getElementById('editModalDate').value     = p.paidAt ? p.paidAt.substring(0,10) : '';
+            document.getElementById('editPaymentModal').style.display = 'block';
+            document.getElementById('editPaymentModal').scrollIntoView({ behavior:'smooth', block:'nearest' });
+        };
+
+        window.closeEditPaymentModal = function() {
+            document.getElementById('editPaymentModal').style.display = 'none';
+        };
+
+        window.saveEditPaymentModal = function() {
+            var paymentId = parseInt(document.getElementById('editModalPaymentId').value);
+            var payload = {
+                paymentId:     paymentId,
+                amount:        parseFloat(document.getElementById('editModalAmount').value) || 0,
+                paymentMethod: document.getElementById('editModalMethod').value,
+                reference:     document.getElementById('editModalRef').value.trim() || null,
+                notes:         document.getElementById('editModalNotes').value.trim() || null,
+                paidAt:        document.getElementById('editModalDate').value ? document.getElementById('editModalDate').value + 'T00:00:00' : null
+            };
+            if (payload.amount <= 0) { showNotif('Amount must be greater than 0', 'warning'); return; }
+            $.ajax({
+                url: '@Url.Action("UpdateRepairPayment", "Repairs")', type: 'POST',
+                contentType: 'application/json', data: JSON.stringify(payload),
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                success: function(resp) {
+                    if (resp && resp.success) {
+                        var idx = ledgerItems.findIndex(function(x){ return x.id === paymentId; });
+                        if (idx !== -1) ledgerItems[idx] = resp.data;
+                        recalcTotals(); renderLedger(); calculateSummary(); updateRemainingHint();
+                        closeEditPaymentModal();
+                        showNotif('Transaction updated', 'success');
+                    } else { showNotif(resp.message || 'Update failed', 'danger'); }
+                },
+                error: function() { showNotif('Network error', 'danger'); }
+            });
+        };
+
+        function setDefaultPaymentDate() {
+            var d = document.getElementById('editPaymentDate');
+            if (d) d.value = new Date().toISOString().split('T')[0];
+        }
+
+        /* ── Summary ───────────────────────────────────────────────── */
+        function getGrandTotal() {
+            var partsTotal = selectedParts.reduce(function(s,p){return s+p.price*p.quantity;},0);
+            var cost = parseFloat(document.getElementById('editCost').value) || 0;
+            return partsTotal + cost;
+        }
+
+        function calculateSummary() {
+            var partsTotal = selectedParts.reduce(function(s,p){return s+p.price*p.quantity;},0);
+            var cost       = parseFloat(document.getElementById('editCost').value) || 0;
+            var grand      = partsTotal + cost;
+            var net        = editTotalPaid - editTotalRefunded;  // net cash received
+            var balance    = Math.max(0, grand - net);
+            var overpaid   = Math.max(0, net - grand);
+            document.getElementById('sumPartsTotal').textContent    = '$' + partsTotal.toFixed(2);
+            document.getElementById('sumRepairCost').textContent    = '$' + cost.toFixed(2);
+            document.getElementById('sumGrandTotal').textContent    = '$' + grand.toFixed(2);
+            document.getElementById('sumTotalPaid').textContent     = '$' + editTotalPaid.toFixed(2);
+            document.getElementById('sumTotalRefunded').textContent = '$' + editTotalRefunded.toFixed(2);
+            document.getElementById('sumBalance').textContent       = '$' + balance.toFixed(2);
+            document.getElementById('sumBalanceRow').style.display  = balance > 0 ? 'flex' : 'none';
+            document.getElementById('sumOverpaid').textContent      = '$' + overpaid.toFixed(2);
+            document.getElementById('sumOverpaidRow').style.display = overpaid > 0 ? 'flex' : 'none';
+        }
+
+        // Recalculate when cost changes
+        document.getElementById('editCost').addEventListener('input', function() {
+            calculateSummary();
+            updateRemainingHint();
+        });
+
+        /* ── Save ──────────────────────────────────────────────────── */
+        window.saveEditRepair = function() {
+            var btn = document.getElementById('saveEditBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving…';
+
+            var payload = {
+                repairId:         repairId,
+                brandId:          parseInt(document.getElementById('editBrandId').value)    || 0,
+                deviceCategoryId: parseInt(document.getElementById('editCategoryId').value) || 0,
+                deviceModelId:    parseInt(document.getElementById('editModelId').value)    || 0,
+                description:      document.getElementById('editDescription').value,
+                comments:         document.getElementById('editComments').value,
+                cost:             getGrandTotal(),
+                // amountPaid is intentionally omitted — server recalculates from the ledger
+                status:           getSelectedStatus(),
+                // paymentStatus is intentionally omitted — server auto-calculates it from the ledger
+                paymentStatus:    null,
+                parts:            selectedParts.map(function(p) {
+                    return { inventoryItemId: parseInt(p.id), quantity: p.quantity, unitPrice: p.price, partName: p.name };
+                }),
+                payments:         []  // payments are managed via the ledger API independently
+            };
+
+            $.ajax({
+                url:         '@Url.Action("UpdateRepairJson", "Repairs")',
+                type:        'POST',
+                contentType: 'application/json',
+                data:        JSON.stringify(payload),
+                headers:     { 'X-Requested-With': 'XMLHttpRequest' },
+                success: function(resp) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-save me-1"></i>Update Repair';
+                    if (resp.success) {
+                        showNotif('Repair updated successfully!', 'success');
+                        setTimeout(function(){ window.location.href = '@Url.Action("Index", "Repairs")'; }, 1200);
+                    } else {
+                        showNotif(resp.message || 'Update failed', 'danger');
+                    }
+                },
+                error: function() {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-save me-1"></i>Update Repair';
+                    showNotif('Network error — please try again', 'danger');
+                }
+            });
+        };
+
+        /* ── Print ─────────────────────────────────────────────────── */
+        window.printRepair = function() {
+            document.getElementById('printRepairNum').textContent = repairId;
+            window.print();
+        };
+
+        /* ── Notification ──────────────────────────────────────────── */
+        function showNotif(msg, type) {
+            var el = document.getElementById('editNotification');
+            el.className = 'alert alert-' + (type||'info') + ' no-print';
+            el.textContent = msg;
+            el.style.display = 'block';
+            setTimeout(function(){ el.style.display = 'none'; }, 3500);
+        }
+
+    }());
+    </script>
+}

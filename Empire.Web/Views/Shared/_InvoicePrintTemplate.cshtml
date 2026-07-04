@@ -1,0 +1,456 @@
+@* Reusable Invoice Print Template *@
+@* This partial can be included in any view that needs invoice printing functionality *@
+
+<div id="invoicePrintTemplate" style="display: none;">
+    <div class="invoice-print-container">
+        <!-- Invoice Header -->
+        <div class="invoice-header">
+            <div class="header-center">
+                <img id="printShopLogo" src="" alt="Shop Logo" style="max-width: 150px; max-height: 100px; display: none; margin: 0 auto 10px auto;" />
+                <div class="invoice-title">INVOICE</div>
+                <div class="company-name" id="printCompanyName"></div>
+            </div>
+        </div>
+
+        <!-- Invoice Info Row -->
+        <div class="invoice-info-row">
+            <div class="bill-to-section">
+                <div class="section-label">BILL TO:</div>
+                <div class="customer-name" id="printCustomerName"></div>
+                <div class="customer-email" id="printCustomerEmail"></div>
+                <div class="customer-address" id="printCustomerAddress"></div>
+            </div>
+            <div class="invoice-meta">
+                <div class="meta-item">
+                    <span class="meta-label">Date:</span>
+                    <span id="printInvoiceDate"></span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-label">Invoice NO.</span>
+                    <span id="printInvoiceNumber"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- FROM Section -->
+        <div class="from-section">
+            <div class="section-label">FROM:</div>
+            <div class="shop-name" id="printShopName"></div>
+            <div class="shop-email" id="printShopEmail"></div>
+            <div class="shop-address-line1" id="printShopAddressLine1"></div>
+            <div class="shop-address-line2" id="printShopAddressLine2"></div>
+            <div class="shop-phone">
+                <strong>Phone #:</strong> <span id="printShopPhone"></span>
+            </div>
+        </div>
+
+        <!-- Items Table -->
+        <table class="invoice-items-table">
+            <thead>
+                <tr>
+                    <th>DESCRIPTION</th>
+                    <th class="text-center">ITEM TYPE</th>
+                    <th class="text-center">QTY</th>
+                    <th class="text-end">PRICE</th>
+                    <th class="text-end">TOTAL</th>
+                </tr>
+            </thead>
+            <tbody id="printInvoiceItems">
+                <!-- Items will be populated dynamically -->
+            </tbody>
+        </table>
+
+        <!-- Totals Section -->
+        <div class="invoice-totals">
+            <div class="total-row">
+                <span class="total-label">Subtotal:</span>
+                <span class="total-value" id="printSubtotal">$0.00</span>
+            </div>
+            <div class="total-row" id="printTaxRow" style="display: none;">
+                <span class="total-label">Tax:</span>
+                <span class="total-value" id="printTax">$0.00</span>
+            </div>
+            <div class="total-row" id="printDiscountRow" style="display: none;">
+                <span class="total-label">Discount:</span>
+                <span class="total-value" id="printDiscount">$0.00</span>
+            </div>
+            <div class="total-row total-amount-row">
+                <span class="total-label">Total amount:</span>
+                <span class="total-value" id="printTotalAmount">$0.00</span>
+            </div>
+        </div>
+
+        <!-- Payment and Notes -->
+        <div class="invoice-bottom-section">
+            <div class="payment-section">
+                <div class="section-label">PAYMENT METHOD</div>
+                <div id="printPaymentMethod"></div>
+            </div>
+            <div class="notes-section">
+                <div class="section-label">NOTES</div>
+                <div id="printNotes"></div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="invoice-footer">
+            <div class="signature-line">
+                <div class="signature-box">
+                    <div class="signature-label">Date</div>
+                </div>
+                <div class="thank-you">Thank you!</div>
+                <div class="signature-box">
+                    <div class="signature-label">Signature</div>
+                </div>
+            </div>
+            <div class="website" id="printWebsite"></div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @@media print {
+        body > * {
+            display: none !important;
+        }
+        #invoicePrintTemplate {
+            display: block !important;
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999;
+            background: white;
+        }
+        #invoicePrintTemplate * {
+            visibility: visible;
+        }
+    }
+
+    .invoice-print-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 40px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        color: #333;
+        background: #f5f5f5;
+    }
+
+    .invoice-header {
+        text-align: center;
+        margin-bottom: 40px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #ddd;
+    }
+    
+    .header-center {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    #printShopLogo {
+        display: block;
+    }
+
+    .invoice-title {
+        font-size: 48px;
+        font-weight: 300;
+        color: #666;
+        letter-spacing: 2px;
+    }
+
+    .company-name {
+        font-size: 24px;
+        font-weight: 600;
+        color: #333;
+        text-align: right;
+    }
+
+    .invoice-info-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 30px;
+    }
+
+    .section-label {
+        font-size: 12px;
+        font-weight: 600;
+        color: #666;
+        margin-bottom: 10px;
+        letter-spacing: 1px;
+    }
+
+    .bill-to-section,
+    .from-section {
+        flex: 1;
+    }
+
+    .customer-name,
+    .shop-name {
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+    }
+
+    .customer-email,
+    .customer-address,
+    .customer-phone,
+    .shop-email,
+    .shop-address {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 3px;
+    }
+
+    .invoice-meta {
+        text-align: right;
+    }
+
+    .meta-item {
+        margin-bottom: 10px;
+    }
+
+    .meta-label {
+        font-size: 14px;
+        color: #666;
+        margin-right: 10px;
+    }
+
+    .from-section {
+        margin-bottom: 30px;
+    }
+
+    .invoice-items-table {
+        width: 100%;
+        margin-bottom: 30px;
+        border-collapse: collapse;
+        border: 2px solid #dee2e6;
+    }
+
+    .invoice-items-table thead {
+        background-color: #e0e0e0;
+    }
+
+    .invoice-items-table th {
+        padding: 12px 15px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #666;
+        text-align: left;
+        letter-spacing: 1px;
+        border: 1px solid #dee2e6;
+    }
+
+    .invoice-items-table td {
+        padding: 12px 15px;
+        border: 1px solid #e0e0e0;
+        font-size: 14px;
+        color: #333;
+        vertical-align: top;
+    }
+
+    .item-description {
+        font-weight: 500;
+    }
+
+    .item-details {
+        font-size: 12px;
+        color: #999;
+        margin-top: 4px;
+    }
+
+    .text-center {
+        text-align: center;
+    }
+
+    .text-end {
+        text-align: right;
+    }
+
+    .invoice-totals {
+        margin-left: auto;
+        width: 300px;
+        margin-bottom: 30px;
+    }
+
+    .total-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        font-size: 14px;
+    }
+
+    .total-amount-row {
+        background-color: #e0e0e0;
+        padding: 12px;
+        margin-top: 10px;
+        font-weight: 600;
+        font-size: 16px;
+    }
+
+    .invoice-bottom-section {
+        display: flex;
+        gap: 40px;
+        margin-bottom: 40px;
+    }
+
+    .payment-section,
+    .notes-section {
+        flex: 1;
+    }
+
+    .invoice-footer {
+        margin-top: 60px;
+        padding-top: 20px;
+        border-top: 1px solid #ddd;
+    }
+
+    .signature-line {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .signature-box {
+        width: 200px;
+        border-top: 1px solid #999;
+        padding-top: 5px;
+    }
+
+    .signature-label {
+        font-size: 12px;
+        color: #666;
+    }
+
+    .thank-you {
+        font-size: 36px;
+        font-weight: 300;
+        color: #666;
+    }
+
+    .website {
+        text-align: center;
+        font-size: 14px;
+        color: #666;
+    }
+</style>
+
+<script>
+    // Global function to populate and print invoice
+    function printInvoice(invoiceData) {
+        console.log('Printing invoice with data:', invoiceData);
+        
+        // Populate invoice template
+        $('#printCompanyName').text(invoiceData.companyName || '');
+        $('#printCustomerName').text(invoiceData.customerName || '');
+        $('#printCustomerEmail').text(invoiceData.customerEmail || '');
+        
+        // Format customer address with phone
+        let customerAddressText = invoiceData.customerAddress || '';
+        if (invoiceData.customerPhone) {
+            const formattedPhone = window.PhoneFormatter ? window.PhoneFormatter.format(invoiceData.customerPhone) : invoiceData.customerPhone;
+            customerAddressText += (customerAddressText ? '\n' : '') + 'Phone: ' + formattedPhone;
+        }
+        $('#printCustomerAddress').text(customerAddressText);
+        
+        $('#printInvoiceDate').text(invoiceData.invoiceDate || '');
+        $('#printInvoiceNumber').text(invoiceData.invoiceNumber || '');
+        $('#printShopName').text(invoiceData.shopName || '');
+        $('#printShopEmail').text(invoiceData.shopEmail || '');
+        
+        // Handle shop address - split into two lines
+        const shopAddress = invoiceData.shopAddress || '';
+        const shopCity = invoiceData.shopCity || '';
+        const shopState = invoiceData.shopState || '';
+        const shopZip = invoiceData.shopZip || '';
+        
+        $('#printShopAddressLine1').text(shopAddress);
+        const cityStateZip = [shopCity, shopState, shopZip].filter(x => x).join(' ');
+        $('#printShopAddressLine2').text(cityStateZip);
+        
+        // Handle shop phone - format it
+        const formattedShopPhone = invoiceData.shopPhone && window.PhoneFormatter 
+            ? window.PhoneFormatter.format(invoiceData.shopPhone) 
+            : (invoiceData.shopPhone || '');
+        $('#printShopPhone').text(formattedShopPhone);
+        
+        // Handle shop logo
+        if (invoiceData.shopLogo && invoiceData.shopLogo.trim() !== '') {
+            $('#printShopLogo').attr('src', invoiceData.shopLogo).css('display', 'block');
+        } else {
+            $('#printShopLogo').css('display', 'none');
+        }
+        
+        // Populate items
+        const itemsHtml = (invoiceData.items || []).map(item => {
+            const itemDetails = [];
+            if (item.imei) itemDetails.push('IMEI: ' + item.imei);
+            if (item.serialNumber) itemDetails.push('S/N: ' + item.serialNumber);
+            if (item.details) itemDetails.push(item.details);
+            
+            // Use name as primary, description as secondary
+            const itemName = item.name || item.description || 'Item';
+            const itemDesc = item.description && item.description !== item.name ? item.description : '';
+            
+            return '<tr>' +
+                '<td>' +
+                    '<div class="item-description">' + itemName + '</div>' +
+                    (itemDesc ? '<div class="item-details">' + itemDesc + '</div>' : '') +
+                    (itemDetails.length > 0 ? '<div class="item-details">' + itemDetails.join(' | ') + '</div>' : '') +
+                '</td>' +
+                '<td class="text-center">' + (item.itemType || item.type || 'Item') + '</td>' +
+                '<td class="text-center">' + (item.quantity || 1) + '</td>' +
+                '<td class="text-end">$' + (item.unitPrice || item.price || 0).toFixed(2) + '</td>' +
+                '<td class="text-end">$' + (item.totalPrice || item.total || 0).toFixed(2) + '</td>' +
+            '</tr>';
+        }).join('');
+        $('#printInvoiceItems').html(itemsHtml);
+        
+        // Populate totals
+        $('#printSubtotal').text('$' + (invoiceData.subtotal || 0).toFixed(2));
+        
+        if (invoiceData.tax && invoiceData.tax > 0) {
+            $('#printTaxRow').show();
+            $('#printTax').text('$' + invoiceData.tax.toFixed(2));
+        } else {
+            $('#printTaxRow').hide();
+        }
+        
+        if (invoiceData.discount && invoiceData.discount > 0) {
+            $('#printDiscountRow').show();
+            $('#printDiscount').text('-$' + invoiceData.discount.toFixed(2));
+        } else {
+            $('#printDiscountRow').hide();
+        }
+        
+        $('#printTotalAmount').text('$' + (invoiceData.totalAmount || 0).toFixed(2));
+        
+        // Populate payment method - handle both string and array
+        let paymentHtml = 'N/A';
+        if (invoiceData.paymentMethod && typeof invoiceData.paymentMethod === 'string') {
+            paymentHtml = invoiceData.paymentMethod;
+        } else if (invoiceData.paymentMethods && Array.isArray(invoiceData.paymentMethods)) {
+            paymentHtml = invoiceData.paymentMethods.map(pm => 
+                pm.method + ': $' + (pm.amount || 0).toFixed(2)
+            ).join('<br>');
+        }
+        $('#printPaymentMethod').html(paymentHtml);
+        
+        // Populate notes
+        $('#printNotes').text(invoiceData.notes || 'N/A');
+        
+        // Populate website
+        $('#printWebsite').text(invoiceData.website || '');
+        
+        // Trigger print dialog directly
+        // The media print CSS will handle showing the template only when printing
+        window.print();
+    }
+    
+    // Make function globally accessible
+    window.printInvoice = printInvoice;
+</script>

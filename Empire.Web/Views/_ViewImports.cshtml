@@ -1,0 +1,23 @@
+@using Empire.Web
+@using Empire.Web.Models
+@using Microsoft.AspNetCore.Html
+@using Microsoft.AspNetCore.Mvc.Rendering
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+@* Timezone-Aware DateTime Rendering Helper *@
+@functions {
+    public static IHtmlContent RenderUtcDate(DateTime? date, string format = "long")
+    {
+        if (!date.HasValue) return new HtmlString(string.Empty);
+        
+        var utcDate = date.Value.ToString("o"); // ISO 8601 format
+        var fallbackDate = format switch
+        {
+            "short" => date.Value.ToString("MM/dd/yyyy"),
+            "time" => date.Value.ToString("hh:mm:ss tt"),
+            _ => date.Value.ToString("MM/dd/yyyy hh:mm:ss tt")
+        };
+        
+        return new HtmlString($"<span data-utc-date=\"{utcDate}\" data-date-format=\"{format}\">{fallbackDate}</span>");
+    }
+}

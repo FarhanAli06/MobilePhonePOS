@@ -1,0 +1,115 @@
+@model Empire.Web.DTOs.Customer.CustomerDto
+
+<form id="editCustomerForm" novalidate>
+    <input type="hidden" id="editCustomerId" value="@Model.Id">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">First Name *</label>
+                <input type="text" class="form-control" id="editFirstName" value="@Model.FirstName" required>
+                <div class="invalid-feedback">First name is required.</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Last Name</label>
+                <input type="text" class="form-control" id="editLastName" value="@Model.LastName">
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Phone</label>
+                <input type="tel" class="form-control" id="editPhone" value="@Model.Phone">
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control" id="editEmail" value="@Model.Email" placeholder="email@example.com">
+                <div class="invalid-feedback">Please enter a valid email address.</div>
+            </div>
+        </div>
+        <div class="col-12">
+            <div class="mb-3">
+                <label class="form-label">Address</label>
+                <input type="text" class="form-control" id="editAddress" value="@Model.Address" placeholder="Street address">
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="mb-3">
+                <label class="form-label">City</label>
+                <input type="text" class="form-control" id="editCity" value="@Model.City">
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="mb-3">
+                <label class="form-label">State</label>
+                <input type="text" class="form-control" id="editState" value="@Model.State">
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="mb-3">
+                <label class="form-label">ZIP Code</label>
+                <input type="text" class="form-control" id="editZipCode" value="@Model.ZipCode">
+            </div>
+        </div>
+    </div>
+</form>
+
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+    <button type="button" class="btn btn-primary" onclick="updateCustomer()">
+        <i class="fas fa-save me-2"></i>Update Customer
+    </button>
+</div>
+
+<script>
+    function updateCustomer() {
+        // Clear previous validation state
+        $('#editCustomerForm .form-control').removeClass('is-invalid is-valid');
+
+        let valid = true;
+        const firstName = $('#editFirstName').val().trim();
+        const email = $('#editEmail').val().trim();
+
+        if (!firstName) {
+            $('#editFirstName').addClass('is-invalid');
+            valid = false;
+        } else {
+            $('#editFirstName').addClass('is-valid');
+        }
+
+
+        if (!valid) return;
+
+        const customerId = $('#editCustomerId').val();
+        const formData = {
+            FirstName: firstName,
+            LastName: $('#editLastName').val().trim(),
+            Phone: $('#editPhone').val().trim(),
+            Email: email,
+            Address: $('#editAddress').val().trim(),
+            City: $('#editCity').val().trim(),
+            State: $('#editState').val().trim(),
+            ZipCode: $('#editZipCode').val().trim()
+        };
+
+        $.ajax({
+            url: '@Url.Action("Edit", "Customers")/' + customerId,
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(formData),
+            success: function(response) {
+                if (response.success) {
+                    $('#editCustomerModal').modal('hide');
+                    location.reload();
+                } else {
+                    alert('Error: ' + response.message);
+                }
+            },
+            error: function() {
+                alert('Error updating customer');
+            }
+        });
+    }
+</script>

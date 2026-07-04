@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "Empire.API": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "http://localhost:5002;https://localhost:5003",
+      "launchUrl": "swagger"
+    }
+  }
+}

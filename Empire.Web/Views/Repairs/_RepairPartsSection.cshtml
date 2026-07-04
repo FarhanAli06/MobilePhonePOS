@@ -1,0 +1,41 @@
+@* Shared partial: Repair Parts Section
+   Pass a "prefix" via ViewData to keep element IDs unique per page.
+   Usage:
+     @@await Html.PartialAsync("_RepairPartsSection", null,
+         new ViewDataDictionary(ViewData) { { "prefix", "edit" } })
+*@
+@{
+    var prefix = ViewData["prefix"]?.ToString() ?? "parts";
+}
+
+<div class="section-card repair-parts-section">
+    <div class="section-header">
+        <i class="material-icons">build</i>
+        Parts Used
+    </div>
+    <div class="section-body">
+        @* Loading state *@
+        <div id="@(prefix)-partsLoadingMsg" class="text-center text-muted py-3" style="display:none;">
+            <i class="material-icons" style="font-size:36px;opacity:.4;">inventory_2</i>
+            <p class="mt-1 mb-0 small">Loading parts&hellip;</p>
+        </div>
+        @* No parts state *@
+        <div id="@(prefix)-partsNoMsg" class="text-center text-muted py-3" style="display:none;">
+            <i class="material-icons" style="font-size:36px;opacity:.4;">inventory_2</i>
+            <p class="mt-1 mb-0 small">No parts found for this device. Select a device first.</p>
+        </div>
+        @* Parts grid *@
+        <div id="@(prefix)-partsGrid" class="parts-grid"></div>
+        @* Selected parts list *@
+        <div id="@(prefix)-selectedSection" style="display:none;margin-top:16px;padding-top:14px;border-top:2px solid var(--border);">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <strong style="font-size:.9rem;">
+                    <i class="material-icons" style="font-size:16px;vertical-align:middle;">shopping_cart</i>
+                    Selected Parts
+                </strong>
+                <span class="badge bg-primary" id="@(prefix)-partsCount">0 parts</span>
+            </div>
+            <div id="@(prefix)-selectedPartsList"></div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,287 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   device-selector.css  –  Styles for the generic EmpireDeviceSelector widget
+   ───────────────────────────────────────────────────────────────────────────── */
+
+/* ── Container ────────────────────────────────────────────────────────────── */
+.empire-device-selector {
+    font-family: 'Inter', sans-serif;
+}
+
+/* ── Steps ────────────────────────────────────────────────────────────────── */
+.eds-step {
+    display: none;
+    animation: edsFadeIn 0.25s ease;
+}
+.eds-step--active {
+    display: block;
+}
+@keyframes edsFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0);   }
+}
+
+.eds-step-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #f0f0f0;
+}
+
+.eds-step-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0;
+    color: #1a1a1a;
+}
+
+.eds-back-btn {
+    background: #f0f0f0;
+    border: none;
+    border-radius: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+    color: #555;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+.eds-back-btn:hover { background: #e0e0e0; }
+
+/* ── Brand grid ───────────────────────────────────────────────────────────── */
+.eds-brand-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.eds-brand-card {
+    background: #fff;
+    padding: 14px 10px;
+    border-radius: 10px;
+    text-align: center;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.25s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+.eds-brand-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.1);
+}
+.eds-brand-card.active {
+    border-color: #2196f3;
+    background: rgba(33,150,243,0.05);
+}
+
+.eds-brand-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 10px;
+    color: #fff;
+    font-size: 22px;
+}
+
+.eds-brand-name {
+    font-weight: 600;
+    font-size: 13px;
+    color: #1a1a1a;
+}
+
+/* ── Category grid ────────────────────────────────────────────────────────── */
+.eds-category-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.eds-category-card {
+    background: #fff;
+    padding: 18px 12px;
+    border-radius: 10px;
+    text-align: center;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.25s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+.eds-category-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.1);
+}
+.eds-category-card.active {
+    border-color: #2196f3;
+    background: rgba(33,150,243,0.05);
+}
+
+.eds-category-icon {
+    font-size: 30px;
+    margin-bottom: 8px;
+    color: #2196f3;
+}
+
+.eds-category-name {
+    font-weight: 600;
+    font-size: 13px;
+    color: #1a1a1a;
+}
+
+/* ── Model grid ───────────────────────────────────────────────────────────── */
+.eds-model-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.eds-model-card {
+    background: #fff;
+    padding: 14px 10px;
+    border-radius: 10px;
+    text-align: center;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.25s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+.eds-model-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 14px rgba(0,0,0,0.1);
+}
+.eds-model-card.active {
+    border-color: #2196f3;
+    background: rgba(33,150,243,0.05);
+}
+
+.eds-model-icon {
+    font-size: 26px;
+    margin-bottom: 8px;
+}
+
+.eds-model-name {
+    font-weight: 600;
+    font-size: 12px;
+    color: #1a1a1a;
+}
+
+/* ── Parts grid ───────────────────────────────────────────────────────────── */
+.eds-parts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.eds-part-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 18px;
+    border: 1px solid #e0e0e0;
+    cursor: pointer;
+    transition: all 0.25s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+.eds-part-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+}
+.eds-part-card.selected {
+    border-color: #4caf50;
+    background: rgba(76,175,80,0.06);
+}
+
+.eds-part-icon  { font-size: 28px; margin-bottom: 8px; }
+.eds-part-name  { font-weight: 600; font-size: 13px; margin-bottom: 4px; color: #1a1a1a; }
+.eds-part-price { font-size: 14px; font-weight: 700; color: #2196f3; margin-bottom: 4px; }
+
+.eds-part-stock { font-size: 11px; font-weight: 600; }
+.eds-part-stock.in-stock  { color: #4caf50; }
+.eds-part-stock.out-stock { color: #f44336; }
+
+/* ── Banner (selected brand/model summary above parts) ────────────────────── */
+.eds-selected-banner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: linear-gradient(135deg, #2196f3, #1565c0);
+    color: #fff;
+    padding: 16px 20px;
+    border-radius: 10px;
+    margin-bottom: 18px;
+}
+
+.eds-banner-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.eds-banner-brand { font-size: 18px; font-weight: 700; }
+.eds-banner-model { font-size: 13px; opacity: 0.85; }
+
+/* ── Breadcrumb ───────────────────────────────────────────────────────────── */
+.eds-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    font-size: 13px;
+}
+
+.eds-crumb {
+    font-weight: 600;
+    color: #2196f3;
+}
+
+.eds-crumb-sep { color: #aaa; font-size: 10px; }
+
+.eds-reset-btn {
+    background: none;
+    border: none;
+    color: #f44336;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0 4px;
+    line-height: 1;
+}
+.eds-reset-btn:hover { color: #b71c1c; }
+
+/* ── Loading / empty states ───────────────────────────────────────────────── */
+.eds-loading {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 24px;
+    color: #888;
+    font-size: 14px;
+}
+
+.eds-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 24px;
+    color: #888;
+    font-size: 14px;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 576px) {
+    .eds-brand-grid    { grid-template-columns: repeat(3, 1fr); }
+    .eds-category-grid,
+    .eds-model-grid    { grid-template-columns: repeat(2, 1fr); }
+    .eds-parts-grid    { grid-template-columns: 1fr; }
+}

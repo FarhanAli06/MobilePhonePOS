@@ -1,0 +1,122 @@
+@{
+    ViewData["Title"] = "Page Permissions";
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title">
+                        <i class="fas fa-shield-alt me-2"></i>Page Permissions
+                    </h3>
+                </div>
+                <div class="card-body">
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            @TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            @TempData["ErrorMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <p class="text-muted mb-3">
+                        Select a user below to manage which pages they can access in the sidebar.
+                    </p>
+
+                    <div class="table-responsive">
+                        <table id="usersPermTable" class="table table-striped table-hover">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Full Name</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="usersTableBody">
+                                <tr>
+                                    <td colspan="6" class="text-center">
+                                        <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                                        Loading users...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+$(document).ready(function () {
+    loadUsers();
+});
+
+function loadUsers() {
+    $.ajax({
+        url: '/Users/GetAll',
+        type: 'GET',
+        success: function (response) {
+            var users = response.data || response;
+            var tbody = $('#usersTableBody');
+            tbody.empty();
+
+            if (!users || users.length === 0) {
+                tbody.append('<tr><td colspan="6" class="text-center text-muted">No users found.</td></tr>');
+                return;
+            }
+
+            $.each(users, function (i, u) {
+                var statusBadge = u.isActive
+                    ? '<span class="badge bg-success">Active</span>'
+                    : '<span class="badge bg-danger">Inactive</span>';
+
+                var assignUrl = '@Url.Action("Assign", "PagePermissions")?userId=' + u.id;
+
+                tbody.append(
+                    '<tr>' +
+                    '<td><strong>' + escHtml(u.username) + '</strong></td>' +
+                    '<td>' + escHtml((u.firstName || '') + ' ' + (u.lastName || '')) + '</td>' +
+                    '<td>' + escHtml(u.email || '') + '</td>' +
+                    '<td>' + escHtml(u.roleName || '') + '</td>' +
+                    '<td>' + statusBadge + '</td>' +
+                    '<td>' +
+                        '<a href="' + assignUrl + '" class="btn btn-sm btn-primary">' +
+                            '<i class="fas fa-shield-alt me-1"></i>Assign Pages' +
+                        '</a>' +
+                    '</td>' +
+                    '</tr>'
+                );
+            });
+
+            if ($.fn.DataTable) {
+                $('#usersPermTable').DataTable({ destroy: true });
+            }
+        },
+        error: function () {
+            $('#usersTableBody').html(
+                '<tr><td colspan="6" class="text-center text-danger">Failed to load users.</td></tr>'
+            );
+        }
+    });
+}
+
+function escHtml(str) {
+    if (!str) return '';
+    return $('<div>').text(str).html();
+}
+</script>
+}

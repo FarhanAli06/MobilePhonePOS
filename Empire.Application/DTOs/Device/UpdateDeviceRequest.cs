@@ -1,0 +1,67 @@
+using System.ComponentModel.DataAnnotations;
+using Empire.Domain.Enums;
+
+namespace Empire.Application.DTOs.Device;
+
+public class UpdateDeviceRequest
+{
+    [Required]
+    public int BrandId { get; set; }
+    
+    [Required]
+    public int DeviceCategoryId { get; set; }
+    
+    [Required]
+    public int DeviceModelId { get; set; }
+    
+    [MaxLength(50)]
+    public string Brand { get; set; } = string.Empty;
+    
+    [MaxLength(50)]
+    public string Category { get; set; } = string.Empty;
+    
+    [MaxLength(100)]
+    public string Model { get; set; } = string.Empty;
+    
+    [MaxLength(50)]
+    public string ModelNumber { get; set; } = string.Empty;
+    
+    public int? Year { get; set; }
+    
+    /// <summary>Defaults to Phone. Not required — the service does not use this field during update.</summary>
+    public DeviceType DeviceType { get; set; } = DeviceType.Phone;
+    
+    [MaxLength(50)]
+    public string IMEISerialNumber { get; set; } = string.Empty;
+    
+    [MaxLength(20)]
+    public string? GB { get; set; }
+    
+    [Range(0, 100)]
+    public int? BatteryHealthPercentage { get; set; }
+    
+    [MaxLength(20)]
+    public string NetworkStatus { get; set; } = "Unlocked";
+    
+    [MaxLength(20)]
+    public string ScratchesCondition { get; set; } = "None";
+    
+    [Range(0, double.MaxValue)]
+    public decimal? BuyingPrice { get; set; }
+    
+    [Range(0, double.MaxValue)]
+    public decimal? SellingPrice { get; set; }
+    
+    [MaxLength(100)]
+    public string Source { get; set; } = string.Empty;
+    
+    [MaxLength(1000)]
+    public string Notes { get; set; } = string.Empty;
+    
+    public bool IsAvailableForSale { get; set; } = true;
+    
+    public bool IsSold { get; set; } = false;
+    
+    public int? SoldToCustomerId { get; set; }
+}
+

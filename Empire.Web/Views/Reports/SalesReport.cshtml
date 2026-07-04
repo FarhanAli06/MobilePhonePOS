@@ -1,0 +1,1768 @@
+@{
+    ViewData["Title"] = "Sales Report";
+    var customers = ViewBag.Customers as List<dynamic> ?? new List<dynamic>();
+    var users = ViewBag.Users as List<dynamic> ?? new List<dynamic>();
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        <strong>Error:</strong> @TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<style>
+    .stat-card {
+        background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+        color: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .stat-card.success {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    }
+    .stat-card.warning {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    }
+    .stat-card.info {
+        background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    }
+    .stat-card h3 {
+        font-size: 2rem;
+        margin: 0;
+        font-weight: bold;
+    }
+    .stat-card p {
+        margin: 5px 0 0 0;
+        opacity: 0.9;
+    }
+    .chart-container {
+        position: relative;
+        height: 400px;
+        margin-bottom: 30px;
+    }
+    .filter-section {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 10px;
+        margin-bottom: 30px;
+    }
+    .table-responsive {
+        max-height: 600px;
+        overflow-y: auto;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-chart-line me-2"></i>Comprehensive Sales Report</h2>
+        <div>
+            <button type="button" class="btn btn-success" onclick="exportToExcel()">
+                <i class="fas fa-file-excel me-2"></i>Export to Excel
+            </button>
+            <button type="button" class="btn btn-primary" onclick="printReport()">
+                <i class="fas fa-print me-2"></i>Print Report
+            </button>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filter-section">
+        <h5 class="mb-3"><i class="fas fa-filter me-2"></i>Filters</h5>
+        <div class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">From Date & Time</label>
+                <input type="datetime-local" class="form-control" id="dateFrom" value="@DateTime.Now.Date.AddMonths(-1).ToString("yyyy-MM-dd")T00:00">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">To Date & Time</label>
+                <input type="datetime-local" class="form-control" id="dateTo" value="@DateTime.Now.Date.ToString("yyyy-MM-dd")T23:59">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Customer</label>
+                <select class="form-select" id="customerId">
+                    <option value="">All Customers</option>
+                    @foreach (var customer in customers)
+                    {
+                        <option value="@customer.Id">@customer.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Payment Status</label>
+                <select class="form-select" id="paymentStatus" asp-items="ViewBag.PaymentStatuses">
+                    <option value="">All Status</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Payment Method</label>
+                <select class="form-select" id="paymentMethod">
+                    <option value="">All Methods</option>
+                    <option value="Cash">Cash</option>
+                    <option value="Card">Card</option>
+                    <option value="Check">Check</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Item Type</label>
+                <select class="form-select" id="itemType">
+                    <option value="">All Types</option>
+                    <option value="Device">Devices</option>
+                    <option value="Inventory">Inventory</option>
+                    <option value="Repair">Repairs</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Cashier</label>
+                <select class="form-select" id="userId">
+                    <option value="">All Cashiers</option>
+                    @foreach (var user in users)
+                    {
+                        <option value="@user.Id">@user.Username</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="button" class="btn btn-primary w-100" onclick="loadReport()">
+                    <i class="fas fa-search me-2"></i>Generate Report
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Statistics -->
+    <div class="row" id="summarySection" style="display: none;">
+        <div class="col-md-3">
+            <div class="stat-card">
+                <p><i class="fas fa-dollar-sign me-2"></i>Total Revenue</p>
+                <h3 id="totalRevenue">$0.00</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card success">
+                <p><i class="fas fa-shopping-cart me-2"></i>Total Sales</p>
+                <h3 id="totalSales">0</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card warning">
+                <p><i class="fas fa-check-circle me-2"></i>Paid Amount</p>
+                <h3 id="totalPaid">$0.00</h3>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card info">
+                <p><i class="fas fa-chart-bar me-2"></i>Average Sale</p>
+                <h3 id="averageSale">$0.00</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="row mt-4" id="chartsSection" style="display: none;">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-line me-2"></i>Sales Over Time</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="salesByDateChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-pie me-2"></i>Revenue by Payment Method</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="paymentMethodChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4" id="chartsSection2" style="display: none;">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-bar me-2"></i>Top 10 Selling Items</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="topItemsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-bar me-2"></i>Sales by Payment Status</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="paymentStatusChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4" id="chartsSection3" style="display: none;">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-chart-pie me-2"></i>Revenue by Item Type</h5>
+                </div>
+                <div class="card-body">
+                    <div class="chart-container">
+                        <canvas id="itemTypeChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sales Analytics Chart -->
+    <div class="row mt-4" id="analyticsSection" style="display: none;">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-chart-line me-2"></i>Sales Analytics - Cost, Revenue & Profit</h5>
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="btnDaily" onclick="loadAnalytics('day')">
+                            <i class="fas fa-calendar-day me-1"></i>Daily
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="btnMonthly" onclick="loadAnalytics('month')">
+                            <i class="fas fa-calendar-alt me-1"></i>Monthly
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="btnYearly" onclick="loadAnalytics('year')">
+                            <i class="fas fa-calendar me-1"></i>Yearly
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <small class="text-muted">Total Inventory Cost</small>
+                                <h4 class="mb-0 text-danger" id="analyticsTotalCost">$0.00</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <small class="text-muted">Total Sales Revenue</small>
+                                <h4 class="mb-0 text-primary" id="analyticsTotalSales">$0.00</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <small class="text-muted">Total Profit</small>
+                                <h4 class="mb-0 text-success" id="analyticsTotalProfit">$0.00</h4>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <small class="text-muted">Profit Margin</small>
+                                <h4 class="mb-0 text-info" id="analyticsProfitMargin">0%</h4>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-container" style="height: 450px;">
+                        <canvas id="analyticsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Sales Table -->
+    <div class="card mt-4" id="tableSection" style="display: none;">
+        <div class="card-header">
+            <h5><i class="fas fa-table me-2"></i>Detailed Sales List</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover" id="salesTable">
+                    <thead style="background-color: #343a40; color: white;">
+                        <tr>
+                            <th>Invoice #</th>
+                            <th>Date & Time</th>
+                            <th>Customer</th>
+                            <th>Items</th>
+                            <th>Subtotal</th>
+                            <th>Tax</th>
+                            <th>Discount</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                            <th>Payment Method</th>
+                            <th>Paid</th>
+                            <th>Balance</th>
+                            <th>Cashier</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="salesTableBody">
+                        <!-- Data will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden Invoice Print Template -->
+<div id="salesReportInvoicePrintTemplate" style="display: none;">
+    <div class="invoice-print-content">
+        <!-- Header Section -->
+        <div class="invoice-header-section">
+            <div class="invoice-title">
+                <h1>INVOICE</h1>
+            </div>
+            <div class="company-logo">
+                <h2 id="printSalesShopName"></h2>
+            </div>
+        </div>
+        
+        <!-- Bill To and Invoice Info -->
+        <div class="invoice-info-section">
+            <div class="bill-to">
+                <p class="section-label">BILL TO:</p>
+                <p class="customer-name" id="printSalesCustomerName"></p>
+                <p id="printSalesCustomerEmail"></p>
+                <p id="printSalesCustomerAddress"></p>
+                <p><span class="label-text">Phone #:</span> <span id="printSalesCustomerPhone"></span></p>
+            </div>
+            <div class="invoice-details">
+                <p><span class="detail-label">Date:</span> <span id="printSalesInvoiceDate"></span></p>
+                <p><span class="detail-label">Invoice NO.</span> <span id="printSalesInvoiceNumber"></span></p>
+            </div>
+        </div>
+        
+        <!-- From Section -->
+        <div class="from-section">
+            <p class="section-label">FROM:</p>
+            <p class="shop-name-from" id="printSalesShopNameFrom"></p>
+            <p id="printSalesShopEmail"></p>
+            <p id="printSalesShopAddress"></p>
+        </div>
+        
+        <!-- Items Table -->
+        <table class="invoice-items-table">
+            <thead>
+                <tr>
+                    <th class="desc-col">DESCRIPTION</th>
+                    <th class="qty-col">QTY</th>
+                    <th class="price-col">PRICE</th>
+                    <th class="total-col">TOTAL</th>
+                </tr>
+            </thead>
+            <tbody id="printSalesInvoiceItems">
+            </tbody>
+        </table>
+        
+        <!-- Total Section -->
+        <div class="invoice-totals-section">
+            <div class="totals-row" id="printSalesSubtotalRow">
+                <span class="totals-label">Subtotal:</span>
+                <span class="totals-value" id="printSalesSubtotal"></span>
+            </div>
+            <div class="totals-row" id="printSalesTaxRow" style="display: none;">
+                <span class="totals-label">Tax:</span>
+                <span class="totals-value" id="printSalesTax"></span>
+            </div>
+            <div class="totals-row" id="printSalesDiscountRow" style="display: none;">
+                <span class="totals-label">Discount:</span>
+                <span class="totals-value" id="printSalesDiscount"></span>
+            </div>
+            <div class="totals-row total-amount-row">
+                <span class="totals-label">Total amount:</span>
+                <span class="totals-value" id="printSalesTotal"></span>
+            </div>
+        </div>
+        
+        <!-- Payment and Notes -->
+        <div class="payment-notes-section">
+            <div class="payment-method">
+                <p class="section-label">PAYMENT METHOD</p>
+                <div id="printSalesPaymentMethods"></div>
+            </div>
+            <div class="notes-section">
+                <p class="section-label">NOTES</p>
+                <div id="printSalesNotes"></div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="invoice-footer-section">
+            <div class="signature-section">
+                <div class="signature-line">
+                    <p>Date</p>
+                </div>
+                <div class="thank-you">
+                    <h2>Thank you!</h2>
+                </div>
+                <div class="signature-line">
+                    <p>Signature</p>
+                </div>
+            </div>
+            <div class="website">
+                <p id="printSalesShopWebsite"></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @@media print {
+        body * {
+            visibility: hidden;
+        }
+        .invoice-print-content, .invoice-print-content * {
+            visibility: visible;
+        }
+        .invoice-print-content {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+        }
+    }
+    
+    /* Invoice Container */
+    .invoice-print-content {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 50px;
+        background: #f5f5f5;
+        color: #333;
+    }
+    
+    /* Header Section */
+    .invoice-header-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        padding: 40px 0;
+        background: #e8e8e8;
+        margin: -50px -50px 40px -50px;
+        padding: 40px 50px;
+    }
+    
+    .invoice-title h1 {
+        font-size: 56px;
+        font-weight: 300;
+        letter-spacing: 2px;
+        color: #4a4a4a;
+        margin: 0;
+    }
+    
+    .company-logo h2 {
+        font-size: 24px;
+        font-weight: 600;
+        color: #4a4a4a;
+        margin: 0;
+        text-align: right;
+    }
+    
+    /* Bill To and Invoice Info Section */
+    .invoice-info-section {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 40px;
+    }
+    
+    .section-label {
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        color: #666;
+        margin-bottom: 10px;
+    }
+    
+    .bill-to .customer-name {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        margin: 5px 0;
+    }
+    
+    .bill-to p {
+        margin: 3px 0;
+        color: #555;
+        font-size: 14px;
+    }
+    
+    .label-text {
+        font-weight: 600;
+    }
+    
+    .invoice-details {
+        text-align: right;
+    }
+    
+    .invoice-details p {
+        margin: 8px 0;
+        font-size: 14px;
+    }
+    
+    .detail-label {
+        font-weight: 600;
+        margin-right: 10px;
+    }
+    
+    /* From Section */
+    .from-section {
+        margin-bottom: 40px;
+    }
+    
+    .shop-name-from {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        margin: 5px 0;
+    }
+    
+    .from-section p {
+        margin: 3px 0;
+        color: #555;
+        font-size: 14px;
+    }
+    
+    /* Items Table */
+    .invoice-items-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 40px 0;
+        background: white;
+    }
+    
+    .invoice-items-table thead {
+        background: #e8e8e8;
+    }
+    
+    .invoice-items-table th {
+        padding: 15px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        color: #666;
+        border-bottom: 2px solid #ddd;
+    }
+    
+    .invoice-items-table th.qty-col,
+    .invoice-items-table th.price-col,
+    .invoice-items-table th.total-col {
+        text-align: right;
+    }
+    
+    .invoice-items-table td {
+        padding: 15px;
+        border-bottom: 1px solid #eee;
+        font-size: 14px;
+        color: #555;
+    }
+    
+    .invoice-items-table td.qty-col,
+    .invoice-items-table td.price-col,
+    .invoice-items-table td.total-col {
+        text-align: right;
+    }
+    
+    /* Totals Section */
+    .invoice-totals-section {
+        margin: 40px 0;
+        text-align: right;
+    }
+    
+    .totals-row {
+        display: flex;
+        justify-content: flex-end;
+        padding: 8px 0;
+        font-size: 14px;
+    }
+    
+    .totals-label {
+        margin-right: 40px;
+        color: #666;
+    }
+    
+    .totals-value {
+        min-width: 120px;
+        text-align: right;
+        color: #333;
+    }
+    
+    .total-amount-row {
+        background: #e8e8e8;
+        padding: 15px 20px;
+        margin-top: 10px;
+        font-size: 16px;
+        font-weight: 700;
+    }
+    
+    .total-amount-row .totals-label,
+    .total-amount-row .totals-value {
+        color: #333;
+    }
+    
+    /* Payment and Notes Section */
+    .payment-notes-section {
+        display: flex;
+        justify-content: space-between;
+        margin: 40px 0;
+    }
+    
+    .payment-method,
+    .notes-section {
+        flex: 1;
+        margin-right: 40px;
+    }
+    
+    .notes-section {
+        margin-right: 0;
+    }
+    
+    .payment-method p.section-label,
+    .notes-section p.section-label {
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        color: #666;
+        margin-bottom: 10px;
+    }
+    
+    .payment-method div,
+    .notes-section div {
+        color: #555;
+        font-size: 14px;
+        line-height: 1.6;
+    }
+    
+    /* Footer Section */
+    .invoice-footer-section {
+        margin-top: 60px;
+        padding-top: 30px;
+        border-top: 1px solid #ddd;
+    }
+    
+    .signature-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+    }
+    
+    .signature-line {
+        text-align: center;
+    }
+    
+    .signature-line p {
+        margin: 0;
+        padding-top: 40px;
+        border-top: 1px solid #999;
+        min-width: 150px;
+        font-size: 12px;
+        color: #666;
+    }
+    
+    .thank-you h2 {
+        font-size: 36px;
+        font-weight: 300;
+        color: #4a4a4a;
+        margin: 0;
+        text-align: center;
+    }
+    
+    .website {
+        text-align: center;
+    }
+    
+    .website p {
+        margin: 0;
+        color: #666;
+        font-size: 14px;
+    }
+</style>
+
+@section Scripts {
+    <!-- DataTables CSS and JS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+        // ── Utility helpers ──────────────────────────────────────────────────────
+        function formatCurrency(value) {
+            var n = parseFloat(value) || 0;
+            return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+        function formatDate(dateStr) {
+            if (!dateStr) return 'N/A';
+            var d = new Date(dateStr);
+            return isNaN(d.getTime()) ? dateStr : d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+        }
+        // ────────────────────────────────────────────────────────────────────────
+
+        let salesData = null;
+        let charts = {};
+
+        $(document).ready(function() {
+            // Load report on page load
+            loadReport();
+        });
+
+        function loadReport() {
+            const filters = {
+                dateFrom: $('#dateFrom').val(),
+                dateTo: $('#dateTo').val(),
+                customerId: $('#customerId').val() || null,
+                paymentStatus: $('#paymentStatus').val() || null,
+                paymentMethod: $('#paymentMethod').val() || null,
+                itemType: $('#itemType').val() || null,
+                userId: $('#userId').val() || null
+            };
+
+            $.ajax({
+                url: '@Url.Action("GetSalesReportData", "Reports")',
+                type: 'GET',
+                data: filters,
+                success: function(response) {
+                    if (response.success) {
+                        salesData = response;
+                        updateSummary(response.summary);
+                        updateCharts(response.charts);
+                        updateTable(response.sales);
+                        
+                        // Show sections
+                        $('#summarySection').show();
+                        $('#chartsSection').show();
+                        $('#chartsSection2').show();
+                        $('#chartsSection3').show();
+                        $('#analyticsSection').show();
+                        $('#tableSection').show();
+                        
+                        // Load analytics data (default to daily view)
+                        loadAnalytics('day');
+                    } else {
+                        alert('Error loading report: ' + response.message);
+                    }
+                },
+                error: function(xhr) {
+                    console.error('Error loading report:', xhr);
+                    alert('Error loading report data');
+                }
+            });
+        }
+
+        function updateSummary(summary) {
+            $('#totalRevenue').text('$' + summary.totalRevenue.toFixed(2));
+            $('#totalSales').text(summary.totalSales);
+            $('#totalPaid').text('$' + summary.totalPaid.toFixed(2));
+            $('#averageSale').text('$' + summary.averageSale.toFixed(2));
+        }
+
+        function updateCharts(chartData) {
+            // Destroy existing charts
+            Object.values(charts).forEach(chart => chart.destroy());
+            charts = {};
+
+            // Sales by Date - Line Chart
+            const salesByDateCtx = document.getElementById('salesByDateChart').getContext('2d');
+            charts.salesByDate = new Chart(salesByDateCtx, {
+                type: 'line',
+                data: {
+                    labels: chartData.salesByDate.map(d => d.date),
+                    datasets: [{
+                        label: 'Revenue',
+                        data: chartData.salesByDate.map(d => d.revenue),
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Revenue: $' + context.parsed.y.toFixed(2);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toFixed(0);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Payment Method - Pie Chart
+            const paymentMethodCtx = document.getElementById('paymentMethodChart').getContext('2d');
+            charts.paymentMethod = new Chart(paymentMethodCtx, {
+                type: 'pie',
+                data: {
+                    labels: chartData.salesByPaymentMethod.map(d => d.method),
+                    datasets: [{
+                        data: chartData.salesByPaymentMethod.map(d => d.amount),
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(255, 206, 86, 0.8)',
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(153, 102, 255, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': $' + context.parsed.toFixed(2);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Top Items - Bar Chart
+            const topItemsCtx = document.getElementById('topItemsChart').getContext('2d');
+            charts.topItems = new Chart(topItemsCtx, {
+                type: 'bar',
+                data: {
+                    labels: chartData.topItems.map(d => d.name),
+                    datasets: [{
+                        label: 'Revenue',
+                        data: chartData.topItems.map(d => d.revenue),
+                        backgroundColor: 'rgba(54, 162, 235, 0.8)',
+                        borderColor: 'rgba(54, 162, 235, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Revenue: $' + context.parsed.x.toFixed(2);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toFixed(0);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Payment Status - Bar Chart
+            const paymentStatusCtx = document.getElementById('paymentStatusChart').getContext('2d');
+            charts.paymentStatus = new Chart(paymentStatusCtx, {
+                type: 'bar',
+                data: {
+                    labels: chartData.salesByStatus.map(d => d.status),
+                    datasets: [{
+                        label: 'Amount',
+                        data: chartData.salesByStatus.map(d => d.amount),
+                        backgroundColor: [
+                            'rgba(75, 192, 192, 0.8)',
+                            'rgba(255, 206, 86, 0.8)',
+                            'rgba(255, 99, 132, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(255, 99, 132, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return 'Amount: $' + context.parsed.y.toFixed(2);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toFixed(0);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Item Type - Donut Chart
+            const itemTypeCtx = document.getElementById('itemTypeChart').getContext('2d');
+            charts.itemType = new Chart(itemTypeCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: chartData.itemsByType.map(d => d.type),
+                    datasets: [{
+                        data: chartData.itemsByType.map(d => d.revenue),
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.8)',
+                            'rgba(54, 162, 235, 0.8)',
+                            'rgba(255, 206, 86, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': $' + context.parsed.toFixed(2);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        let salesTable = null;
+        
+        function updateTable(sales) {
+            // Destroy existing DataTable if it exists
+            if (salesTable) {
+                salesTable.destroy();
+            }
+            
+            const tbody = $('#salesTableBody');
+            tbody.empty();
+
+            if (sales.length === 0) {
+                tbody.append('<tr><td colspan="12" class="text-center">No sales found</td></tr>');
+                return;
+            }
+
+            sales.forEach(sale => {
+                const statusBadge = 
+                    sale.paymentStatus === 'Paid' ? 'success' :
+                    sale.paymentStatus === 'Partial' ? 'warning' : 'danger';
+
+                const row = `
+                    <tr>
+                        <td>${sale.invoiceNumber}</td>
+                        <td>${sale.date ? new Date(sale.date).toLocaleDateString() : ''}</td>
+                        <td>${sale.customer || ''}</td>
+                        <td>${sale.items}</td>
+                        <td>$${(sale.subtotal||0).toFixed(2)}</td>
+                        <td>$${(sale.tax||0).toFixed(2)}</td>
+                        <td>$${(sale.discount||0).toFixed(2)}</td>
+                        <td><strong>$${(sale.total||0).toFixed(2)}</strong></td>
+                        <td><span class="badge bg-${statusBadge}">${sale.paymentStatus}</span></td>
+                        <td>${sale.paymentMethods || sale.paymentMethod || ''}</td>
+                        <td>${formatCurrency(sale.totalPaid || 0)}</td>
+                        <td class="${(sale.balance||0)>0?'text-danger fw-bold':''}">${ formatCurrency(sale.balance || 0)}</td>
+                        <td>${sale.cashier || ''}</td>
+                        <td>
+                            <button class="btn btn-sm btn-success me-1" onclick="loadInvoiceForEdit(${sale.id})" title="Edit Invoice">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-primary" onclick="printInvoiceFromSalesReport(${sale.id})" title="Print Invoice">
+                                <i class="fas fa-print"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+            
+            // Initialize DataTable with export buttons
+            salesTable = $('#salesTable').DataTable({
+                dom: 'Bfrtip',
+                buttons: [
+                    {
+                        extend: 'excel',
+                        text: '<i class="fas fa-file-excel"></i> Export to Excel',
+                        className: 'btn btn-success btn-sm',
+                        exportOptions: {
+                            columns: ':not(:last-child)' // Exclude Actions column
+                        }
+                    },
+                    {
+                        extend: 'print',
+                        text: '<i class="fas fa-print"></i> Print Report',
+                        className: 'btn btn-info btn-sm',
+                        exportOptions: {
+                            columns: ':not(:last-child)' // Exclude Actions column
+                        }
+                    }
+                ],
+                order: [[1, 'desc']], // Sort by date descending
+                pageLength: 25,
+                responsive: true,
+                language: {
+                    search: "Search sales:",
+                    lengthMenu: "Show _MENU_ sales per page",
+                    info: "Showing _START_ to _END_ of _TOTAL_ sales",
+                    infoEmpty: "No sales to show",
+                    infoFiltered: "(filtered from _MAX_ total sales)"
+                }
+            });
+        }
+
+        function exportToExcel() {
+            if (!salesData) {
+                alert('Please generate a report first');
+                return;
+            }
+
+            // Create CSV content
+            let csv = 'Invoice #,Date,Customer,Items,Subtotal,Tax,Discount,Total,Status,Payment Method,Cashier\n';
+            
+            salesData.sales.forEach(sale => {
+                csv += `${sale.invoiceNumber},${sale.date ? new Date(sale.date).toLocaleDateString() : ''},${sale.customer||''},${sale.items},${sale.subtotal||0},${sale.tax||0},${sale.discount||0},${sale.total||0},${sale.paymentStatus},${sale.paymentMethods||sale.paymentMethod||''},${sale.cashier||''}\n`;
+            });
+
+            // Download CSV
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'sales_report_' + new Date().toISOString().split('T')[0] + '.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        function printReport() {
+            window.print();
+        }
+        
+        function printInvoiceFromSalesReport(saleId) {
+            if (!saleId) {
+                alert('Invalid sale ID');
+                return;
+            }
+
+            // Use GetSaleDetail which returns full shop, customer, items, and payments
+            $.ajax({
+                url: '@Url.Action("GetSaleDetail", "Reports")' + '?id=' + saleId,
+                type: 'GET',
+                success: function(response) {
+                    if (response.success && response.data) {
+                        const d = response.data;
+                        const shop     = d.shop     || {};
+                        const customer = d.customer || {};
+                        const items    = d.items    || [];
+                        const payments = d.payments || [];
+
+                        const invoiceData = {
+                            companyName:     shop.name    || '',
+                            shopName:        shop.name    || '',
+                            shopEmail:       shop.email   || '',
+                            shopPhone:       shop.phone   || '',
+                            shopAddress:     [shop.address, shop.city, shop.state, shop.zip].filter(Boolean).join(', '),
+                            shopCity:        shop.city    || '',
+                            shopState:       shop.state   || '',
+                            shopZip:         shop.zip     || '',
+                            shopLogo:        shop.logo    || '',
+                            website:         '',
+
+                            customerName:    customer.name    || 'Walk-in Customer',
+                            customerEmail:   customer.email   || '',
+                            customerPhone:   customer.phone   || '',
+                            customerAddress: customer.address || '',
+
+                            invoiceNumber:   d.invoiceNumber || '',
+                            invoiceDate:     d.saleDate ? new Date(d.saleDate).toLocaleDateString() : '',
+
+                            items: items.map(function(i) {
+                                return {
+                                    name:        i.name        || '',
+                                    description: i.description || '',
+                                    quantity:    i.qty         || 1,
+                                    price:       parseFloat(i.unitPrice || 0),
+                                    total:       parseFloat(i.total     || 0)
+                                };
+                            }),
+
+                            subtotal:    parseFloat(d.subtotal  || 0),
+                            tax:         parseFloat(d.tax       || 0),
+                            discount:    parseFloat(d.discount  || 0),
+                            totalAmount: parseFloat(d.total     || 0),
+
+                            paymentMethods: payments.map(function(p) {
+                                return { method: p.method || 'Cash', amount: parseFloat(p.amount || 0) };
+                            }),
+
+                            notes: ''
+                        };
+
+                        if (typeof window.printInvoice === 'function') {
+                            window.printInvoice(invoiceData);
+                        } else {
+                            console.error('printInvoice function not found.');
+                            alert('Print function not available. Please refresh the page and try again.');
+                        }
+                    } else {
+                        alert('Error loading invoice: ' + (response.message || 'Unknown error'));
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error fetching invoice:', error);
+                    alert('Failed to load invoice. Please try again.');
+                }
+            });
+        }
+        
+        function populateInvoiceTemplate(data) {
+            // Safely handle response structure
+            if (!data) {
+                console.error('No data provided to populateInvoiceTemplate');
+                return;
+            }
+            
+            // Backend returns: invoice, customer, shop, items, totals, payment
+            const invoice = data.invoice || data || {};
+            const customer = data.customer || {};
+            const shop = data.shop || {};
+            const items = data.items || [];
+            const payment = data.payment || {};
+            const totals = data.totals || {};
+            
+            // Populate template fields
+            document.getElementById('printSalesInvoiceNumber').textContent = invoice.number || 'N/A';
+            document.getElementById('printSalesInvoiceDate').textContent = invoice.date ? new Date(invoice.date).toLocaleDateString() : 'N/A';
+            
+            // Shop info (appears twice - header and from section)
+            document.getElementById('printSalesShopName').textContent = shop.name || 'N/A';
+            document.getElementById('printSalesShopNameFrom').textContent = shop.name || 'N/A';
+            document.getElementById('printSalesShopEmail').textContent = shop.email || '';
+            document.getElementById('printSalesShopAddress').textContent = shop.address || '';
+            document.getElementById('printSalesShopWebsite').textContent = shop.website || '';
+            
+            // Customer info
+            document.getElementById('printSalesCustomerName').textContent = customer.name || 'Walk-in Customer';
+            document.getElementById('printSalesCustomerEmail').textContent = customer.email || '';
+            document.getElementById('printSalesCustomerAddress').textContent = customer.address || '';
+            document.getElementById('printSalesCustomerPhone').textContent = customer.phone || 'N/A';
+            
+            // Populate items table
+            const itemsBody = document.getElementById('printSalesInvoiceItems');
+            itemsBody.innerHTML = '';
+            items.forEach(item => {
+                const row = document.createElement('tr');
+                const itemName = item.name || item.itemName || 'N/A';
+                const itemDesc = item.description || '';
+                const fullDescription = itemDesc ? `${itemName} - ${itemDesc}` : itemName;
+                
+                row.innerHTML = `
+                    <td class="desc-col">${fullDescription}</td>
+                    <td class="qty-col" style="text-align: right;">${item.quantity || 0}</td>
+                    <td class="price-col" style="text-align: right;">$${(item.unitPrice || 0).toFixed(2)}</td>
+                    <td class="total-col" style="text-align: right;">$${(item.totalPrice || 0).toFixed(2)}</td>
+                `;
+                itemsBody.appendChild(row);
+            });
+            
+            // Populate totals
+            document.getElementById('printSalesSubtotal').textContent = '$' + totals.subtotal.toFixed(2);
+            
+            if (totals.tax > 0) {
+                document.getElementById('printSalesTax').textContent = '$' + totals.tax.toFixed(2);
+                document.getElementById('printSalesTaxRow').style.display = 'flex';
+            } else {
+                document.getElementById('printSalesTaxRow').style.display = 'none';
+            }
+            
+            if (totals.discount > 0) {
+                document.getElementById('printSalesDiscount').textContent = '-$' + totals.discount.toFixed(2);
+                document.getElementById('printSalesDiscountRow').style.display = 'flex';
+            } else {
+                document.getElementById('printSalesDiscountRow').style.display = 'none';
+            }
+            
+            document.getElementById('printSalesTotal').textContent = '$' + totals.total.toFixed(2);
+            
+            // Populate payment methods
+            const paymentMethodsDiv = document.getElementById('printSalesPaymentMethods');
+            paymentMethodsDiv.innerHTML = '';
+            
+            // Backend returns payment.methods as array of {method, amount}
+            const paymentMethods = payment.methods || [];
+            if (paymentMethods.length > 0) {
+                paymentMethods.forEach(pm => {
+                    const p = document.createElement('p');
+                    const methodName = pm.method || pm.paymentMethod || 'Unknown';
+                    const amount = pm.amount || 0;
+                    p.innerHTML = `${methodName}: $${amount.toFixed(2)}`;
+                    paymentMethodsDiv.appendChild(p);
+                });
+            } else {
+                const p = document.createElement('p');
+                p.textContent = payment.method || 'Cash';
+                paymentMethodsDiv.appendChild(p);
+            }
+            
+            // Populate notes
+            const notesDiv = document.getElementById('printSalesNotes');
+            notesDiv.innerHTML = '';
+            const notes = invoice.notes || payment.notes || '';
+            if (notes) {
+                const p = document.createElement('p');
+                p.textContent = notes;
+                notesDiv.appendChild(p);
+            }
+
+        }
+        
+        // Sales Analytics Functions
+        let currentAnalyticsView = 'day';
+        
+        function loadAnalytics(groupBy) {
+            console.log('Loading analytics with groupBy:', groupBy);
+            currentAnalyticsView = groupBy;
+            
+            // Update button states
+            $('#btnDaily, #btnMonthly, #btnYearly').removeClass('active btn-primary').addClass('btn-outline-primary');
+            if (groupBy === 'day') {
+                $('#btnDaily').removeClass('btn-outline-primary').addClass('btn-primary active');
+            } else if (groupBy === 'month') {
+                $('#btnMonthly').removeClass('btn-outline-primary').addClass('btn-primary active');
+            } else if (groupBy === 'year') {
+                $('#btnYearly').removeClass('btn-outline-primary').addClass('btn-primary active');
+            }
+            
+            const filters = {
+                dateFrom: $('#dateFrom').val(),
+                dateTo: $('#dateTo').val(),
+                groupBy: groupBy
+            };
+            
+            $.ajax({
+                url: '@Url.Action("GetSalesAnalytics", "Reports")',
+                type: 'GET',
+                data: filters,
+                success: function(response) {
+                    console.log('Analytics API response:', response);
+                    if (response.success) {
+                        console.log('Analytics data loaded successfully');
+                        updateAnalyticsSummary(response.summary);
+                        renderAnalyticsChart(response.data, groupBy);
+                    } else {
+                        alert('Error loading analytics: ' + response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error loading analytics:', xhr, status, error);
+                    console.error('Response text:', xhr.responseText);
+                    alert('Error loading analytics data: ' + error);
+                }
+            });
+        }
+        
+        function updateAnalyticsSummary(summary) {
+            $('#analyticsTotalCost').text('$' + summary.totalInventoryCost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+            $('#analyticsTotalSales').text('$' + summary.totalSales.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+            $('#analyticsTotalProfit').text('$' + summary.totalProfit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+            $('#analyticsProfitMargin').text(summary.profitMargin.toFixed(1) + '%');
+        }
+        
+        function renderAnalyticsChart(data, groupBy) {
+            // Destroy existing analytics chart if it exists
+            if (charts.analytics) {
+                charts.analytics.destroy();
+            }
+            
+            const ctx = document.getElementById('analyticsChart').getContext('2d');
+            
+            charts.analytics = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.map(d => d.displayLabel),
+                    datasets: [
+                        {
+                            label: 'Inventory Cost',
+                            data: data.map(d => d.inventoryCost),
+                            borderColor: 'rgb(220, 53, 69)',
+                            backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: true,
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        },
+                        {
+                            label: 'Sales Revenue',
+                            data: data.map(d => d.sales),
+                            borderColor: 'rgb(13, 110, 253)',
+                            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: true,
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        },
+                        {
+                            label: 'Profit',
+                            data: data.map(d => d.profit),
+                            borderColor: 'rgb(25, 135, 84)',
+                            backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: true,
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 15,
+                                font: {
+                                    size: 12,
+                                    weight: 'bold'
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    label += '$' + context.parsed.y.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                                    return label;
+                                }
+                            },
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: {
+                                size: 14
+                            },
+                            bodyFont: {
+                                size: 13
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            },
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString('en-US', {minimumFractionDigits: 0, maximumFractionDigits: 0});
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // ── Sale Detail Modal ─────────────────────────────────────────────────
+        let currentSaleId = 0;
+
+        function loadInvoiceForEdit(saleId) {
+            currentSaleId = saleId;
+            $('#saleDetailModal').modal('show');
+            loadSaleDetail(saleId);
+        }
+
+        function loadSaleDetail(saleId) {
+            $.get('/Reports/GetSaleDetail', { id: saleId }, function(res) {
+                if (!res.success) { alert('Error loading sale: ' + (res.message || 'Unknown error')); return; }
+                const d = res.data;
+                $('#sdInvoiceNumber').text(d.invoiceNumber || '—');
+                $('#sdCustomer').text(d.customer || 'Walk-in');
+                $('#sdTotal').text(formatCurrency(d.total));
+                $('#sdTotalPaid').text(formatCurrency(d.totalPaid));
+                $('#sdBalance').text(formatCurrency(d.balance));
+                $('#sdPaymentStatus').text(d.paymentStatus || '—')
+                    .removeClass('bg-success bg-warning bg-danger bg-secondary')
+                    .addClass(d.paymentStatus === 'Paid' ? 'bg-success' :
+                              d.paymentStatus === 'Partial' ? 'bg-warning text-dark' : 'bg-danger');
+                let itemsHtml = '';
+                (d.items || []).forEach(i => {
+                    itemsHtml += `<tr><td>${i.name}</td><td>${i.qty}</td><td>${formatCurrency(i.unitPrice)}</td><td>${formatCurrency(i.total)}</td></tr>`;
+                });
+                $('#sdItemsBody').html(itemsHtml || '<tr><td colspan="4" class="text-center text-muted">No items</td></tr>');
+                renderSalePayments(d.payments || []);
+            });
+        }
+
+        function renderSalePayments(payments) {
+            let html = '';
+            payments.forEach(p => {
+                html += `<tr>
+                    <td>${p.method}</td>
+                    <td>${formatCurrency(p.amount)}</td>
+                    <td><small class="text-muted">${p.transactionId || '—'}</small></td>
+                    <td>
+                        <button class="btn btn-xs btn-outline-primary me-1" onclick="openEditPaymentForm(${p.id},'${p.method}',${p.amount},'${p.transactionId||''}')"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-xs btn-outline-danger" onclick="deleteSalePayment(${p.id})"><i class="fas fa-trash"></i></button>
+                    </td>
+                </tr>`;
+            });
+            $('#sdPaymentsBody').html(html || '<tr><td colspan="4" class="text-center text-muted">No payments yet</td></tr>');
+        }
+
+        function openAddPaymentForm() {
+            $('#editPaymentId').val(0);
+            $('#paymentFormTitle').text('Add Payment');
+            $('#newPaymentMethod').val('Cash');
+            $('#newPaymentAmount').val('');
+            $('#newPaymentRef').val('');
+            $('#addPaymentForm').show();
+        }
+
+        function openEditPaymentForm(id, method, amount, ref) {
+            $('#editPaymentId').val(id);
+            $('#paymentFormTitle').text('Edit Payment');
+            $('#newPaymentMethod').val(method);
+            $('#newPaymentAmount').val(amount);
+            $('#newPaymentRef').val(ref);
+            $('#addPaymentForm').show();
+        }
+
+        function cancelPaymentForm() { $('#addPaymentForm').hide(); }
+
+        function savePaymentForm() {
+            const paymentId = parseInt($('#editPaymentId').val());
+            const method    = $('#newPaymentMethod').val();
+            const amount    = parseFloat($('#newPaymentAmount').val());
+            const ref       = $('#newPaymentRef').val();
+            if (!amount || amount <= 0) { alert('Please enter a valid amount'); return; }
+            if (paymentId > 0) {
+                $.ajax({ url: '/Reports/UpdateSalePayment', type: 'POST', contentType: 'application/json',
+                    data: JSON.stringify({ paymentId, paymentMethod: method, amount, transactionId: ref }),
+                    success: function(res) {
+                        if (res.success) { cancelPaymentForm(); loadSaleDetail(currentSaleId); }
+                        else alert('Error: ' + (res.message || 'Failed'));
+                    }
+                });
+            } else {
+                $.ajax({ url: '/Reports/AddSalePayment', type: 'POST', contentType: 'application/json',
+                    data: JSON.stringify({ saleId: currentSaleId, paymentMethod: method, amount, transactionId: ref }),
+                    success: function(res) {
+                        if (res.success) { cancelPaymentForm(); loadSaleDetail(currentSaleId); }
+                        else alert('Error: ' + (res.message || 'Failed'));
+                    }
+                });
+            }
+        }
+
+        function deleteSalePayment(paymentId) {
+            if (!confirm('Delete this payment?')) return;
+            $.post('/Reports/DeleteSalePayment', { paymentId }, function(res) {
+                if (res.success) loadSaleDetail(currentSaleId);
+                else alert('Error: ' + (res.message || 'Failed'));
+            });
+        }
+
+    </script>
+
+@* _InvoiceEditModal is already included in _Layout.cshtml — do NOT include again here *@
+
+@* Include shared invoice print template *@
+@await Html.PartialAsync("_InvoicePrintTemplate")
+}
+
+<!-- Sale Detail & Payment Management Modal -->
+<div class="modal fade" id="saleDetailModal" tabindex="-1" aria-labelledby="saleDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="saleDetailModalLabel">
+                    <i class="fas fa-receipt me-2"></i>Sale Detail
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Sale Summary Row -->
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body py-2">
+                                <small class="text-muted">Invoice</small>
+                                <div class="fw-bold" id="sdInvoiceNumber">—</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body py-2">
+                                <small class="text-muted">Customer</small>
+                                <div class="fw-bold" id="sdCustomer">—</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body py-2">
+                                <small class="text-muted">Total</small>
+                                <div class="fw-bold text-primary" id="sdTotal">$0.00</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="card border-0 bg-success text-white">
+                            <div class="card-body py-2">
+                                <small>Paid</small>
+                                <div class="fw-bold" id="sdTotalPaid">$0.00</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="card border-0 bg-danger text-white">
+                            <div class="card-body py-2">
+                                <small>Balance Due</small>
+                                <div class="fw-bold" id="sdBalance">$0.00</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <!-- Items -->
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-2"><i class="fas fa-box me-1"></i>Items Sold</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead class="table-light">
+                                    <tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr>
+                                </thead>
+                                <tbody id="sdItemsBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Payments -->
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="text-muted mb-0"><i class="fas fa-money-bill-wave me-1"></i>Payments</h6>
+                            <button class="btn btn-sm btn-success" onclick="openAddPaymentForm()">
+                                <i class="fas fa-plus me-1"></i>Add Payment
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead class="table-light">
+                                    <tr><th>Method</th><th>Amount</th><th>Ref</th><th></th></tr>
+                                </thead>
+                                <tbody id="sdPaymentsBody"></tbody>
+                            </table>
+                        </div>
+
+                        <!-- Add/Edit Payment Form -->
+                        <div id="addPaymentForm" class="card border-primary mt-3" style="display:none;">
+                            <div class="card-header bg-primary text-white py-2">
+                                <span id="paymentFormTitle">Add Payment</span>
+                            </div>
+                            <div class="card-body">
+                                <input type="hidden" id="editPaymentId" value="0" />
+                                <div class="row g-2">
+                                    <div class="col-md-4">
+                                        <label class="form-label form-label-sm">Method</label>
+                                        <select class="form-select form-select-sm" id="newPaymentMethod">
+                                            <option value="Cash">Cash</option>
+                                            <option value="Card">Card</option>
+                                            <option value="Zelle">Zelle</option>
+                                            <option value="Venmo">Venmo</option>
+                                            <option value="Check">Check</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label form-label-sm">Amount</label>
+                                        <input type="number" class="form-control form-control-sm" id="newPaymentAmount" step="0.01" min="0.01" placeholder="0.00" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label form-label-sm">Ref / Transaction ID</label>
+                                        <input type="text" class="form-control form-control-sm" id="newPaymentRef" placeholder="Optional" />
+                                    </div>
+                                </div>
+                                <div class="mt-2 d-flex gap-2">
+                                    <button class="btn btn-sm btn-primary" onclick="savePaymentForm()">
+                                        <i class="fas fa-save me-1"></i>Save
+                                    </button>
+                                    <button class="btn btn-sm btn-secondary" onclick="cancelPaymentForm()">Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <span class="badge bg-secondary me-auto" id="sdPaymentStatus">—</span>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sale Detail & Payment Management Modal -->
+<div class="modal fade" id="saleDetailModal" tabindex="-1" aria-labelledby="saleDetailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="saleDetailModalLabel"><i class="fas fa-receipt me-2"></i>Sale Detail &amp; Payments</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-3">
+                    <div class="col-md-3"><div class="card border-0 bg-light"><div class="card-body py-2"><small class="text-muted">Invoice</small><div class="fw-bold" id="sdInvoiceNumber">—</div></div></div></div>
+                    <div class="col-md-3"><div class="card border-0 bg-light"><div class="card-body py-2"><small class="text-muted">Customer</small><div class="fw-bold" id="sdCustomer">—</div></div></div></div>
+                    <div class="col-md-2"><div class="card border-0 bg-light"><div class="card-body py-2"><small class="text-muted">Total</small><div class="fw-bold text-primary" id="sdTotal">$0.00</div></div></div></div>
+                    <div class="col-md-2"><div class="card border-0 bg-success text-white"><div class="card-body py-2"><small>Paid</small><div class="fw-bold" id="sdTotalPaid">$0.00</div></div></div></div>
+                    <div class="col-md-2"><div class="card border-0 bg-danger text-white"><div class="card-body py-2"><small>Balance Due</small><div class="fw-bold" id="sdBalance">$0.00</div></div></div></div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-2"><i class="fas fa-box me-1"></i>Items Sold</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead class="table-light"><tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+                                <tbody id="sdItemsBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="text-muted mb-0"><i class="fas fa-money-bill-wave me-1"></i>Payments</h6>
+                            <button class="btn btn-sm btn-success" onclick="openAddPaymentForm()"><i class="fas fa-plus me-1"></i>Add Payment</button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-bordered">
+                                <thead class="table-light"><tr><th>Method</th><th>Amount</th><th>Ref</th><th></th></tr></thead>
+                                <tbody id="sdPaymentsBody"></tbody>
+                            </table>
+                        </div>
+                        <div id="addPaymentForm" class="card border-primary mt-3" style="display:none;">
+                            <div class="card-header bg-primary text-white py-2"><span id="paymentFormTitle">Add Payment</span></div>
+                            <div class="card-body">
+                                <input type="hidden" id="editPaymentId" value="0" />
+                                <div class="row g-2">
+                                    <div class="col-md-4">
+                                        <label class="form-label form-label-sm">Method</label>
+                                        <select class="form-select form-select-sm" id="newPaymentMethod">
+                                            <option value="Cash">Cash</option>
+                                            <option value="Card">Card</option>
+                                            <option value="Zelle">Zelle</option>
+                                            <option value="Venmo">Venmo</option>
+                                            <option value="Check">Check</option>
+                                            <option value="Other">Other</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label form-label-sm">Amount</label>
+                                        <input type="number" class="form-control form-control-sm" id="newPaymentAmount" step="0.01" min="0.01" placeholder="0.00" />
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label form-label-sm">Ref / Transaction ID</label>
+                                        <input type="text" class="form-control form-control-sm" id="newPaymentRef" placeholder="Optional" />
+                                    </div>
+                                </div>
+                                <div class="mt-2 d-flex gap-2">
+                                    <button class="btn btn-sm btn-primary" onclick="savePaymentForm()"><i class="fas fa-save me-1"></i>Save</button>
+                                    <button class="btn btn-sm btn-secondary" onclick="cancelPaymentForm()">Cancel</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <span class="badge bg-secondary me-auto" id="sdPaymentStatus">—</span>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+

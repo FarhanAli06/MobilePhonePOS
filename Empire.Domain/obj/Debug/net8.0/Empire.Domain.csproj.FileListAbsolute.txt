@@ -1,0 +1,11 @@
+C:\Users\User\Downloads\EmpireFix_v54\EmpireV37\Empire.Domain\bin\Debug\net8.0\Empire.Domain.deps.json
+C:\Users\User\Downloads\EmpireFix_v54\EmpireV37\Empire.Domain\bin\Debug\net8.0\Empire.Domain.dll
+C:\Users\User\Downloads\EmpireFix_v54\EmpireV37\Empire.Domain\bin\Debug\net8.0\Empire.Domain.pdb
+C:\Users\User\Downloads\EmpireFix_v54\EmpireV37\Empire.Domain\obj\Debug\net8.0\Empire.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\User\Downloads\EmpireFix_v54\EmpireV37\Empire.Domain\obj\Debug\net8.0\Empire.Domain.AssemblyInfoInputs.cache
+C:\Users\User\Downloads\EmpireFix_v54\EmpireV37\Empire.Domain\obj\Debug\net8.0\Empire.Domain.AssemblyInfo.cs
+C:\Users\User\Downloads\EmpireFix_v54\EmpireV37\Empire.Domain\obj\Debug\net8.0\Empire.Domain.csproj.CoreCompileInputs.cache
+C:\Users\User\Downloads\EmpireFix_v54\EmpireV37\Empire.Domain\obj\Debug\net8.0\Empire.Domain.dll
+C:\Users\User\Downloads\EmpireFix_v54\EmpireV37\Empire.Domain\obj\Debug\net8.0\refint\Empire.Domain.dll
+C:\Users\User\Downloads\EmpireFix_v54\EmpireV37\Empire.Domain\obj\Debug\net8.0\Empire.Domain.pdb
+C:\Users\User\Downloads\EmpireFix_v54\EmpireV37\Empire.Domain\obj\Debug\net8.0\ref\Empire.Domain.dll

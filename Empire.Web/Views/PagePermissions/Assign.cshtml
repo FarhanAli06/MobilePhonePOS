@@ -1,0 +1,141 @@
+@using Empire.Web.DTOs.Page
+@{
+    ViewData["Title"] = "Assign Pages";
+    int userId = ViewBag.UserId;
+    string userName = ViewBag.UserName ?? $"User #{userId}";
+    var allPages = (ViewBag.Pages as List<PageDto>) ?? new List<PageDto>();
+    var groups = allPages.GroupBy(p => p.GroupName ?? "Other").OrderBy(g => g.Key);
+}
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h3 class="card-title">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        Assign Pages &mdash; <span class="text-primary">@userName</span>
+                    </h3>
+                    <a href="@Url.Action("Index")" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-arrow-left me-1"></i>Back to Users
+                    </a>
+                </div>
+
+                <div class="card-body">
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            @TempData["SuccessMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            @TempData["ErrorMessage"]
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    }
+
+                    <form method="post" action="@Url.Action("Assign")?userId=@userId">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="userId" value="@userId" />
+
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <button type="button" class="btn btn-outline-secondary btn-sm me-2" onclick="selectAll(true)">
+                                    <i class="fas fa-check-square me-1"></i>Select All
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="selectAll(false)">
+                                    <i class="fas fa-square me-1"></i>Deselect All
+                                </button>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Save Permissions
+                            </button>
+                        </div>
+
+                        <div class="row">
+                            @foreach (var grp in groups)
+                            {
+                                var grpKey = grp.Key;
+                                var grpId  = grpKey.Replace(" ", "_");
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card border-primary h-100">
+                                        <div class="card-header bg-primary text-white py-2">
+                                            <div class="form-check mb-0">
+                                                <input class="form-check-input group-toggle"
+                                                       type="checkbox"
+                                                       id="group_@grpId"
+                                                       data-group="@grpKey"
+                                                       @(grp.All(pi => pi.IsActive) ? "checked" : "") />
+                                                <label class="form-check-label fw-bold" for="group_@grpId">
+                                                    @grpKey
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="card-body py-2">
+                                            @foreach (var pi in grp.OrderBy(x => x.DisplayOrder))
+                                            {
+                                                <div class="form-check mb-1">
+                                                    <input class="form-check-input page-checkbox"
+                                                           type="checkbox"
+                                                           name="pageIds"
+                                                           value="@pi.Id"
+                                                           id="pi_@pi.Id"
+                                                           data-group="@grpKey"
+                                                           @(pi.IsActive ? "checked" : "") />
+                                                    <label class="form-check-label" for="pi_@pi.Id">
+                                                        @if (!string.IsNullOrEmpty(pi.Icon))
+                                                        {
+                                                            <i class="@pi.Icon me-1 text-muted" style="width:16px;"></i>
+                                                        }
+                                                        @pi.Name
+                                                        @if (pi.ParentPageId.HasValue)
+                                                        {
+                                                            <small class="text-muted ms-1">(sub-page)</small>
+                                                        }
+                                                    </label>
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <div class="d-flex justify-content-end mt-3">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save me-2"></i>Save Permissions
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+// Group toggle: check/uncheck all pages in a group
+$(document).on('change', '.group-toggle', function () {
+    var grp = $(this).data('group');
+    var checked = $(this).prop('checked');
+    $('.page-checkbox[data-group="' + grp + '"]').prop('checked', checked);
+});
+
+// Individual page: update group header state
+$(document).on('change', '.page-checkbox', function () {
+    var grp = $(this).data('group');
+    var all = $('.page-checkbox[data-group="' + grp + '"]');
+    var allChecked = all.filter(':checked').length === all.length;
+    $('#group_' + grp.replace(/ /g, '_')).prop('checked', allChecked);
+});
+
+function selectAll(state) {
+    $('.page-checkbox').prop('checked', state);
+    $('.group-toggle').prop('checked', state);
+}
+</script>
+}

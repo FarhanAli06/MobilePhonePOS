@@ -1,0 +1,659 @@
+@{
+    ViewData["Title"] = "Styling Management";
+    Layout = "_Layout";
+}
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     STYLING MANAGEMENT PAGE
+     Centralised CRUD for visual styles (colour, icon, badge variant) that can
+     be assigned to Brands, Device Categories, and Device Models.
+═══════════════════════════════════════════════════════════════════════════ -->
+
+@section Styles {
+<style>
+    /* ── Colour swatch helper ─────────────────────────────────────── */
+    .swatch {
+        display: inline-block;
+        width: 18px; height: 18px;
+        border-radius: 4px;
+        border: 1px solid rgba(0,0,0,.15);
+        vertical-align: middle;
+        margin-right: 6px;
+        flex-shrink: 0;
+    }
+    /* ── Live preview badge ──────────────────────────────────────── */
+    #previewBadge {
+        font-size: 1rem;
+        padding: .45em .85em;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all .25s;
+    }
+    /* ── Select2 custom option ───────────────────────────────────── */
+    .select2-styling-option {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    /* ── Assignment table ────────────────────────────────────────── */
+    .assign-table td { vertical-align: middle; }
+    .assign-table .form-select { min-width: 200px; }
+</style>
+}
+
+<div class="container-fluid px-4">
+
+    <!-- ── Page header ──────────────────────────────────────────────────── -->
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h2 class="mb-0 fw-bold text-dark">
+                <i class="fas fa-palette me-2 text-primary"></i>Styling Management
+            </h2>
+            <p class="text-muted mb-0 small">
+                Define visual styles and assign them to Brands, Device Categories, and Device Models.
+            </p>
+        </div>
+        <button class="btn btn-primary" onclick="showCreateModal()">
+            <i class="fas fa-plus me-1"></i>New Style
+        </button>
+    </div>
+
+    <!-- ── Tab navigation ───────────────────────────────────────────────── -->
+    <ul class="nav nav-tabs mb-4" id="stylingTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="tab-styles" data-bs-toggle="tab" data-bs-target="#pane-styles" type="button" role="tab">
+                <i class="fas fa-paint-brush me-1"></i>Styles
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-brands" data-bs-toggle="tab" data-bs-target="#pane-brands" type="button" role="tab"
+                    onclick="loadAssignments()">
+                <i class="fas fa-tags me-1"></i>Assign to Brands
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-categories" data-bs-toggle="tab" data-bs-target="#pane-categories" type="button" role="tab"
+                    onclick="loadAssignments()">
+                <i class="fas fa-mobile-alt me-1"></i>Assign to Categories
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-models" data-bs-toggle="tab" data-bs-target="#pane-models" type="button" role="tab"
+                    onclick="loadAssignments()">
+                <i class="fas fa-list me-1"></i>Assign to Models
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="stylingTabContent">
+
+        <!-- ══ Tab 1: Styles CRUD ══════════════════════════════════════════ -->
+        <div class="tab-pane fade show active" id="pane-styles" role="tabpanel">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table id="stylingTable" class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Preview</th>
+                                    <th>Name</th>
+                                    <th>Description</th>
+                                    <th>Badge</th>
+                                    <th>Order</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stylingTableBody">
+                                <tr><td colspan="7" class="text-center py-4 text-muted">Loading…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ Tab 2: Assign to Brands ════════════════════════════════════ -->
+        <div class="tab-pane fade" id="pane-brands" role="tabpanel">
+            <div class="card">
+                <div class="card-body">
+                    <p class="text-muted small mb-3">
+                        Select a style for each brand. Changes are saved immediately when you choose from the dropdown.
+                    </p>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle assign-table">
+                            <thead class="table-light">
+                                <tr><th>Brand</th><th>Assigned Style</th></tr>
+                            </thead>
+                            <tbody id="brandAssignBody">
+                                <tr><td colspan="2" class="text-center py-4 text-muted">Loading…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ Tab 3: Assign to Device Categories ═════════════════════════ -->
+        <div class="tab-pane fade" id="pane-categories" role="tabpanel">
+            <div class="card">
+                <div class="card-body">
+                    <p class="text-muted small mb-3">
+                        Select a style for each device category. Changes are saved immediately.
+                    </p>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle assign-table">
+                            <thead class="table-light">
+                                <tr><th>Category</th><th>Assigned Style</th></tr>
+                            </thead>
+                            <tbody id="categoryAssignBody">
+                                <tr><td colspan="2" class="text-center py-4 text-muted">Loading…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ══ Tab 4: Assign to Device Models ════════════════════════════ -->
+        <div class="tab-pane fade" id="pane-models" role="tabpanel">
+            <div class="card">
+                <div class="card-body">
+                    <p class="text-muted small mb-3">
+                        Select a style for each device model. Changes are saved immediately.
+                    </p>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle assign-table">
+                            <thead class="table-light">
+                                <tr><th>Model</th><th>Assigned Style</th></tr>
+                            </thead>
+                            <tbody id="modelAssignBody">
+                                <tr><td colspan="2" class="text-center py-4 text-muted">Loading…</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div><!-- /tab-content -->
+</div><!-- /container -->
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     CREATE / EDIT MODAL
+══════════════════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="stylingModal" tabindex="-1" aria-labelledby="stylingModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="stylingModalLabel">New Style</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="editId" />
+
+                <div class="row g-3">
+                    <!-- Left column: form fields -->
+                    <div class="col-md-7">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Name <span class="text-danger">*</span></label>
+                            <input type="text" id="fName" class="form-control" placeholder="e.g. Apple, Samsung, Warning" maxlength="100" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Description</label>
+                            <input type="text" id="fDescription" class="form-control" placeholder="Optional note" maxlength="200" />
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Background Colour</label>
+                                <div class="input-group">
+                                    <input type="color" id="fColor" class="form-control form-control-color" value="#6c757d" title="Background colour" />
+                                    <input type="text" id="fColorHex" class="form-control" value="#6c757d" maxlength="7" placeholder="#rrggbb" />
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Text Colour</label>
+                                <div class="input-group">
+                                    <input type="color" id="fTextColor" class="form-control form-control-color" value="#ffffff" title="Text colour" />
+                                    <input type="text" id="fTextColorHex" class="form-control" value="#ffffff" maxlength="7" placeholder="#rrggbb" />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Icon (Material / FA class)</label>
+                                <input type="text" id="fIcon" class="form-control" placeholder="e.g. phone_iphone or fa-apple" maxlength="100" />
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Badge Variant</label>
+                                <select id="fBadgeVariant" class="form-select">
+                                    <option value="primary">Primary (blue)</option>
+                                    <option value="secondary" selected>Secondary (grey)</option>
+                                    <option value="success">Success (green)</option>
+                                    <option value="danger">Danger (red)</option>
+                                    <option value="warning">Warning (yellow)</option>
+                                    <option value="info">Info (teal)</option>
+                                    <option value="dark">Dark</option>
+                                    <option value="light">Light</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Display Order</label>
+                                <input type="number" id="fDisplayOrder" class="form-control" value="0" min="0" />
+                            </div>
+                            <div class="col-6 d-flex align-items-end">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="fIsActive" checked />
+                                    <label class="form-check-label fw-semibold" for="fIsActive">Active</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right column: live preview -->
+                    <div class="col-md-5">
+                        <div class="card h-100 bg-light border-0">
+                            <div class="card-body d-flex flex-column align-items-center justify-content-center gap-3 text-center">
+                                <div class="text-muted small fw-semibold text-uppercase letter-spacing-1">Live Preview</div>
+
+                                <!-- Custom colour badge -->
+                                <div id="previewBadge" style="background:#6c757d; color:#ffffff;">
+                                    <i id="previewIcon" class="fas fa-circle"></i>
+                                    <span id="previewName">Style Name</span>
+                                </div>
+
+                                <!-- Bootstrap badge variant -->
+                                <span id="previewBootstrapBadge" class="badge bg-secondary">
+                                    <i id="previewBootstrapIcon" class="fas fa-circle me-1"></i>
+                                    <span id="previewBootstrapName">Style Name</span>
+                                </span>
+
+                                <div class="text-muted small mt-2">
+                                    Top: custom colour &amp; text<br>
+                                    Bottom: Bootstrap badge variant
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="btnSave" onclick="saveStyle()">
+                    <i class="fas fa-save me-1"></i>Save Style
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     DELETE CONFIRM MODAL
+══════════════════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h6 class="modal-title"><i class="fas fa-trash me-2"></i>Delete Style</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Delete <strong id="deleteStyleName"></strong>?<br>
+                <small class="text-muted">Any entities using this style will be unlinked.</small></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger btn-sm" id="btnConfirmDelete" onclick="confirmDelete()">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+// ── State ─────────────────────────────────────────────────────────────────
+let allStyles = [];
+let deleteId = null;
+let assignmentsLoaded = false;
+
+// ── Init ──────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+    loadStyles();
+    bindPreviewListeners();
+});
+
+// ── Load styles table ─────────────────────────────────────────────────────
+async function loadStyles() {
+    const tbody = document.getElementById('stylingTableBody');
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin me-2"></i>Loading…</td></tr>';
+    try {
+        const res = await fetch('/Styling/GetAll');
+        const json = await res.json();
+        if (!json.success) throw new Error(json.message);
+        allStyles = json.data || [];
+        renderStylesTable(allStyles);
+    } catch (e) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger py-4">${e.message}</td></tr>`;
+    }
+}
+
+function renderStylesTable(styles) {
+    const tbody = document.getElementById('stylingTableBody');
+    if (!styles.length) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No styles defined yet. Click <strong>New Style</strong> to create one.</td></tr>';
+        return;
+    }
+    tbody.innerHTML = styles.map(s => `
+        <tr>
+            <td>
+                <span style="background:${s.color};color:${s.textColor};padding:4px 10px;border-radius:5px;display:inline-flex;align-items:center;gap:5px;font-size:.85rem;">
+                    <i class="fas fa-${s.icon || 'circle'}"></i>
+                    ${escHtml(s.name)}
+                </span>
+            </td>
+            <td class="fw-semibold">${escHtml(s.name)}</td>
+            <td class="text-muted small">${escHtml(s.description || '—')}</td>
+            <td><span class="badge bg-${s.badgeVariant}">${escHtml(s.badgeVariant)}</span></td>
+            <td>${s.displayOrder}</td>
+            <td>
+                ${s.isActive
+                    ? '<span class="badge bg-success">Active</span>'
+                    : '<span class="badge bg-secondary">Inactive</span>'}
+            </td>
+            <td class="text-end">
+                <button class="btn btn-sm btn-outline-primary me-1" onclick="showEditModal(${s.id})" title="Edit">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" onclick="showDeleteModal(${s.id}, '${escHtml(s.name)}')" title="Delete">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>`).join('');
+}
+
+// ── Create modal ──────────────────────────────────────────────────────────
+function showCreateModal() {
+    document.getElementById('editId').value = '';
+    document.getElementById('stylingModalLabel').textContent = 'New Style';
+    document.getElementById('fName').value = '';
+    document.getElementById('fDescription').value = '';
+    document.getElementById('fIcon').value = 'circle';
+    document.getElementById('fColor').value = '#6c757d';
+    document.getElementById('fColorHex').value = '#6c757d';
+    document.getElementById('fTextColor').value = '#ffffff';
+    document.getElementById('fTextColorHex').value = '#ffffff';
+    document.getElementById('fBadgeVariant').value = 'secondary';
+    document.getElementById('fDisplayOrder').value = '0';
+    document.getElementById('fIsActive').checked = true;
+    updatePreview();
+    new bootstrap.Modal(document.getElementById('stylingModal')).show();
+}
+
+// ── Edit modal ────────────────────────────────────────────────────────────
+function showEditModal(id) {
+    const s = allStyles.find(x => x.id === id);
+    if (!s) return;
+    document.getElementById('editId').value = s.id;
+    document.getElementById('stylingModalLabel').textContent = 'Edit Style';
+    document.getElementById('fName').value = s.name;
+    document.getElementById('fDescription').value = s.description || '';
+    document.getElementById('fIcon').value = s.icon || 'circle';
+    document.getElementById('fColor').value = s.color || '#6c757d';
+    document.getElementById('fColorHex').value = s.color || '#6c757d';
+    document.getElementById('fTextColor').value = s.textColor || '#ffffff';
+    document.getElementById('fTextColorHex').value = s.textColor || '#ffffff';
+    document.getElementById('fBadgeVariant').value = s.badgeVariant || 'secondary';
+    document.getElementById('fDisplayOrder').value = s.displayOrder ?? 0;
+    document.getElementById('fIsActive').checked = s.isActive;
+    updatePreview();
+    new bootstrap.Modal(document.getElementById('stylingModal')).show();
+}
+
+// ── Save ──────────────────────────────────────────────────────────────────
+async function saveStyle() {
+    const id = document.getElementById('editId').value;
+    const name = document.getElementById('fName').value.trim();
+    if (!name) { alert('Name is required.'); return; }
+
+    const payload = {
+        name,
+        description: document.getElementById('fDescription').value.trim() || null,
+        icon: document.getElementById('fIcon').value.trim() || 'circle',
+        color: document.getElementById('fColorHex').value.trim() || '#6c757d',
+        textColor: document.getElementById('fTextColorHex').value.trim() || '#ffffff',
+        badgeVariant: document.getElementById('fBadgeVariant').value,
+        displayOrder: parseInt(document.getElementById('fDisplayOrder').value) || 0,
+        isActive: document.getElementById('fIsActive').checked
+    };
+
+    const btn = document.getElementById('btnSave');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving…';
+
+    try {
+        const url = id ? `/Styling/Update?id=${id}` : '/Styling/Create';
+        const method = id ? 'PUT' : 'POST';
+        const res = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const json = await res.json();
+        if (!json.success) throw new Error(json.message);
+
+        bootstrap.Modal.getInstance(document.getElementById('stylingModal'))?.hide();
+        showToast(id ? 'Style updated.' : 'Style created.', 'success');
+        assignmentsLoaded = false; // force reload on next assignment tab visit
+        await loadStyles();
+    } catch (e) {
+        showToast(e.message, 'danger');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save me-1"></i>Save Style';
+    }
+}
+
+// ── Delete ────────────────────────────────────────────────────────────────
+function showDeleteModal(id, name) {
+    deleteId = id;
+    document.getElementById('deleteStyleName').textContent = name;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+async function confirmDelete() {
+    if (!deleteId) return;
+    try {
+        const res = await fetch(`/Styling/Delete?id=${deleteId}`, { method: 'DELETE' });
+        const json = await res.json();
+        if (!json.success) throw new Error(json.message);
+
+        bootstrap.Modal.getInstance(document.getElementById('deleteModal'))?.hide();
+        showToast('Style deleted.', 'success');
+        assignmentsLoaded = false;
+        await loadStyles();
+    } catch (e) {
+        showToast(e.message, 'danger');
+    }
+    deleteId = null;
+}
+
+// ── Assignments ───────────────────────────────────────────────────────────
+async function loadAssignments() {
+    if (assignmentsLoaded) return;
+    assignmentsLoaded = true;
+
+    const [assignRes, styleRes] = await Promise.all([
+        fetch('/Styling/GetAssignments').then(r => r.json()),
+        fetch('/Styling/GetSelections').then(r => r.json())
+    ]);
+
+    const styles = styleRes.data || [];
+    const assignments = assignRes.data || {};
+
+    renderAssignTable('brandAssignBody', assignments.brands || [], styles, 'brand');
+    renderAssignTable('categoryAssignBody', assignments.categories || [], styles, 'category');
+    renderAssignTable('modelAssignBody', assignments.models || [], styles, 'model');
+}
+
+function renderAssignTable(tbodyId, entities, styles, type) {
+    const tbody = document.getElementById(tbodyId);
+    if (!entities.length) {
+        tbody.innerHTML = '<tr><td colspan="2" class="text-center text-muted py-3">No items found.</td></tr>';
+        return;
+    }
+
+    const options = [
+        '<option value="">— None —</option>',
+        ...styles.map(s =>
+            `<option value="${s.id}" data-color="${s.color}" data-text="${s.textColor}" data-icon="${s.icon || 'circle'}">
+                ${escHtml(s.name)}
+            </option>`)
+    ].join('');
+
+    tbody.innerHTML = entities.map(e => `
+        <tr id="row-${type}-${e.id}">
+            <td class="fw-semibold">${escHtml(e.name)}</td>
+            <td>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="swatch" id="swatch-${type}-${e.id}"
+                          style="background:${getStyleColor(styles, e.stylingId)}"></span>
+                    <select class="form-select form-select-sm"
+                            id="sel-${type}-${e.id}"
+                            onchange="assignStyle('${type}', ${e.id}, this)">
+                        ${options}
+                    </select>
+                </div>
+            </td>
+        </tr>`).join('');
+
+    // Set current values
+    entities.forEach(e => {
+        const sel = document.getElementById(`sel-${type}-${e.id}`);
+        if (sel && e.stylingId) sel.value = e.stylingId;
+    });
+}
+
+function getStyleColor(styles, stylingId) {
+    if (!stylingId) return '#dee2e6';
+    const s = styles.find(x => x.id === stylingId);
+    return s ? s.color : '#dee2e6';
+}
+
+async function assignStyle(type, entityId, selectEl) {
+    const stylingId = selectEl.value ? parseInt(selectEl.value) : null;
+    const selectedOpt = selectEl.options[selectEl.selectedIndex];
+    const color = selectedOpt?.dataset?.color || '#dee2e6';
+
+    // Update swatch immediately
+    const swatch = document.getElementById(`swatch-${type}-${entityId}`);
+    if (swatch) swatch.style.background = color;
+
+    const urlMap = {
+        brand: `/Styling/AssignToBrand?brandId=${entityId}`,
+        category: `/Styling/AssignToCategory?categoryId=${entityId}`,
+        model: `/Styling/AssignToModel?modelId=${entityId}`
+    };
+
+    try {
+        const res = await fetch(urlMap[type], {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ stylingId })
+        });
+        const json = await res.json();
+        if (!json.success) throw new Error(json.message);
+        showToast('Styling assigned.', 'success');
+    } catch (e) {
+        showToast(e.message, 'danger');
+    }
+}
+
+// ── Live preview ──────────────────────────────────────────────────────────
+function bindPreviewListeners() {
+    ['fName','fIcon','fColorHex','fTextColorHex','fBadgeVariant'].forEach(id => {
+        document.getElementById(id)?.addEventListener('input', updatePreview);
+    });
+    document.getElementById('fColor')?.addEventListener('input', e => {
+        document.getElementById('fColorHex').value = e.target.value;
+        updatePreview();
+    });
+    document.getElementById('fTextColor')?.addEventListener('input', e => {
+        document.getElementById('fTextColorHex').value = e.target.value;
+        updatePreview();
+    });
+    document.getElementById('fColorHex')?.addEventListener('input', e => {
+        if (/^#[0-9a-fA-F]{6}$/.test(e.target.value))
+            document.getElementById('fColor').value = e.target.value;
+        updatePreview();
+    });
+    document.getElementById('fTextColorHex')?.addEventListener('input', e => {
+        if (/^#[0-9a-fA-F]{6}$/.test(e.target.value))
+            document.getElementById('fTextColor').value = e.target.value;
+        updatePreview();
+    });
+}
+
+function updatePreview() {
+    const name    = document.getElementById('fName')?.value || 'Style Name';
+    const icon    = document.getElementById('fIcon')?.value || 'circle';
+    const color   = document.getElementById('fColorHex')?.value || '#6c757d';
+    const text    = document.getElementById('fTextColorHex')?.value || '#ffffff';
+    const variant = document.getElementById('fBadgeVariant')?.value || 'secondary';
+
+    const badge = document.getElementById('previewBadge');
+    if (badge) {
+        badge.style.background = color;
+        badge.style.color = text;
+    }
+    const pIcon = document.getElementById('previewIcon');
+    if (pIcon) pIcon.className = `fas fa-${icon}`;
+    const pName = document.getElementById('previewName');
+    if (pName) pName.textContent = name;
+
+    const bbadge = document.getElementById('previewBootstrapBadge');
+    if (bbadge) {
+        bbadge.className = `badge bg-${variant}`;
+    }
+    const bIcon = document.getElementById('previewBootstrapIcon');
+    if (bIcon) bIcon.className = `fas fa-${icon} me-1`;
+    const bName = document.getElementById('previewBootstrapName');
+    if (bName) bName.textContent = name;
+}
+
+// ── Toast helper ──────────────────────────────────────────────────────────
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toastContainer') || (() => {
+        const el = document.createElement('div');
+        el.id = 'toastContainer';
+        el.className = 'toast-container position-fixed bottom-0 end-0 p-3';
+        el.style.zIndex = '9999';
+        document.body.appendChild(el);
+        return el;
+    })();
+
+    const id = 'toast_' + Date.now();
+    const icons = { success: 'check-circle', danger: 'exclamation-circle', info: 'info-circle', warning: 'exclamation-triangle' };
+    container.insertAdjacentHTML('beforeend', `
+        <div id="${id}" class="toast align-items-center text-bg-${type} border-0" role="alert" aria-live="assertive">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="fas fa-${icons[type] || 'info-circle'} me-2"></i>${escHtml(message)}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>`);
+    const el = document.getElementById(id);
+    new bootstrap.Toast(el, { delay: 3000 }).show();
+    el.addEventListener('hidden.bs.toast', () => el.remove());
+}
+
+function escHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+}

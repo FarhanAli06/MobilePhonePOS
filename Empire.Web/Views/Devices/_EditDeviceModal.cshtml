@@ -1,0 +1,417 @@
+@model Empire.Web.DTOs.Device.DeviceSelectionDto
+
+<form id="editDeviceForm">
+    <input type="hidden" id="editDeviceId" value="@Model.Id" />
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Brand *</label>
+                <select class="form-select" id="editBrandId" required>
+                    <option value="">Select Brand</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Category *</label>
+                <select class="form-select" id="editDeviceCategoryId" required>
+                    <option value="">Select Category</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Model *</label>
+                <select class="form-select" id="editDeviceModelId" required>
+                    <option value="">Select Model</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">IMEI/Serial Number</label>
+                <input type="text" class="form-control" id="editImeiSerialNumber" value="@Model.IMEISerialNumber">
+            </div>
+        </div>
+	        <div class="col-md-6">
+	            <div class="mb-3">
+	                <label class="form-label">GB</label>
+	                <input type="text" class="form-control" id="editGB" value="@Model.GB" placeholder="e.g., 64GB, 128GB, 256GB">
+	            </div>
+	        </div>
+	        <div class="col-md-6">
+	            <div class="mb-3">
+	                <label class="form-label">Company</label>
+	                <select class="form-select" id="editCompanyId">
+	                    <option value="">Select Company</option>
+	                </select>
+	            </div>
+	        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Battery Health (%)">
+                <input type="number" class="form-control" id="editBatteryHealth" min="0" max="100" value="@Model.BatteryHealthPercentage">
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Network Status</label>
+                <select class="form-select" id="editNetworkStatus">
+                    <option value="Unlocked">Unlocked</option>
+                    <option value="Locked">Locked</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Scratches</label>
+                <select class="form-select" id="editScratches">
+                    <option value="Excellent">Excellent (No Scratches)</option>
+                    <option value="None">None</option>
+                    <option value="Minor">Minor</option>
+                    <option value="Major">Major</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Buying Price</label>
+                <input type="number" class="form-control" id="editBuyingPrice" step="0.01" min="0" value="@Model.BuyingPrice">
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Selling Price</label>
+                <input type="number" class="form-control" id="editSellingPrice" step="0.01" min="0" value="@Model.SellingPrice">
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Year</label>
+                <input type="number" class="form-control" id="editYear" min="2000" max="2099" value="@Model.Year">
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Source</label>
+                <input type="text" class="form-control" id="editSource" value="@Model.Source">
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Available for Sale</label>
+                <select class="form-select" id="editIsAvailableForSale">
+                    <option value="true">Yes</option>
+                    <option value="false">No</option>
+                </select>
+            </div>
+        </div>
+        @if (Model.IsSold)
+        {
+            <div class="col-md-6">
+                <div class="mb-3">
+                    <label class="form-label">Sold To Customer</label>
+                    <select class="form-select" id="editSoldToCustomerId">
+                        <option value="">Select Customer</option>
+                    </select>
+                </div>
+            </div>
+        }
+        <div class="col-12">
+            <div class="mb-3">
+                <label class="form-label">Notes</label>
+                <textarea class="form-control" id="editNotes" rows="3">@Model.Notes</textarea>
+            </div>
+        </div>
+    </div>
+</form>
+
+<div class="modal-footer">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+    <button type="button" class="btn btn-primary" onclick="updateDevice()">Update Device</button>
+</div>
+
+<script>
+(function() {
+    // Store original values - we'll need to get IDs from the dropdowns after they load
+    var originalBrandId = @Model.BrandId;
+    var originalCategoryId = @Model.DeviceCategoryId;
+    var originalModelId = @Model.DeviceModelId;
+    var originalNetworkStatus = "@Model.NetworkStatus";
+    var originalScratches = "@Model.ScratchesCondition";
+    var originalIsAvailable = @Model.IsAvailableForSale.ToString().ToLower();
+    var isSold = @Model.IsSold.ToString().ToLower();
+	    var originalCustomerId = @(Model.SoldToCustomerId.HasValue ? Model.SoldToCustomerId.Value.ToString() : "null");
+	    var originalCompanyId = @(Model.CompanyId.HasValue ? Model.CompanyId.Value.ToString() : "null");
+	
+	    // Load dropdowns when modal opens
+	    $(document).ready(function() {
+	        loadEditBrands();
+	        loadEditCategories();
+	        loadEditCompanies(); // Load companies
+	        
+	        // Set network status
+        $('#editNetworkStatus').val(originalNetworkStatus);
+        
+        // Set scratches
+        $('#editScratches').val(originalScratches);
+        
+        // Set availability
+        $('#editIsAvailableForSale').val(originalIsAvailable.toString());
+        
+        // Load customers if device is sold
+        if (isSold) {
+            loadEditCustomers();
+        }
+    });
+
+    function loadEditBrands() {
+        $.ajax({
+            url: '@Url.Action("GetBrands", "Lookup")',
+            type: 'GET',
+            success: function(brands) {
+                var select = $('#editBrandId');
+                select.empty();
+                select.append('<option value="">Select Brand</option>');
+                
+                if (brands && brands.length > 0) {
+                    brands.forEach(function(brand) {
+                        var brandId = brand.id || brand.Id;
+                        var brandName = brand.name || brand.Name;
+                        var selected = brandId === originalBrandId ? 'selected' : '';
+                        select.append('<option value="' + brandId + '" ' + selected + '>' + brandName + '</option>');
+                    });
+                    
+                    // After brands load, load models
+                    setTimeout(function() {
+                        var brandId = $('#editBrandId').val();
+                        var categoryId = $('#editDeviceCategoryId').val();
+                        if (brandId && categoryId) {
+                            loadEditModels(categoryId, brandId);
+                        }
+                    }, 100);
+                }
+            },
+            error: function() {
+                console.error('Error loading brands');
+            }
+        });
+    }
+
+    function loadEditCategories() {
+        $.ajax({
+            url: '@Url.Action("GetDeviceCategories", "Lookup")',
+            type: 'GET',
+            success: function(categories) {
+                var select = $('#editDeviceCategoryId');
+                select.empty();
+                select.append('<option value="">Select Category</option>');
+                
+                if (categories && categories.length > 0) {
+                    categories.forEach(function(category) {
+                        var categoryId = category.id || category.Id;
+                        var categoryName = category.name || category.Name;
+                        var selected = categoryId === originalCategoryId ? 'selected' : '';
+                        select.append('<option value="' + categoryId + '" ' + selected + '>' + categoryName + '</option>');
+                    });
+                    
+                    // After categories load, load models
+                    setTimeout(function() {
+                        var brandId = $('#editBrandId').val();
+                        var categoryId = $('#editDeviceCategoryId').val();
+                        if (brandId && categoryId) {
+                            loadEditModels(categoryId, brandId);
+                        }
+                    }, 100);
+                }
+            },
+            error: function() {
+                console.error('Error loading categories');
+            }
+        });
+    }
+
+    function loadEditModels(categoryId, brandId) {
+        $.ajax({
+            url: '@Url.Action("GetDeviceModels", "Lookup")',
+            type: 'GET',
+            data: { categoryId: categoryId, brandId: brandId },
+            success: function(models) {
+                var modelSelect = $('#editDeviceModelId');
+                modelSelect.empty();
+                modelSelect.append('<option value="">Select Model</option>');
+                
+                if (models && models.length > 0) {
+                    models.forEach(function(model) {
+                        var modelId = model.id || model.Id;
+                        var modelName = model.name || model.Name;
+                        var modelNumber = model.modelNumber || model.ModelNumber || '';
+                        var displayText = modelNumber ? modelName + ' (' + modelNumber + ')' : modelName;
+                        var selected = modelId === originalModelId ? 'selected' : '';
+                        modelSelect.append('<option value="' + modelId + '" ' + selected + '>' + displayText + '</option>');
+                    });
+                } else {
+                    modelSelect.append('<option value="" disabled>No models found for this combination</option>');
+                }
+            },
+            error: function() {
+                console.error('Error loading models');
+            }
+        });
+    }
+
+    // Add change handlers for cascading
+    $('#editBrandId').on('change', function() {
+        var brandId = $(this).val();
+        var categoryId = $('#editDeviceCategoryId').val();
+        
+        if (brandId && categoryId) {
+            loadEditModels(categoryId, brandId);
+        } else {
+            $('#editDeviceModelId').empty().append('<option value="">Select Model</option>');
+        }
+    });
+
+    $('#editDeviceCategoryId').on('change', function() {
+        var brandId = $('#editBrandId').val();
+        var categoryId = $(this).val();
+        
+        if (brandId && categoryId) {
+            loadEditModels(categoryId, brandId);
+        } else {
+            $('#editDeviceModelId').empty().append('<option value="">Select Model</option>');
+        }
+    });
+
+    function loadEditCustomers() {
+	        $.ajax({
+	            url: '@Url.Action("GetCustomersForSelection", "Customers")',
+	            type: 'GET',
+	            success: function(response) {
+	                var select = $('#editSoldToCustomerId');
+	                select.empty();
+	                select.append('<option value="">Select Customer</option>');
+	                
+	                if (response.success && response.customers && response.customers.length > 0) {
+	                    response.customers.forEach(function(customer) {
+	                        var customerId = customer.id || customer.Id;
+	                        var customerName = customer.name || customer.Name;
+	                        var displayText = customerName + (customer.phone ? ' - ' + customer.phone : '');
+	                        var selected = customerId == originalCustomerId ? 'selected' : '';
+	                        select.append('<option value="' + customerId + '" ' + selected + '>' + displayText + '</option>');
+	                    });
+	                }
+	            },
+	            error: function() {
+	                console.error('Error loading customers');
+	            }
+	        });
+	    }
+	
+    function loadEditCompanies() {
+        $.ajax({
+            url: '@Url.Action("GetSelectionList", "Company")',
+            type: 'GET',
+            success: function(companies) {
+	                var select = $('#editCompanyId');
+	                select.empty();
+	                select.append('<option value="">Select Company</option>');
+	                
+	                if (companies && companies.length > 0) {
+	                    companies.forEach(function(company) {
+	                        var companyId = company.id || company.Id;
+	                        var companyName = company.name || company.Name;
+	                        var selected = companyId == originalCompanyId ? 'selected' : '';
+	                        select.append('<option value="' + companyId + '" ' + selected + '>' + companyName + '</option>');
+	                    });
+	                }
+	            },
+            error: function() {
+                console.error('Error loading companies');
+            }
+        });
+    }
+
+function updateDevice() {
+    var deviceId = $('#editDeviceId').val();
+    var brandId = $('#editBrandId').val();
+    var categoryId = $('#editDeviceCategoryId').val();
+    var modelId = $('#editDeviceModelId').val();
+    var companyId = $('#editCompanyId').val();
+	            
+	            if (!brandId || !categoryId || !modelId) {
+	                alert('Please select Brand, Category, and Model');
+	                return;
+	            }
+
+        // Get the text values from the dropdowns for the DTO
+        var brandText = $('#editBrandId option:selected').text();
+        var categoryText = $('#editDeviceCategoryId option:selected').text();
+        var modelText = $('#editDeviceModelId option:selected').text();
+
+        var deviceData = {
+            // Lookup IDs (required for update)
+            BrandId: parseInt(brandId),
+            DeviceCategoryId: parseInt(categoryId),
+            DeviceModelId: parseInt(modelId),
+            
+            // Required properties for DTO validation
+            Brand: brandText,
+            Category: categoryText,
+            Model: modelText,
+            ModelNumber: '',
+            DeviceType: 0, // Default value
+            
+	            // Properties that are actually used by the service
+	            IMEISerialNumber: $('#editImeiSerialNumber').val() || '',
+	            GB: $('#editGB').val() || null,
+	            BatteryHealthPercentage: $('#editBatteryHealth').val() ? parseInt($('#editBatteryHealth').val()) : null,
+	            NetworkStatus: $('#editNetworkStatus').val() || 'Unlocked',
+	            ScratchesCondition: $('#editScratches').val() || 'Excellent',
+	            BuyingPrice: $('#editBuyingPrice').val() ? parseFloat($('#editBuyingPrice').val()) : null,
+	            SellingPrice: $('#editSellingPrice').val() ? parseFloat($('#editSellingPrice').val()) : null,
+	            Year: $('#editYear').val() ? parseInt($('#editYear').val()) : null,
+	            Source: $('#editSource').val() || '',
+	            Notes: $('#editNotes').val() || '',
+	            IsAvailableForSale: $('#editIsAvailableForSale').val() === 'true',
+	            IsSold: isSold,
+	            SoldToCustomerId: null,
+	            CompanyId: companyId ? parseInt(companyId) : null // Added CompanyId
+	        };
+        
+        // Add customer ID if device is sold
+        if (isSold && $('#editSoldToCustomerId').length > 0) {
+            var customerId = $('#editSoldToCustomerId').val();
+            if (customerId) {
+                deviceData.SoldToCustomerId = parseInt(customerId);
+            }
+        }
+
+        $.ajax({
+            url: '/Devices/Edit/' + deviceId,
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(deviceData),
+            success: function(response) {
+                if (response.success) {
+                    $('#editDeviceModal').modal('hide');
+                    location.reload();
+                } else {
+                    alert('Error: ' + response.message);
+                }
+            },
+            error: function(xhr) {
+                console.error('Error updating device:', xhr);
+                var errorMessage = 'Error updating device. Please try again.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                alert(errorMessage);
+            }
+        });
+    }
+    
+    // Make updateDevice available globally for onclick handler
+    window.updateDevice = updateDevice;
+})();
+</script>

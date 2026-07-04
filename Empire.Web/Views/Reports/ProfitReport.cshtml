@@ -1,0 +1,316 @@
+@{
+    ViewData["Title"] = "Profit Report";
+}
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-chart-line me-2"></i>
+        Profit Report
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <button type="button" class="btn btn-success" onclick="exportToExcel()">
+            <i class="fas fa-file-excel me-1"></i>
+            Export to Excel
+        </button>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4" id="summaryCards">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-white-50 mb-1">Total Revenue</h6>
+                        <h3 class="mb-0" id="totalRevenue">$0.00</h3>
+                    </div>
+                    <i class="fas fa-dollar-sign fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-white-50 mb-1">Total Cost</h6>
+                        <h3 class="mb-0" id="totalCost">$0.00</h3>
+                    </div>
+                    <i class="fas fa-shopping-cart fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-white-50 mb-1">Total Profit</h6>
+                        <h3 class="mb-0" id="totalProfit">$0.00</h3>
+                    </div>
+                    <i class="fas fa-chart-line fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="text-white-50 mb-1">Profit Margin</h6>
+                        <h3 class="mb-0" id="profitMargin">0%</h3>
+                    </div>
+                    <i class="fas fa-percentage fa-2x opacity-50"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-3">
+    <div class="card-header">
+        <h6 class="m-0"><i class="fas fa-filter me-2"></i>Filters</h6>
+    </div>
+    <div class="card-body">
+        <form id="filterForm" class="row g-3">
+            <div class="col-md-2">
+                <label for="filterDateFrom" class="form-label">From Date</label>
+                <input type="date" id="filterDateFrom" class="form-control">
+            </div>
+            <div class="col-md-2">
+                <label for="filterDateTo" class="form-label">To Date</label>
+                <input type="date" id="filterDateTo" class="form-control">
+            </div>
+            <div class="col-md-2">
+                <label for="filterBrand" class="form-label">Brand</label>
+                <select id="filterBrand" class="form-select">
+                    <option value="">All Brands</option>
+                    @foreach (var brand in ViewBag.Brands)
+                    {
+                        <option value="@brand.Id">@brand.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="filterCategory" class="form-label">Category</label>
+                <select id="filterCategory" class="form-select">
+                    <option value="">All Categories</option>
+                    @foreach (var category in ViewBag.Categories)
+                    {
+                        <option value="@category.Id">@category.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="filterCustomer" class="form-label">Customer</label>
+                <select id="filterCustomer" class="form-select">
+                    <option value="">All Customers</option>
+                    @foreach (var customer in ViewBag.Customers)
+                    {
+                        <option value="@customer.Id">@customer.Name</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="filterPaymentStatus" class="form-label">Payment Status</label>
+                <select id="filterPaymentStatus" class="form-select" asp-items="ViewBag.PaymentStatuses">
+                    <option value="">All Status</option>
+                </select>
+            </div>
+            <div class="col-12">
+                <button type="button" class="btn btn-primary" onclick="loadReport()">
+                    <i class="fas fa-search me-1"></i>Generate Report
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="resetFilters()">
+                    <i class="fas fa-undo me-1"></i>Reset
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Report Table -->
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-sm" id="profitTable">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Invoice #</th>
+                        <th>Customer</th>
+                        <th>Item</th>
+                        <th>Brand</th>
+                        <th>Category</th>
+                        <th>Qty</th>
+                        <th>Revenue</th>
+                        <th>Cost</th>
+                        <th>Profit</th>
+                        <th>Margin %</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="reportBody">
+                    <tr>
+                        <td colspan="12" class="text-center">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </td>
+                    </tr>
+                </tbody>
+                <tfoot id="reportFooter" style="display: none;">
+                    <tr class="fw-bold">
+                        <td colspan="7" class="text-end">TOTAL:</td>
+                        <td id="footerRevenue">$0.00</td>
+                        <td id="footerCost">$0.00</td>
+                        <td id="footerProfit">$0.00</td>
+                        <td id="footerMargin">0%</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    let reportData = [];
+
+    $(document).ready(function() {
+        // Set default date range (last 30 days)
+        const today = new Date();
+        const thirtyDaysAgo = new Date(today);
+        thirtyDaysAgo.setDate(today.getDate() - 30);
+        
+        $('#filterDateFrom').val(thirtyDaysAgo.toISOString().split('T')[0]);
+        $('#filterDateTo').val(today.toISOString().split('T')[0]);
+        
+        loadReport();
+    });
+
+    function loadReport() {
+        const filters = {
+            dateFrom: $('#filterDateFrom').val(),
+            dateTo: $('#filterDateTo').val(),
+            brandId: $('#filterBrand').val(),
+            categoryId: $('#filterCategory').val(),
+            customerId: $('#filterCustomer').val(),
+            paymentStatus: $('#filterPaymentStatus').val()
+        };
+
+        $.get('@Url.Action("GetProfitData", "Reports")', filters, function(response) {
+            if (response.success) {
+                reportData = response.data;
+                displayReport(response.data, response.summary);
+            } else {
+                alert('Error loading report: ' + response.message);
+            }
+        }).fail(function() {
+            alert('Error loading report');
+        });
+    }
+
+    function displayReport(data, summary) {
+        // Update summary cards
+        $('#totalRevenue').text('$' + summary.totalRevenue.toFixed(2));
+        $('#totalCost').text('$' + summary.totalCost.toFixed(2));
+        $('#totalProfit').text('$' + summary.totalProfit.toFixed(2));
+        $('#profitMargin').text(summary.profitMargin.toFixed(2) + '%');
+
+        // Update table
+        const tbody = $('#reportBody');
+        tbody.empty();
+
+        if (data.length === 0) {
+            tbody.html('<tr><td colspan="12" class="text-center">No data found for selected filters</td></tr>');
+            $('#reportFooter').hide();
+            return;
+        }
+
+        data.forEach(function(row) {
+            const profitClass = row.profit >= 0 ? 'text-success' : 'text-danger';
+            const statusClass = row.paymentStatus === 'Paid' ? 'success' : 'warning';
+            
+            const tr = `
+                <tr>
+                    <td>${new Date(row.saleDate).toLocaleDateString()}</td>
+                    <td>${row.invoiceNumber}</td>
+                    <td>${row.customer}</td>
+                    <td>${row.itemName}</td>
+                    <td>${row.brand}</td>
+                    <td>${row.category}</td>
+                    <td>${row.quantity}</td>
+                    <td>$${row.revenue.toFixed(2)}</td>
+                    <td>$${row.cost.toFixed(2)}</td>
+                    <td class="${profitClass} fw-bold">$${row.profit.toFixed(2)}</td>
+                    <td class="${profitClass}">${row.margin.toFixed(2)}%</td>
+                    <td><span class="badge bg-${statusClass}">${row.paymentStatus}</span></td>
+                </tr>
+            `;
+            tbody.append(tr);
+        });
+
+        // Update footer
+        $('#footerRevenue').text('$' + summary.totalRevenue.toFixed(2));
+        $('#footerCost').text('$' + summary.totalCost.toFixed(2));
+        $('#footerProfit').text('$' + summary.totalProfit.toFixed(2));
+        $('#footerMargin').text(summary.profitMargin.toFixed(2) + '%');
+        $('#reportFooter').show();
+    }
+
+    function resetFilters() {
+        $('#filterForm')[0].reset();
+        const today = new Date();
+        const thirtyDaysAgo = new Date(today);
+        thirtyDaysAgo.setDate(today.getDate() - 30);
+        
+        $('#filterDateFrom').val(thirtyDaysAgo.toISOString().split('T')[0]);
+        $('#filterDateTo').val(today.toISOString().split('T')[0]);
+        
+        loadReport();
+    }
+
+    function exportToExcel() {
+        if (reportData.length === 0) {
+            alert('No data to export');
+            return;
+        }
+
+        // Create CSV content
+        let csv = 'Date,Invoice #,Customer,Item,Brand,Category,Qty,Revenue,Cost,Profit,Margin %,Status\\n';
+        
+        reportData.forEach(function(row) {
+            csv += `${new Date(row.saleDate).toLocaleDateString()},`;
+            csv += `${row.invoiceNumber},`;
+            csv += `"${row.customer}",`;
+            csv += `"${row.itemName}",`;
+            csv += `${row.brand},`;
+            csv += `${row.category},`;
+            csv += `${row.quantity},`;
+            csv += `${row.revenue.toFixed(2)},`;
+            csv += `${row.cost.toFixed(2)},`;
+            csv += `${row.profit.toFixed(2)},`;
+            csv += `${row.margin.toFixed(2)},`;
+            csv += `${row.paymentStatus}\\n`;
+        });
+
+        // Download CSV
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'profit_report_' + new Date().toISOString().split('T')[0] + '.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    }
+</script>
+}

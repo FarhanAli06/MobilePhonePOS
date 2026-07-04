@@ -1,0 +1,39 @@
+@*
+    Razor Helper for Timezone-Aware DateTime Rendering
+    Usage: @await Html.PartialAsync("_DateTimeHelper", new { Date = Model.CreatedDate, Format = "short" })
+*@
+
+@functions {
+    public static string RenderDate(DateTime? date, string format = "long")
+    {
+        if (!date.HasValue) return string.Empty;
+        
+        var utcDate = date.Value.ToString("o"); // ISO 8601 format
+        var fallbackDate = format switch
+        {
+            "short" => date.Value.ToString("MM/dd/yyyy"),
+            "time" => date.Value.ToString("hh:mm:ss tt"),
+            _ => date.Value.ToString("MM/dd/yyyy hh:mm:ss tt")
+        };
+        
+        return $"<span data-utc-date=\"{utcDate}\" data-date-format=\"{format}\">{fallbackDate}</span>";
+    }
+}
+
+@{
+    var date = ViewData["Date"] as DateTime?;
+    var format = ViewData["Format"] as string ?? "long";
+    
+    if (date.HasValue)
+    {
+        var utcDate = date.Value.ToString("o");
+        var fallbackDate = format switch
+        {
+            "short" => date.Value.ToString("MM/dd/yyyy"),
+            "time" => date.Value.ToString("hh:mm:ss tt"),
+            _ => date.Value.ToString("MM/dd/yyyy hh:mm:ss tt")
+        };
+        
+        <span data-utc-date="@utcDate" data-date-format="@format">@fallbackDate</span>
+    }
+}

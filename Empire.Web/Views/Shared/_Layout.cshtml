@@ -1,0 +1,596 @@
+@inject Empire.Web.Services.Session.ISessionHelper SessionHelper
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
+@{
+    // Page visibility is driven entirely by the GrantedPageKeys stored in session after login.
+    // SuperAdmin users have all pages seeded in UserPagePermissions (per shop), so they
+    // naturally receive all keys — no role-based bypass is needed or desired.
+    // This ensures page permissions are the single source of truth for ALL roles.
+    var grantedKeys = SessionHelper.IsAuthenticated() ? SessionHelper.GetGrantedPageKeys() : new HashSet<string>();
+    bool CanSee(string pageKey) => grantedKeys.Contains(pageKey);
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Empire Solution</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+    <!-- Generic device selector widget -->
+    <link rel="stylesheet" href="~/css/device-selector.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/intl-tel-input@19.5.6/build/css/intlTelInput.css">
+    <style>
+        :root {
+            --primary: #2196f3;
+            --primary-dark: #1976d2;
+        }
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+        }
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 0.75rem 1rem;
+            margin: 0.25rem 0;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: white;
+            background-color: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+        .main-content {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            transition: all 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+        .stat-card {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+        .stat-card-success {
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+        }
+        .stat-card-warning {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        .stat-card-info {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border: none;
+        }
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            transform: translateY(-1px);
+        }
+        .table th {
+            background-color: #f8f9fa;
+            border-top: none;
+            font-weight: 600;
+        }
+        .badge {
+            font-size: 0.75em;
+            padding: 0.5em 0.75em;
+        }
+        
+        /* Darker borders for better visual separation */
+        .card {
+            border: 2px solid #dee2e6 !important;
+        }
+        
+        .table {
+            border: 2px solid #dee2e6;
+        }
+        
+        .table thead th {
+            border-bottom: 2px solid #dee2e6 !important;
+        }
+        
+        .table td, .table th {
+            border-color: #dee2e6 !important;
+        }
+        
+        .form-control, .form-select {
+            border: 2px solid #ced4da !important;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary) !important;
+            box-shadow: 0 0 0 0.2rem rgba(33, 150, 243, 0.25) !important;
+        }
+        
+        .modal-content {
+            border: 2px solid #dee2e6 !important;
+        }
+        
+        .nav-tabs {
+            border-bottom: 2px solid #dee2e6 !important;
+        }
+        
+        .nav-tabs .nav-link {
+            border: 2px solid transparent !important;
+        }
+        
+        .nav-tabs .nav-link.active {
+            border-color: #dee2e6 #dee2e6 #fff !important;
+            border-width: 2px !important;
+        }
+        
+        .filter-tab {
+            border: 2px solid #dee2e6 !important;
+        }
+        
+        .filter-tab.active {
+            border-color: var(--primary) !important;
+        }
+        
+        hr {
+            border-top: 2px solid #dee2e6 !important;
+        }
+        
+        .list-group-item {
+            border: 2px solid #dee2e6 !important;
+        }
+    </style>
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            @if (SessionHelper.IsAuthenticated())
+            {
+                <!-- Sidebar -->
+                <nav class="col-md-3 col-lg-2 d-md-block sidebar collapse">
+                    <div class="position-sticky pt-3">
+                        <div class="text-center mb-4">
+                            <h4 class="text-white">
+                                <i class="fas fa-mobile-alt me-2"></i>
+                                Empire Solution
+                            </h4>
+                            <small class="text-white-50">Phone Repair Management</small>
+                        </div>
+                        
+                        <!-- ── Dynamic sidebar: only shows pages granted to this user ── -->
+                        <ul class="nav flex-column">
+
+                            @* Dashboard is always visible to authenticated users *@
+                            <li class="nav-item">
+                                <a class="nav-link @(ViewContext.RouteData.Values["Action"]?.ToString() == "Dashboard" ? "active" : "")"
+                                   asp-controller="Home" asp-action="Dashboard">
+                                    <i class="fas fa-tachometer-alt me-2"></i>Dashboard
+                                </a>
+                            </li>
+
+                            @if (CanSee("repairs"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Repairs" ? "active" : "")"
+                                       asp-controller="Repairs" asp-action="Index">
+                                        <i class="fas fa-tools me-2"></i>Repairs
+                                    </a>
+                                </li>
+                            }
+
+                            @if (CanSee("inventory_items") || CanSee("stock_movements"))
+                            {
+                                var invActive = ViewContext.RouteData.Values["Controller"]?.ToString() is "Inventories" or "InventoryTransactions";
+                                <li class="nav-item">
+                                    <a class="nav-link @(invActive ? "active" : "")"
+                                       data-bs-toggle="collapse" href="#inventorySubmenu" role="button"
+                                       aria-expanded="@(invActive ? "true" : "false")" aria-controls="inventorySubmenu">
+                                        <i class="fas fa-boxes me-2"></i>Inventory
+                                        <i class="fas fa-chevron-down ms-auto small"></i>
+                                    </a>
+                                    <div class="collapse @(invActive ? "show" : "")" id="inventorySubmenu">
+                                        <ul class="nav flex-column ms-3">
+                                            @if (CanSee("inventory_items"))
+                                            {
+                                                <li class="nav-item">
+                                                    <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Inventories" ? "active" : "")"
+                                                       asp-controller="Inventories" asp-action="Index">
+                                                        <i class="fas fa-box me-2"></i>Inventory Items
+                                                    </a>
+                                                </li>
+                                            }
+                                            @if (CanSee("stock_movements"))
+                                            {
+                                                <li class="nav-item">
+                                                    <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "InventoryTransactions" ? "active" : "")"
+                                                       asp-controller="InventoryTransactions" asp-action="Index">
+                                                        <i class="fas fa-exchange-alt me-2"></i>Stock Movements
+                                                    </a>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </div>
+                                </li>
+                            }
+
+                            @if (CanSee("devices"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Devices" ? "active" : "")"
+                                       asp-controller="Devices" asp-action="Index">
+                                        <i class="fas fa-mobile-alt me-2"></i>Devices
+                                    </a>
+                                </li>
+                            }
+
+                            @if (CanSee("customers"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Customers" ? "active" : "")"
+                                       asp-controller="Customers" asp-action="Index">
+                                        <i class="fas fa-users me-2"></i>Customers
+                                    </a>
+                                </li>
+                            }
+
+                            @if (CanSee("pos"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "POS" ? "active" : "")"
+                                       asp-controller="POS" asp-action="Index">
+                                        <i class="fas fa-cash-register me-2"></i>Point of Sale
+                                    </a>
+                                </li>
+                            }
+
+                            @if (CanSee("reports_sales") || CanSee("reports_profit") || CanSee("reports_repairs"))
+                            {
+                                var rptActive = ViewContext.RouteData.Values["Controller"]?.ToString() == "Reports";
+                                <li class="nav-item">
+                                    <a class="nav-link @(rptActive ? "active" : "")"
+                                       data-bs-toggle="collapse" href="#reportsSubmenu" role="button"
+                                       aria-expanded="@(rptActive ? "true" : "false")" aria-controls="reportsSubmenu">
+                                        <i class="fas fa-chart-bar me-2"></i>Reports
+                                        <i class="fas fa-chevron-down ms-auto small"></i>
+                                    </a>
+                                    <div class="collapse @(rptActive ? "show" : "")" id="reportsSubmenu">
+                                        <ul class="nav flex-column ms-3">
+                                            @if (CanSee("reports_sales"))
+                                            {
+                                                <li class="nav-item">
+                                                    <a class="nav-link @(ViewContext.RouteData.Values["Action"]?.ToString() == "SalesReport" ? "active" : "")"
+                                                       asp-controller="Reports" asp-action="SalesReport">
+                                                        <i class="fas fa-chart-line me-2"></i>Sales Report
+                                                    </a>
+                                                </li>
+                                            }
+                                            @if (CanSee("reports_profit"))
+                                            {
+                                                <li class="nav-item">
+                                                    <a class="nav-link @(ViewContext.RouteData.Values["Action"]?.ToString() == "ProfitReport" ? "active" : "")"
+                                                       asp-controller="Reports" asp-action="ProfitReport">
+                                                        <i class="fas fa-dollar-sign me-2"></i>Profit Report
+                                                    </a>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </div>
+                                </li>
+                            }
+
+                        </ul>
+
+                        <hr class="my-3" style="border-color: rgba(255, 255, 255, 0.2);">
+
+                        <!-- ── Settings / Admin section ── -->
+                        <ul class="nav flex-column">
+
+                            @if (CanSee("lookup_management") || CanSee("general_lookups") || CanSee("companies"))
+                            {
+                                var lkpActive = ViewContext.RouteData.Values["Controller"]?.ToString() is "LookupManagement" or "Company";
+                                <li class="nav-item">
+                                    <a class="nav-link @(lkpActive ? "active" : "")"
+                                       data-bs-toggle="collapse" href="#lookupSubmenu" role="button"
+                                       aria-expanded="@(lkpActive ? "true" : "false")" aria-controls="lookupSubmenu">
+                                        <i class="fas fa-cogs me-2"></i>Lookup Management
+                                        <i class="fas fa-chevron-down ms-auto small"></i>
+                                    </a>
+                                    <div class="collapse @(lkpActive ? "show" : "")" id="lookupSubmenu">
+                                        <ul class="nav flex-column ms-3">
+                                            @if (CanSee("general_lookups") || CanSee("lookup_management"))
+                                            {
+                                                <li class="nav-item">
+                                                    <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "LookupManagement" ? "active" : "")"
+                                                       asp-controller="LookupManagement" asp-action="Index">
+                                                        <i class="fas fa-list me-2"></i>General Lookups
+                                                    </a>
+                                                </li>
+                                            }
+                                            @if (CanSee("companies"))
+                                            {
+                                                <li class="nav-item">
+                                                    <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Company" ? "active" : "")"
+                                                       asp-controller="Company" asp-action="Index">
+                                                        <i class="fas fa-building me-2"></i>Companies
+                                                    </a>
+                                                </li>
+                                            }
+                                        </ul>
+                                    </div>
+                                </li>
+                            }
+
+                            @if (CanSee("shops"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Shop" ? "active" : "")"
+                                       asp-controller="Shop" asp-action="Index">
+                                        <i class="fas fa-store me-2"></i>Shops
+                                    </a>
+                                </li>
+                            }
+
+                            @if (CanSee("users"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Users" ? "active" : "")"
+                                       asp-controller="Users" asp-action="Index">
+                                        <i class="fas fa-user-cog me-2"></i>Users
+                                    </a>
+                                </li>
+                            }
+
+                            @if (CanSee("page_permissions"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "PagePermissions" ? "active" : "")"
+                                       asp-controller="PagePermissions" asp-action="Index">
+                                        <i class="fas fa-shield-alt me-2"></i>Page Permissions
+                                    </a>
+                                </li>
+                            }
+
+                            <li class="nav-item">
+                                <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Logs" ? "active" : "")"
+                                   asp-controller="Logs" asp-action="Index">
+                                    <i class="fas fa-stream me-2"></i>Request Logs
+                                </a>
+                            </li>
+
+                        </ul>
+                        
+                        <hr class="my-3" style="border-color: rgba(255, 255, 255, 0.2);">
+                        
+                        <div class="text-white-50 small px-3">
+                            <div><strong>@SessionHelper.GetCurrentUserName()</strong></div>
+                            <div>@SessionHelper.GetCurrentShopName()</div>
+                            <div class="badge bg-light text-dark mt-1">@SessionHelper.GetCurrentUserRole()</div>
+                        </div>
+                        
+                        <div class="mt-3 px-3">
+                            <form asp-controller="Home" asp-action="Logout" method="post">
+                                <button type="submit" class="btn btn-outline-light btn-sm w-100">
+                                    <i class="fas fa-sign-out-alt me-2"></i>
+                                    Logout
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </nav>
+                
+                <!-- Main content -->
+                <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4 main-content">
+                    <div class="pt-3 pb-2 mb-3">
+                        @RenderBody()
+                    </div>
+                </main>
+            }
+            else
+            {
+                <!-- Full width for login page -->
+                <main class="col-12">
+                    @RenderBody()
+                </main>
+            }
+        </div>
+    </div>
+
+    <script>
+        // API Configuration - injected from appsettings.json ApiSettings:BaseUrl
+        window.API_BASE_URL = '@(Configuration["ApiSettings:BaseUrl"]?.TrimEnd('/') ?? string.Empty)/api';
+        // Web-side base URL for session-based endpoints (no JWT required from browser)
+        window.WEB_BASE_URL = window.location.origin;
+    </script>
+    
+    <!-- Authentication Context Manager (must load before other scripts) -->
+    <script src="~/js/auth-context.js"></script>
+    
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/timezone-interceptor.js"></script>
+    <script src="~/js/timezone-helper.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="~/js/datatables-timezone.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/intl-tel-input@19.5.6/build/js/intlTelInput.min.js"></script>
+    <script src="~/js/phone-formatter.js"></script>
+        <script>
+        // Initialize DataTables for all tables with class 'data-table'
+        $(document).ready(function() {
+            $('.data-table').DataTable({
+                responsive: true,
+                pageLength: 25
+            });
+        });
+
+        // Global Select2 initialization function
+        function initializeSelect2(selector, options = {}) {
+            const defaultOptions = {
+                theme: 'bootstrap-5',
+                width: '100%',
+                placeholder: 'Select an option...',
+                allowClear: true,
+                dropdownParent: options.dropdownParent || $('body')
+            };
+            
+            const finalOptions = { ...defaultOptions, ...options };
+            $(selector).select2(finalOptions);
+        }
+
+        // Initialize all select elements with Select2 on page load
+        $(document).ready(function() {
+            // Initialize all select elements that don't have the 'no-select2' class
+            $('select:not(.no-select2)').each(function() {
+                const $select = $(this);
+                const placeholder = $select.attr('data-placeholder') || 'Select an option...';
+                
+                initializeSelect2($select, {
+                    placeholder: placeholder,
+                    allowClear: !$select.prop('required')
+                });
+            });
+        });
+    </script>
+    
+    <!-- Customer Selection Script -->
+    <script>
+        // Global customer selection functionality
+        function loadCustomerSelectionModal() {
+            if ($('#customerSelectionModal').length === 0) {
+                // Load customer selection modal from customers page
+                $.get('@Url.Action("Index", "Customers")', function(data) {
+                    const modalHtml = $(data).find('#customerSelectionModal').prop('outerHTML');
+                    if (modalHtml) {
+                        $('body').append(modalHtml);
+                        
+                        // Re-bind customer search functionality
+                        $('#customerSearchInput').on('input', function() {
+                            searchCustomersGlobal($(this).val());
+                        });
+                    }
+                });
+            }
+        }
+        
+        function searchCustomersGlobal(searchTerm) {
+            $.ajax({
+                url: '@Url.Action("GetCustomersForSelection", "Customers")',
+                type: 'GET',
+                success: function(response) {
+                    if (response.success) {
+                        let filteredCustomers = response.customers;
+                        if (searchTerm) {
+                            filteredCustomers = response.customers.filter(c => 
+                                c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                c.phone.includes(searchTerm)
+                            );
+                        }
+                        displayCustomerSearchResultsGlobal(filteredCustomers);
+                    }
+                },
+                error: function() {
+                    console.error('Error loading customers');
+                }
+            });
+        }
+
+        function displayCustomerSearchResultsGlobal(customers) {
+            const resultsContainer = $('#customerSearchResults');
+            resultsContainer.empty();
+
+            customers.forEach(function(customer) {
+                const item = $(`
+                    <a href="#" class="list-group-item list-group-item-action" onclick="selectCustomerGlobal(${customer.id}, '${customer.name}')">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">${customer.name}</h6>
+                            <small>${customer.phone}</small>
+                        </div>
+                        ${customer.email ? '<small>' + customer.email + '</small>' : ''}
+                    </a>
+                `);
+                resultsContainer.append(item);
+            });
+
+            if (customers.length === 0) {
+                resultsContainer.html('<div class="text-center text-muted">No customers found</div>');
+            }
+        }
+
+        function selectCustomerGlobal(id, name) {
+            $('#customerSelectionModal').modal('hide');
+            if (window.customerSelectionCallback) {
+                window.customerSelectionCallback(id, name);
+            }
+        }
+        
+        // Make customer selection available globally
+        window.showCustomerSelection = function(callback) {
+            window.customerSelectionCallback = callback;
+            loadCustomerSelectionModal();
+            setTimeout(function() {
+                $('#customerSelectionModal').modal('show');
+                searchCustomersGlobal(''); // Load all customers initially
+            }, 100);
+        };
+        
+        // Load customer selection modal on page load
+        $(document).ready(function() {
+            loadCustomerSelectionModal();
+            loadPaymentStatusesForModal();
+        });
+        
+        // Load payment statuses via Web-side endpoint (no JWT required from browser)
+        function loadPaymentStatusesForModal() {
+            $.ajax({
+                url: window.WEB_BASE_URL + '/Lookup/GetLookupValuesByCategory?category=PaymentStatus',
+                method: 'GET',
+                success: function(response) {
+                    var items = Array.isArray(response) ? response : [];
+                    var select = $('#editPaymentStatus');
+                    select.empty();
+                    items.forEach(function(status) {
+                        select.append($('<option></option>').val(status.value).text(status.value));
+                    });
+                },
+                error: function(error) {
+                    console.error('Error loading payment statuses:', error);
+                }
+            });
+        }
+    </script>
+
+    <!-- Generic device selector widget -->
+    <script src="~/js/device-selector.js"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+
+    <!-- Global Modals -->
+    @await Html.PartialAsync("_AddNewCustomerModal")
+    @await Html.PartialAsync("_AddNewRepairModal")
+    @await Html.PartialAsync("_InvoiceEditModal")
+    @await Html.PartialAsync("_InvoicePrintTemplate")
+</body>
+</html>
+

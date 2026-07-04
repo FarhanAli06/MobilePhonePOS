@@ -1,0 +1,26 @@
+
+using Empire.Web.DTOs.Inventory;
+using Empire.Web.DTOs.Repair;
+
+namespace Empire.Web.Models;
+
+public class DashboardViewModel
+{
+    public string CurrentShopName { get; set; } = string.Empty;
+    public string UserName { get; set; } = string.Empty;
+    public string UserRole { get; set; } = string.Empty;
+    
+    // Statistics
+    public int TotalRepairs { get; set; }
+    public int InProgressRepairs { get; set; }
+    public int CompletedRepairs { get; set; }
+    public decimal TotalInventoryValue { get; set; }
+    public int LowStockItemsCount { get; set; }
+    public decimal DailySales { get; set; }
+    public decimal DailyProfit { get; set; }
+    
+    // Recent data
+    public IEnumerable<RepairDto> RecentRepairs { get; set; } = new List<RepairDto>();
+    public IEnumerable<InventoryItemDto> LowStockItems { get; set; } = new List<InventoryItemDto>();
+}
+
