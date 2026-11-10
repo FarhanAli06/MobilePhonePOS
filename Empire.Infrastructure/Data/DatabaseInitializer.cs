@@ -43,6 +43,12 @@ namespace Empire.Infrastructure.Data
                 await _context.Database.MigrateAsync();
                 _logger.LogInformation("Database migrations applied successfully.");
 
+                // The model reads this column during repair queries, so create it
+                // before seeding or any other model-backed startup work begins.
+                await EnsureRepairPartCostColumnAsync();
+                await EnsureDeviceColorAndCarrierColumnsAsync();
+                await EnsureSalesAndDeviceAuditTablesAsync();
+
                 // Ensure RequestLogs table exists — safety net for databases that were
                 // created before the RequestLogs migration was added.
                 await EnsureRequestLogsTableAsync();
@@ -50,12 +56,17 @@ namespace Empire.Infrastructure.Data
                 // Seed initial data.
                 await SeedDataAsync();
 
+                // Keep the Apple laptop selector useful on both existing and fresh
+                // installations. This is idempotent and never changes user-created models.
+                await EnsureMacBookModelsAsync();
+
                 // Ensure new RepairStatus lookup values exist in databases that were
                 // seeded before Unrepairable and Abandoned were introduced.
                 await EnsureRepairStatusesAsync();
 
                 // Ensure SaleItems.RepairId column exists — added after initial schema.
                 await EnsureSaleItemRepairIdColumnAsync();
+                await EnsureSaleItemStatusColumnAsync();
 
                 // Ensure IX_Stylings_Name has a WHERE filter so empty-name rows
                 // don't cause duplicate key errors during seeding.
@@ -64,6 +75,12 @@ namespace Empire.Infrastructure.Data
                 await EnsureAmountPaidColumnAsync();
                 // Ensure InventoryItems.CategoryId column exists — added after initial schema.
                 await EnsureCategoryIdColumnAsync();
+                await EnsureInventoryBatchTablesAsync();
+                await EnsureInventoryVariantColumnsAndChoicesAsync();
+                await EnsureIPhone18ModelsAndInventoryAsync();
+                await EnsureMacBookInventoryAsync();
+                await EnsureGameConsoleServicesAsync();
+                await EnsurePerformanceIndexesAsync();
             }
             catch (Exception ex)
             {
@@ -73,6 +90,503 @@ namespace Empire.Infrastructure.Data
         }
 
         // ─── Helpers ─────────────────────────────────────────────────────────────
+
+        private async Task EnsureSalesAndDeviceAuditTablesAsync()
+        {
+            const string sql = @"
+IF COL_LENGTH('Devices','LifecycleStatus') IS NULL
+    ALTER TABLE [Devices] ADD [LifecycleStatus] nvarchar(40) NOT NULL CONSTRAINT [DF_Devices_LifecycleStatus] DEFAULT N'Available';
+IF COL_LENGTH('Payments','Type') IS NULL
+    ALTER TABLE [Payments] ADD [Type] nvarchar(20) NOT NULL CONSTRAINT [DF_Payments_Type] DEFAULT N'Payment';
+IF OBJECT_ID(N'[SaleActivities]', N'U') IS NULL
+BEGIN
+ CREATE TABLE [SaleActivities]([Id] int IDENTITY NOT NULL PRIMARY KEY,[SaleId] int NOT NULL,[Action] nvarchar(50) NOT NULL,[Description] nvarchar(500) NOT NULL,[OldValues] nvarchar(max) NULL,[NewValues] nvarchar(max) NULL,[PerformedByUserId] int NULL,[PerformedAt] datetime2 NOT NULL,CONSTRAINT [FK_SaleActivities_Sales] FOREIGN KEY([SaleId]) REFERENCES [Sales]([Id]) ON DELETE CASCADE,CONSTRAINT [FK_SaleActivities_Users] FOREIGN KEY([PerformedByUserId]) REFERENCES [Users]([Id]));
+ CREATE INDEX [IX_SaleActivities_SaleId_PerformedAt] ON [SaleActivities]([SaleId],[PerformedAt]);
+END;
+IF OBJECT_ID(N'[DeviceActivities]', N'U') IS NULL
+BEGIN
+ CREATE TABLE [DeviceActivities]([Id] int IDENTITY NOT NULL PRIMARY KEY,[DeviceId] int NOT NULL,[Action] nvarchar(50) NOT NULL,[Description] nvarchar(500) NOT NULL,[OldValues] nvarchar(max) NULL,[NewValues] nvarchar(max) NULL,[PerformedByUserId] int NULL,[PerformedAt] datetime2 NOT NULL,CONSTRAINT [FK_DeviceActivities_Devices] FOREIGN KEY([DeviceId]) REFERENCES [Devices]([Id]) ON DELETE CASCADE,CONSTRAINT [FK_DeviceActivities_Users] FOREIGN KEY([PerformedByUserId]) REFERENCES [Users]([Id]));
+ CREATE INDEX [IX_DeviceActivities_DeviceId_PerformedAt] ON [DeviceActivities]([DeviceId],[PerformedAt]);
+END;
+IF OBJECT_ID(N'[SaleReturns]', N'U') IS NULL
+BEGIN
+ CREATE TABLE [SaleReturns]([Id] int IDENTITY NOT NULL PRIMARY KEY,[SaleId] int NOT NULL,[ReturnNumber] nvarchar(30) NOT NULL,[RefundMethod] nvarchar(50) NOT NULL,[RefundAmount] decimal(18,2) NOT NULL,[Reason] nvarchar(500) NOT NULL,[Notes] nvarchar(1000) NOT NULL,[ProcessedByUserId] int NOT NULL,[ProcessedAt] datetime2 NOT NULL,CONSTRAINT [FK_SaleReturns_Sales] FOREIGN KEY([SaleId]) REFERENCES [Sales]([Id]),CONSTRAINT [FK_SaleReturns_Users] FOREIGN KEY([ProcessedByUserId]) REFERENCES [Users]([Id]));
+ CREATE INDEX [IX_SaleReturns_SaleId] ON [SaleReturns]([SaleId]);
+END;
+IF OBJECT_ID(N'[SaleReturnItems]', N'U') IS NULL
+BEGIN
+ CREATE TABLE [SaleReturnItems]([Id] int IDENTITY NOT NULL PRIMARY KEY,[SaleReturnId] int NOT NULL,[SaleItemId] int NOT NULL,[Quantity] int NOT NULL,[UnitRefundAmount] decimal(18,2) NOT NULL,[TotalRefundAmount] decimal(18,2) NOT NULL,[Disposition] nvarchar(50) NOT NULL,CONSTRAINT [FK_SaleReturnItems_Returns] FOREIGN KEY([SaleReturnId]) REFERENCES [SaleReturns]([Id]) ON DELETE CASCADE,CONSTRAINT [FK_SaleReturnItems_Items] FOREIGN KEY([SaleItemId]) REFERENCES [SaleItems]([Id]));
+END;";
+            await _context.Database.ExecuteSqlRawAsync(sql);
+        }
+
+        private async Task EnsureMacBookModelsAsync()
+        {
+            var models = new (string Name, string Number, int Year)[]
+            {
+                ("MacBook Air 15-inch (M4, 2025) — A3241", "A3241", 2025),
+                ("MacBook Air 13-inch (M4, 2025) — A3240", "A3240", 2025),
+                ("MacBook Pro 16-inch (M4, 2024) — A3185", "A3185", 2024),
+                ("MacBook Pro 14-inch (M4, 2024) — A3401", "A3401", 2024),
+                ("MacBook Pro 14-inch (M4, 2024) — A3112", "A3112", 2024),
+                ("MacBook Air 15-inch (M3, 2024) — A3114", "A3114", 2024),
+                ("MacBook Air 13-inch (M3, 2024) — A3113", "A3113", 2024),
+                ("MacBook Pro 16-inch (M3, 2023) — A2991", "A2991", 2023),
+                ("MacBook Pro 14-inch (M3, 2023) — A2992", "A2992", 2023),
+                ("MacBook Pro 14-inch (M3, 2023) — A2918", "A2918", 2023),
+                ("MacBook Pro 16-inch (M2, 2023) — A2780", "A2780", 2023),
+                ("MacBook Pro 14-inch (M2, 2023) — A2779", "A2779", 2023),
+                ("MacBook Air 15-inch (M2, 2023) — A2941", "A2941", 2023),
+                ("MacBook Air 13-inch (M2, 2022) — A2681", "A2681", 2022),
+                ("MacBook Pro 16-inch (2021) — A2485", "A2485", 2021),
+                ("MacBook Pro 14-inch (2021) — A2442", "A2442", 2021),
+                ("MacBook Pro 13-inch (M1/M2, 2020–2022) — A2338", "A2338", 2020),
+                ("MacBook Air 13-inch (M1, 2020) — A2337", "A2337", 2020),
+                ("MacBook Pro 13-inch (2020) — A2251", "A2251", 2020),
+                ("MacBook Pro 13-inch (2020) — A2289", "A2289", 2020),
+                ("MacBook Air 13-inch (2020) — A2179", "A2179", 2020),
+                ("MacBook Pro 16-inch (2019) — A2141", "A2141", 2019),
+                ("MacBook Pro 13-inch (2019) — A2159", "A2159", 2019),
+                ("MacBook Pro 15-inch (2018–2019) — A1990", "A1990", 2018),
+                ("MacBook Pro 13-inch (2018–2019) — A1989", "A1989", 2018),
+                ("MacBook Air 13-inch (2018–2019) — A1932", "A1932", 2018)
+            };
+
+            var shopIds = await _context.Shops.Select(shop => shop.Id).ToListAsync();
+            foreach (var shopId in shopIds)
+            {
+                var appleId = await _context.Brands
+                    .Where(brand => brand.ShopId == shopId && brand.Name == "Apple")
+                    .Select(brand => (int?)brand.Id)
+                    .FirstOrDefaultAsync();
+                var laptopId = await _context.DeviceCategories
+                    .Where(category => category.ShopId == shopId &&
+                        (category.Name == "Laptop" || category.Name == "Computer" || category.Name == "MacBook"))
+                    .Select(category => (int?)category.Id)
+                    .FirstOrDefaultAsync();
+                if (!appleId.HasValue || !laptopId.HasValue) continue;
+
+                var existingNumbers = (await _context.DeviceModels
+                    .Where(model => model.ShopId == shopId && model.BrandId == appleId.Value)
+                    .Select(model => model.ModelNumber)
+                    .ToListAsync())
+                    .Where(number => !string.IsNullOrWhiteSpace(number))
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                var order = 1;
+                foreach (var entry in models)
+                {
+                    if (existingNumbers.Contains(entry.Number)) { order++; continue; }
+                    _context.DeviceModels.Add(new DeviceModel
+                    {
+                        ShopId = shopId,
+                        BrandId = appleId.Value,
+                        DeviceCategoryId = laptopId.Value,
+                        Name = entry.Name,
+                        ModelNumber = entry.Number,
+                        Year = entry.Year,
+                        Description = "Apple MacBook service model",
+                        DisplayOrder = order++,
+                        IsActive = true,
+                        CreatedDate = DateTime.UtcNow,
+                        ModifiedDate = DateTime.UtcNow
+                    });
+                }
+                await _context.SaveChangesAsync();
+            }
+        }
+
+        private async Task EnsureGameConsoleServicesAsync()
+        {
+            var consoleDefinitions = new[]
+            {
+                new { Brand = "Sony", Icon = "sports_esports", Color = "#006FCD", Model = "PlayStation 5 Disc Edition", Number = "PS5-DISC", Services = new[] { "HDMI Port Repair", "Liquid Metal / Overheating Service" } },
+                new { Brand = "Sony", Icon = "sports_esports", Color = "#006FCD", Model = "PlayStation 5 Digital Edition", Number = "PS5-DIGITAL", Services = new[] { "HDMI Port Repair", "Liquid Metal / Overheating Service" } },
+                new { Brand = "Sony", Icon = "sports_esports", Color = "#006FCD", Model = "PlayStation 5 Slim Disc Edition", Number = "PS5-SLIM-DISC", Services = new[] { "HDMI Port Repair", "Liquid Metal / Overheating Service" } },
+                new { Brand = "Sony", Icon = "sports_esports", Color = "#006FCD", Model = "PlayStation 5 Slim Digital Edition", Number = "PS5-SLIM-DIGITAL", Services = new[] { "HDMI Port Repair", "Liquid Metal / Overheating Service" } },
+                new { Brand = "Xbox", Icon = "sports_esports", Color = "#107C10", Model = "Xbox Series X", Number = "XBOX-SERIES-X", Services = new[] { "HDMI Port Repair", "Overheating / Thermal Service" } },
+                new { Brand = "Xbox", Icon = "sports_esports", Color = "#107C10", Model = "Xbox Series S", Number = "XBOX-SERIES-S", Services = new[] { "HDMI Port Repair", "Overheating / Thermal Service" } }
+            };
+
+            var shopIds = await _context.Shops.AsNoTracking().Where(shop => !shop.IsDeleted).Select(shop => shop.Id).ToListAsync();
+            foreach (var shopId in shopIds)
+            {
+                var gaming = await _context.DeviceCategories.FirstOrDefaultAsync(category => category.ShopId == shopId && category.Name == "Gaming" && !category.IsDeleted);
+                if (gaming == null)
+                {
+                    gaming = new DeviceCategory
+                    {
+                        ShopId = shopId, Name = "Gaming", Description = "Game consoles", IsActive = true,
+                        DisplayOrder = 5, CreatedDate = DateTime.UtcNow, ModifiedDate = DateTime.UtcNow
+                    };
+                    _context.DeviceCategories.Add(gaming);
+                    await _context.SaveChangesAsync();
+                }
+
+                var repairPartsId = await _context.InventoryCategories
+                    .Where(category => category.ShopId == shopId && category.Name == "Repair Parts" && !category.IsDeleted)
+                    .Select(category => (int?)category.Id).FirstOrDefaultAsync();
+                if (!repairPartsId.HasValue) continue;
+
+                foreach (var brandDefinition in consoleDefinitions.GroupBy(definition => definition.Brand).Select(group => group.First()))
+                {
+                    var brand = await _context.Brands.FirstOrDefaultAsync(entry => entry.ShopId == shopId && entry.Name == brandDefinition.Brand && !entry.IsDeleted);
+                    if (brand == null)
+                    {
+                        var styling = await _context.Stylings.FirstOrDefaultAsync(entry => entry.Name == brandDefinition.Brand);
+                        if (styling == null)
+                        {
+                            styling = new Styling { Name = brandDefinition.Brand, Icon = brandDefinition.Icon, Color = brandDefinition.Color, CreatedAt = DateTime.UtcNow };
+                            _context.Stylings.Add(styling);
+                            await _context.SaveChangesAsync();
+                        }
+                        brand = new Brand
+                        {
+                            ShopId = shopId, Name = brandDefinition.Brand, Description = brandDefinition.Brand + " game consoles",
+                            IsActive = true, DisplayOrder = brandDefinition.Brand == "Sony" ? 7 : 8, StylingId = styling.Id,
+                            CreatedDate = DateTime.UtcNow, ModifiedDate = DateTime.UtcNow
+                        };
+                        _context.Brands.Add(brand);
+                        await _context.SaveChangesAsync();
+                    }
+
+                    foreach (var definition in consoleDefinitions.Where(entry => entry.Brand == brandDefinition.Brand))
+                    {
+                        var model = await _context.DeviceModels.FirstOrDefaultAsync(entry => entry.ShopId == shopId && entry.BrandId == brand.Id && entry.ModelNumber == definition.Number && !entry.IsDeleted);
+                        if (model == null)
+                        {
+                            model = new DeviceModel
+                            {
+                                ShopId = shopId, BrandId = brand.Id, DeviceCategoryId = gaming.Id,
+                                Name = definition.Model, ModelNumber = definition.Number, Description = definition.Brand + " game console",
+                                IsActive = true, DisplayOrder = 1, CreatedDate = DateTime.UtcNow, ModifiedDate = DateTime.UtcNow
+                            };
+                            _context.DeviceModels.Add(model);
+                            await _context.SaveChangesAsync();
+                        }
+
+                        foreach (var serviceName in definition.Services)
+                        {
+                            var category = await _context.Categories.FirstOrDefaultAsync(entry => entry.ShopId == shopId && entry.Name == serviceName && entry.CategoryType == "Inventory" && !entry.IsDeleted);
+                            if (category == null)
+                            {
+                                category = new Category
+                                {
+                                    ShopId = shopId, Name = serviceName, Description = serviceName,
+                                    CategoryType = "Inventory", IsActive = true, DisplayOrder = 90,
+                                    CreatedDate = DateTime.UtcNow, ModifiedDate = DateTime.UtcNow
+                                };
+                                _context.Categories.Add(category);
+                                await _context.SaveChangesAsync();
+                            }
+
+                            var exists = await _context.InventoryItems.AnyAsync(item => item.ShopId == shopId && item.DeviceModelId == model.Id && item.Name == serviceName && !item.IsDeleted);
+                            if (exists) continue;
+                            var skuStem = serviceName.StartsWith("HDMI", StringComparison.OrdinalIgnoreCase) ? "HDMI" : "THERMAL";
+                            _context.InventoryItems.Add(new InventoryItem
+                            {
+                                ShopId = shopId, BrandId = brand.Id, DeviceCategoryId = gaming.Id, DeviceModelId = model.Id,
+                                InventoryCategoryId = repairPartsId.Value, CategoryId = category.Id,
+                                Name = serviceName, Description = serviceName, SKU = $"SVC-{brand.Id}-{model.Id}-{skuStem}",
+                                CurrentStock = 0, ReorderPoint = 0, CostPrice = 0, RetailPrice = 0, WholesalePrice = 0,
+                                EnableLowStockNotifications = false, IsActive = true,
+                                Notes = "SERVICE_ONLY: selectable repair service; does not deduct a stocked part",
+                                CreatedDate = DateTime.UtcNow, UpdatedDate = DateTime.UtcNow, ModifiedDate = DateTime.UtcNow
+                            });
+                        }
+                        await _context.SaveChangesAsync();
+                    }
+                }
+            }
+        }
+
+        private async Task EnsurePerformanceIndexesAsync()
+        {
+            const string sql = @"
+                IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_InventoryItems_Shop_Model_Active' AND object_id = OBJECT_ID('InventoryItems'))
+                    CREATE INDEX [IX_InventoryItems_Shop_Model_Active] ON [InventoryItems] ([ShopId],[DeviceModelId],[IsDeleted],[IsActive]) INCLUDE ([BrandId],[DeviceCategoryId],[InventoryCategoryId],[CurrentStock],[ReorderPoint]);
+                IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_InventoryItems_Shop_SKU' AND object_id = OBJECT_ID('InventoryItems'))
+                    CREATE INDEX [IX_InventoryItems_Shop_SKU] ON [InventoryItems] ([ShopId],[SKU]) WHERE [IsDeleted] = 0;
+                IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Repairs_Shop_Status_CreatedDate' AND object_id = OBJECT_ID('Repairs'))
+                    CREATE INDEX [IX_Repairs_Shop_Status_CreatedDate] ON [Repairs] ([ShopId],[Status],[CreatedDate] DESC) WHERE [IsDeleted] = 0;
+                IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_Customers_Shop_Phone' AND object_id = OBJECT_ID('Customers'))
+                    CREATE INDEX [IX_Customers_Shop_Phone] ON [Customers] ([ShopId],[Phone]) WHERE [IsDeleted] = 0;
+                IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_DeviceModels_Shop_Brand_Category_Active' AND object_id = OBJECT_ID('DeviceModels'))
+                    CREATE INDEX [IX_DeviceModels_Shop_Brand_Category_Active] ON [DeviceModels] ([ShopId],[BrandId],[DeviceCategoryId],[IsActive]) WHERE [IsDeleted] = 0;";
+            await _context.Database.ExecuteSqlRawAsync(sql);
+        }
+
+        private async Task EnsureIPhone18ModelsAndInventoryAsync()
+        {
+            var phoneModels = new[]
+            {
+                new { Name = "iPhone 18 Pro Max", Year = 2026, Order = 1, BackGlassColors = new[] { "Black", "Silver", "Glacier", "Burgundy" } },
+                new { Name = "iPhone 18 Pro", Year = 2026, Order = 2, BackGlassColors = new[] { "Black", "Silver", "Glacier", "Burgundy" } },
+                new { Name = "iPhone 17e", Year = 2026, Order = 3, BackGlassColors = Array.Empty<string>() },
+                new { Name = "iPhone Air", Year = 2025, Order = 4, BackGlassColors = new[] { "Space Black", "Cloud White", "Light Gold", "Sky Blue" } },
+                new { Name = "iPhone 16e", Year = 2025, Order = 5, BackGlassColors = new[] { "Black", "White" } }
+            };
+            var screenQualities = new[] { "Incell", "Soft OLED", "Hard OLED", "OEM", "Original/Refurbished" };
+            var simpleParts = new[] { "Battery", "Charging Port", "Camera", "Front Camera" };
+
+            var shopIds = await _context.Shops.Where(shop => !shop.IsDeleted).Select(shop => shop.Id).ToListAsync();
+            foreach (var shopId in shopIds)
+            {
+                var appleId = await _context.Brands.Where(brand => brand.ShopId == shopId && brand.Name == "Apple").Select(brand => (int?)brand.Id).FirstOrDefaultAsync();
+                var phoneCategoryId = await _context.DeviceCategories
+                    .Where(category => category.ShopId == shopId && (category.Name == "Smartphone" || category.Name == "Phone" || category.Name == "iPhone"))
+                    .Select(category => (int?)category.Id).FirstOrDefaultAsync();
+                var repairPartsId = await _context.InventoryCategories.Where(category => category.ShopId == shopId && category.Name == "Repair Parts")
+                    .Select(category => (int?)category.Id).FirstOrDefaultAsync();
+                if (!appleId.HasValue || !phoneCategoryId.HasValue || !repairPartsId.HasValue) continue;
+
+                var partCategoryIds = await _context.Categories
+                    .Where(category => category.ShopId == shopId && category.CategoryType == "Inventory" && !category.IsDeleted)
+                    .ToDictionaryAsync(category => category.Name, category => category.Id, StringComparer.OrdinalIgnoreCase);
+
+                // Remove the nonexistent iPhone 17 Plus catalog entry completely.
+                // If an installation somehow has a real transaction tied to it, fail
+                // closed and only hide it rather than destroying repair/sale history.
+                var retired17Plus = await _context.DeviceModels
+                    .FirstOrDefaultAsync(model => model.ShopId == shopId && model.BrandId == appleId.Value &&
+                        model.Name == "iPhone 17 Plus" && !model.IsDeleted);
+                if (retired17Plus != null)
+                {
+                    var legacyItems = await _context.InventoryItems
+                        .Where(item => item.ShopId == shopId && item.DeviceModelId == retired17Plus.Id)
+                        .ToListAsync();
+                    var legacyItemIds = legacyItems.Select(item => item.Id).ToList();
+                    var hasHistory = await _context.Devices.AnyAsync(device => device.DeviceModelId == retired17Plus.Id) ||
+                        await _context.Repairs.AnyAsync(repair => repair.DeviceModelId == retired17Plus.Id) ||
+                        legacyItems.Any(item => item.CurrentStock != 0) ||
+                        (legacyItemIds.Count > 0 && (await _context.RepairParts.AnyAsync(part => legacyItemIds.Contains(part.InventoryItemId)) ||
+                            await _context.SaleItems.AnyAsync(item => item.InventoryItemId.HasValue && legacyItemIds.Contains(item.InventoryItemId.Value))));
+
+                    if (!hasHistory)
+                    {
+                        if (legacyItemIds.Count > 0)
+                        {
+                            _context.InventoryBatches.RemoveRange(await _context.InventoryBatches.Where(batch => legacyItemIds.Contains(batch.InventoryItemId)).ToListAsync());
+                            _context.InventoryTransactions.RemoveRange(await _context.InventoryTransactions.Where(transaction => legacyItemIds.Contains(transaction.InventoryItemId)).ToListAsync());
+                            _context.StockMovements.RemoveRange(await _context.StockMovements.Where(movement => legacyItemIds.Contains(movement.InventoryItemId)).ToListAsync());
+                            _context.InventoryItems.RemoveRange(legacyItems);
+                        }
+                        _context.DeviceModels.Remove(retired17Plus);
+                        await _context.SaveChangesAsync();
+                    }
+                    else
+                    {
+                        retired17Plus.IsActive = false;
+                        retired17Plus.IsDeleted = true;
+                        retired17Plus.ModifiedDate = DateTime.UtcNow;
+                        foreach (var item in legacyItems.Where(item => item.CurrentStock == 0))
+                        {
+                            item.IsActive = false;
+                            item.IsDeleted = true;
+                            item.UpdatedDate = DateTime.UtcNow;
+                            item.ModifiedDate = DateTime.UtcNow;
+                        }
+                    }
+                }
+
+                foreach (var modelDefinition in phoneModels)
+                {
+                    var modelName = modelDefinition.Name;
+                    var model = await _context.DeviceModels.FirstOrDefaultAsync(entry => entry.ShopId == shopId && entry.BrandId == appleId.Value && entry.Name == modelName);
+                    if (model == null)
+                    {
+                        model = new DeviceModel
+                        {
+                            ShopId = shopId,
+                            BrandId = appleId.Value,
+                            DeviceCategoryId = phoneCategoryId.Value,
+                            Name = modelName,
+                            ModelNumber = string.Empty,
+                            Year = modelDefinition.Year,
+                            Description = "Apple iPhone service model",
+                            DisplayOrder = modelDefinition.Order,
+                            IsActive = true,
+                            CreatedDate = DateTime.UtcNow,
+                            ModifiedDate = DateTime.UtcNow
+                        };
+                        _context.DeviceModels.Add(model);
+                        await _context.SaveChangesAsync();
+                    }
+
+                    var existing = (await _context.InventoryItems
+                        .Where(item => item.ShopId == shopId && item.DeviceModelId == model.Id && !item.IsDeleted)
+                        .Select(item => new { item.Name, item.Variant, item.Color })
+                        .ToListAsync())
+                        .Select(item => $"{item.Name}|{item.Variant}|{item.Color}")
+                        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+                    void AddPart(string partName, string variant = "", string color = "")
+                    {
+                        if (!partCategoryIds.TryGetValue(partName, out var categoryId)) return;
+                        var key = $"{partName}|{variant}|{color}";
+                        if (existing.Contains(key)) return;
+                        var suffix = string.Join('-', new[] { variant, color }.Where(value => !string.IsNullOrWhiteSpace(value)))
+                            .ToUpperInvariant().Replace("/", "-").Replace(" ", "-");
+                        _context.InventoryItems.Add(new InventoryItem
+                        {
+                            ShopId = shopId,
+                            BrandId = appleId.Value,
+                            DeviceCategoryId = phoneCategoryId.Value,
+                            DeviceModelId = model.Id,
+                            InventoryCategoryId = repairPartsId.Value,
+                            CategoryId = categoryId,
+                            Name = partName,
+                            Description = $"{modelName} {partName}",
+                            SKU = $"{partName.Replace(" ", "-").ToUpperInvariant()}-{model.Id}{(suffix.Length > 0 ? "-" + suffix : string.Empty)}",
+                            Variant = variant,
+                            Color = color,
+                            CurrentStock = 0,
+                            ReorderPoint = 0,
+                            CostPrice = 0,
+                            RetailPrice = 0,
+                            WholesalePrice = 0,
+                            EnableLowStockNotifications = false,
+                            IsActive = true,
+                            UpdatedDate = DateTime.UtcNow,
+                            CreatedDate = DateTime.UtcNow
+                        });
+                        existing.Add(key);
+                    }
+
+                    foreach (var quality in screenQualities) AddPart("Screen", variant: quality);
+                    foreach (var part in simpleParts) AddPart(part);
+                    foreach (var color in modelDefinition.BackGlassColors) AddPart("Back Glass", color: color);
+                    await _context.SaveChangesAsync();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Gives every supported MacBook model one simple Screen, Battery, and
+        /// Charging Port inventory record. Phone-only screen qualities never apply
+        /// to MacBooks. The method is idempotent and preserves existing stock.
+        /// </summary>
+        private async Task EnsureMacBookInventoryAsync()
+        {
+            var allowedParts = new[] { "Screen", "Battery", "Charging Port" };
+            var phoneScreenVariants = new[] { "Incell", "Soft OLED", "Hard OLED", "OEM", "Original/Refurbished" };
+            var shopIds = await _context.Shops.Where(shop => !shop.IsDeleted).Select(shop => shop.Id).ToListAsync();
+
+            foreach (var shopId in shopIds)
+            {
+                var appleId = await _context.Brands
+                    .Where(brand => brand.ShopId == shopId && brand.Name == "Apple" && !brand.IsDeleted)
+                    .Select(brand => (int?)brand.Id)
+                    .FirstOrDefaultAsync();
+                var laptopId = await _context.DeviceCategories
+                    .Where(category => category.ShopId == shopId && !category.IsDeleted &&
+                        (category.Name == "Laptop" || category.Name == "Computer" || category.Name == "MacBook"))
+                    .Select(category => (int?)category.Id)
+                    .FirstOrDefaultAsync();
+                var repairPartsId = await _context.InventoryCategories
+                    .Where(category => category.ShopId == shopId && category.Name == "Repair Parts" && !category.IsDeleted)
+                    .Select(category => (int?)category.Id)
+                    .FirstOrDefaultAsync();
+                if (!appleId.HasValue || !laptopId.HasValue || !repairPartsId.HasValue) continue;
+
+                var categoryIds = await _context.Categories
+                    .Where(category => category.ShopId == shopId && category.CategoryType == "Inventory" &&
+                        !category.IsDeleted && allowedParts.Contains(category.Name))
+                    .ToDictionaryAsync(category => category.Name, category => category.Id, StringComparer.OrdinalIgnoreCase);
+                if (categoryIds.Count != allowedParts.Length) continue;
+
+                var models = await _context.DeviceModels
+                    .Where(model => model.ShopId == shopId && model.BrandId == appleId.Value &&
+                        model.DeviceCategoryId == laptopId.Value && model.IsActive && !model.IsDeleted &&
+                        model.Name.Contains("MacBook"))
+                    .ToListAsync();
+
+                foreach (var model in models)
+                {
+                    var items = await _context.InventoryItems
+                        .Where(item => item.ShopId == shopId && item.DeviceModelId == model.Id && !item.IsDeleted)
+                        .ToListAsync();
+
+                    // Hide empty, incompatible MacBook parts that were created by the
+                    // earlier generic phone-part seeding. Historical rows remain intact.
+                    foreach (var incompatible in items.Where(item => !allowedParts.Contains(item.Name, StringComparer.OrdinalIgnoreCase)))
+                    {
+                        if (incompatible.CurrentStock == 0)
+                        {
+                            incompatible.IsActive = false;
+                            incompatible.IsDeleted = true;
+                            incompatible.UpdatedDate = DateTime.UtcNow;
+                            incompatible.ModifiedDate = DateTime.UtcNow;
+                        }
+                    }
+
+                    foreach (var partName in allowedParts)
+                    {
+                        var matches = items.Where(item => item.Name.Equals(partName, StringComparison.OrdinalIgnoreCase) && !item.IsDeleted).ToList();
+                        InventoryItem? primary = matches.FirstOrDefault(item => string.IsNullOrWhiteSpace(item.Variant));
+
+                        if (partName == "Screen" && primary == null)
+                        {
+                            primary = matches.FirstOrDefault(item => phoneScreenVariants.Contains(item.Variant, StringComparer.OrdinalIgnoreCase));
+                            if (primary != null)
+                            {
+                                primary.Variant = string.Empty;
+                                primary.Description = $"{model.Name} Screen Replacement";
+                                primary.UpdatedDate = DateTime.UtcNow;
+                                primary.ModifiedDate = DateTime.UtcNow;
+                            }
+                        }
+
+                        if (primary == null)
+                        {
+                            primary = new InventoryItem
+                            {
+                                ShopId = shopId,
+                                BrandId = appleId.Value,
+                                DeviceCategoryId = laptopId.Value,
+                                DeviceModelId = model.Id,
+                                InventoryCategoryId = repairPartsId.Value,
+                                CategoryId = categoryIds[partName],
+                                Name = partName,
+                                Description = partName == "Screen" ? $"{model.Name} Screen Replacement" :
+                                    partName == "Battery" ? $"{model.Name} Battery Replacement" : $"{model.Name} Charging Port",
+                                SKU = $"MAC-{model.ModelNumber}-{partName.Replace(" ", "-").ToUpperInvariant()}",
+                                Variant = string.Empty,
+                                Color = string.Empty,
+                                CurrentStock = 0,
+                                ReorderPoint = 0,
+                                CostPrice = 0,
+                                RetailPrice = 0,
+                                WholesalePrice = 0,
+                                EnableLowStockNotifications = false,
+                                IsActive = true,
+                                UpdatedDate = DateTime.UtcNow,
+                                CreatedDate = DateTime.UtcNow
+                            };
+                            _context.InventoryItems.Add(primary);
+                        }
+                        else
+                        {
+                            primary.IsActive = true;
+                            primary.CategoryId = categoryIds[partName];
+                            primary.InventoryCategoryId = repairPartsId.Value;
+                        }
+
+                        // Remove only empty duplicates. Any row with real stock stays
+                        // available so quantities and FIFO history can never be lost.
+                        foreach (var duplicate in matches.Where(item => item != primary && item.CurrentStock == 0))
+                        {
+                            duplicate.IsActive = false;
+                            duplicate.IsDeleted = true;
+                            duplicate.UpdatedDate = DateTime.UtcNow;
+                            duplicate.ModifiedDate = DateTime.UtcNow;
+                        }
+                    }
+
+                    await _context.SaveChangesAsync();
+                }
+            }
+        }
 
         /// <summary>
         /// Returns true if the given table exists in the current database.
@@ -438,6 +952,35 @@ namespace Empire.Infrastructure.Data
                         await _context.SaveChangesAsync();
                         _logger.LogInformation("Default brands seeded for shop {ShopId}.", sId);
                     }
+
+                    // Motorola is a selectable empty brand. Models are intentionally
+                    // not seeded so each shop can add only the models it carries.
+                    bool hasMotorola = await _context.Brands.AnyAsync(b => b.ShopId == sId && b.Name == "Motorola");
+                    if (!hasMotorola)
+                    {
+                        var motorolaStyling = new Styling
+                        {
+                            Name = "Motorola",
+                            Icon = "phone_android",
+                            Color = "#E1000F",
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        _context.Add(motorolaStyling);
+                        await _context.SaveChangesAsync();
+
+                        _context.Brands.Add(new Brand
+                        {
+                            ShopId = sId,
+                            Name = "Motorola",
+                            Description = "Motorola devices",
+                            IsActive = true,
+                            DisplayOrder = 6,
+                            StylingId = motorolaStyling.Id,
+                            CreatedDate = DateTime.UtcNow
+                        });
+                        await _context.SaveChangesAsync();
+                        _logger.LogInformation("Motorola brand ensured for shop {ShopId} without adding models.", sId);
+                    }
                 }
 
                 // ── 7. Default Device Categories per shop ──────────────────────────────────
@@ -571,6 +1114,39 @@ namespace Empire.Infrastructure.Data
         }
 
         /// <summary>
+        /// Adds durable device color and carrier fields to older installations.
+        /// Lock status remains in NetworkStatus and is intentionally separate.
+        /// </summary>
+        private async Task EnsureDeviceColorAndCarrierColumnsAsync()
+        {
+            const string colorSql = @"
+                IF COL_LENGTH('Devices', 'Color') IS NULL
+                    ALTER TABLE [Devices] ADD [Color] nvarchar(50) NOT NULL
+                        CONSTRAINT [DF_Devices_Color] DEFAULT N'';";
+            const string carrierSql = @"
+                IF COL_LENGTH('Devices', 'Carrier') IS NULL
+                    ALTER TABLE [Devices] ADD [Carrier] nvarchar(100) NOT NULL
+                        CONSTRAINT [DF_Devices_Carrier] DEFAULT N'';";
+            await _context.Database.ExecuteSqlRawAsync(colorSql);
+            await _context.Database.ExecuteSqlRawAsync(carrierSql);
+        }
+
+        /// <summary>
+        /// Adds a durable operational status for custom quick-sale items.
+        /// Existing sale items are kept as In Stock for backward compatibility.
+        /// </summary>
+        private async Task EnsureSaleItemStatusColumnAsync()
+        {
+            const string sql = @"
+                IF COL_LENGTH('SaleItems', 'ItemStatus') IS NULL
+                BEGIN
+                    ALTER TABLE [SaleItems] ADD [ItemStatus] nvarchar(50) NOT NULL
+                        CONSTRAINT [DF_SaleItems_ItemStatus] DEFAULT N'In Stock';
+                END";
+            await _context.Database.ExecuteSqlRawAsync(sql);
+        }
+
+        /// <summary>
         /// Recreates IX_Stylings_Name with a WHERE [Name] &lt;&gt; '' filter so that
         /// Styling rows without a name (legacy data) do not trigger duplicate key
         /// violations when multiple empty-name rows exist.
@@ -613,6 +1189,23 @@ namespace Empire.Infrastructure.Data
         }
 
         /// <summary>
+        /// Stores private cost entered for a custom repair that does not consume
+        /// a standard inventory record. Safe to run on every startup.
+        /// </summary>
+        private async Task EnsureRepairPartCostColumnAsync()
+        {
+            const string sql = @"
+                IF NOT EXISTS (
+                    SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_NAME = 'Repairs' AND COLUMN_NAME = 'PartCost'
+                )
+                BEGIN
+                    ALTER TABLE [Repairs] ADD [PartCost] decimal(18,2) NOT NULL DEFAULT 0;
+                END";
+            await _context.Database.ExecuteSqlRawAsync(sql);
+        }
+
+        /// <summary>
         /// Ensures the InventoryItems.CategoryId column exists for databases created before
         /// the AddCategoryIdToInventoryItems migration was added. Safe to run on every startup.
         /// </summary>
@@ -631,6 +1224,152 @@ namespace Empire.Infrastructure.Data
                             FOREIGN KEY ([CategoryId]) REFERENCES [Categories]([Id]) ON DELETE SET NULL;
                     END
                 END";
+            await _context.Database.ExecuteSqlRawAsync(sql);
+        }
+
+        /// <summary>
+        /// Adds FIFO batch tracking without changing or deleting existing inventory data.
+        /// Existing positive stock is converted to one opening batch at its current cost.
+        /// </summary>
+        private async Task EnsureInventoryBatchTablesAsync()
+        {
+            // Keep the column-creation batch separate from statements that use the
+            // new columns. SQL Server compiles a batch before executing it, so an
+            // UPDATE that references a column added earlier in the same batch can
+            // still fail with "Invalid column name" on first startup.
+            const string schemaSql = @"
+                IF OBJECT_ID('InventoryBatches', 'U') IS NULL
+                BEGIN
+                    CREATE TABLE [InventoryBatches] (
+                        [Id] INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                        [InventoryItemId] INT NOT NULL,
+                        [ReceivedQuantity] INT NOT NULL,
+                        [RemainingQuantity] INT NOT NULL,
+                        [UnitCost] DECIMAL(18,2) NOT NULL,
+                        [Vendor] NVARCHAR(100) NOT NULL DEFAULT '',
+                        [ReferenceNumber] NVARCHAR(50) NOT NULL DEFAULT '',
+                        [ReceivedDate] DATETIME2 NOT NULL,
+                        [Notes] NVARCHAR(500) NOT NULL DEFAULT '',
+                        [IsDeleted] BIT NOT NULL DEFAULT 0,
+                        [CreatedDate] DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+                        [ModifiedDate] DATETIME2 NULL,
+                        CONSTRAINT [FK_InventoryBatches_InventoryItems_InventoryItemId]
+                            FOREIGN KEY ([InventoryItemId]) REFERENCES [InventoryItems]([Id])
+                    );
+                    CREATE INDEX [IX_InventoryBatches_FIFO]
+                        ON [InventoryBatches] ([InventoryItemId], [ReceivedDate], [Id]);
+
+                    INSERT INTO [InventoryBatches]
+                        ([InventoryItemId],[ReceivedQuantity],[RemainingQuantity],[UnitCost],[Vendor],[ReferenceNumber],[ReceivedDate],[Notes],[IsDeleted],[CreatedDate])
+                    SELECT [Id],[CurrentStock],[CurrentStock],[CostPrice],'Opening inventory','OPENING',COALESCE([CreatedDate],GETUTCDATE()),'Automatically preserved when FIFO tracking was enabled',0,GETUTCDATE()
+                    FROM [InventoryItems]
+                    WHERE [CurrentStock] > 0 AND [IsDeleted] = 0;
+                END;
+
+                IF COL_LENGTH('RepairParts', 'ActualUnitCost') IS NULL
+                    ALTER TABLE [RepairParts] ADD [ActualUnitCost] DECIMAL(18,2) NOT NULL DEFAULT 0;
+
+                IF COL_LENGTH('RepairParts', 'IsAllocatedFromStock') IS NULL
+                    ALTER TABLE [RepairParts] ADD [IsAllocatedFromStock] BIT NOT NULL CONSTRAINT [DF_RepairParts_IsAllocatedFromStock] DEFAULT 1;
+
+                IF COL_LENGTH('RepairParts', 'StockAllocatedDate') IS NULL
+                    ALTER TABLE [RepairParts] ADD [StockAllocatedDate] DATETIME2 NULL;";
+
+            await _context.Database.ExecuteSqlRawAsync(schemaSql);
+
+            const string backfillSql = @"
+                UPDATE [RepairParts]
+                   SET [StockAllocatedDate] = COALESCE([StockAllocatedDate], [CreatedDate])
+                 WHERE [IsAllocatedFromStock] = 1 AND [StockAllocatedDate] IS NULL;";
+
+            await _context.Database.ExecuteSqlRawAsync(backfillSql);
+
+            const string allocationTableSql = @"
+
+                IF OBJECT_ID('RepairPartBatchAllocations', 'U') IS NULL
+                BEGIN
+                    CREATE TABLE [RepairPartBatchAllocations] (
+                        [Id] INT IDENTITY(1,1) NOT NULL PRIMARY KEY,
+                        [RepairPartId] INT NOT NULL,
+                        [InventoryBatchId] INT NOT NULL,
+                        [Quantity] INT NOT NULL,
+                        [UnitCost] DECIMAL(18,2) NOT NULL,
+                        [IsDeleted] BIT NOT NULL DEFAULT 0,
+                        [CreatedDate] DATETIME2 NOT NULL DEFAULT GETUTCDATE(),
+                        [ModifiedDate] DATETIME2 NULL,
+                        CONSTRAINT [FK_RepairPartBatchAllocations_RepairParts_RepairPartId]
+                            FOREIGN KEY ([RepairPartId]) REFERENCES [RepairParts]([Id]) ON DELETE CASCADE,
+                        CONSTRAINT [FK_RepairPartBatchAllocations_InventoryBatches_InventoryBatchId]
+                            FOREIGN KEY ([InventoryBatchId]) REFERENCES [InventoryBatches]([Id])
+                    );
+                    CREATE INDEX [IX_RepairPartBatchAllocations_RepairPartId] ON [RepairPartBatchAllocations] ([RepairPartId]);
+                    CREATE INDEX [IX_RepairPartBatchAllocations_InventoryBatchId] ON [RepairPartBatchAllocations] ([InventoryBatchId]);
+                END;";
+            await _context.Database.ExecuteSqlRawAsync(allocationTableSql);
+        }
+
+        /// <summary>
+        /// Adds inventory-only part attributes and removes pre-2016 models from the
+        /// active inventory view without deleting their stock or transaction history.
+        /// </summary>
+        private async Task EnsureInventoryVariantColumnsAndChoicesAsync()
+        {
+            const string sql = @"
+                IF COL_LENGTH('InventoryItems', 'Variant') IS NULL
+                    ALTER TABLE [InventoryItems] ADD [Variant] NVARCHAR(50) NOT NULL CONSTRAINT [DF_InventoryItems_Variant] DEFAULT '';
+
+                IF COL_LENGTH('InventoryItems', 'Color') IS NULL
+                    ALTER TABLE [InventoryItems] ADD [Color] NVARCHAR(50) NOT NULL CONSTRAINT [DF_InventoryItems_Color] DEFAULT '';
+
+                UPDATE ii
+                   SET ii.IsActive = 0,
+                       ii.UpdatedDate = GETUTCDATE(),
+                       ii.ModifiedDate = GETUTCDATE()
+                  FROM [InventoryItems] ii
+                  INNER JOIN [DeviceModels] dm ON dm.Id = ii.DeviceModelId
+                 WHERE dm.[Year] IS NOT NULL
+                   AND dm.[Year] < 2016
+                   AND ii.IsActive = 1
+                   AND ii.IsDeleted = 0;
+
+                DECLARE @InventoryParts TABLE ([Name] NVARCHAR(50), [Description] NVARCHAR(200), [DisplayOrder] INT);
+                INSERT INTO @InventoryParts VALUES
+                    ('Screen', 'Display and screen assemblies', 10),
+                    ('Battery', 'Replacement batteries', 20),
+                    ('Charging Port', 'Charging port assemblies', 30),
+                    ('Camera', 'Rear camera assemblies', 40),
+                    ('Front Camera', 'Front camera assemblies', 50),
+                    ('Back Glass', 'Back glass for compatible phones', 60);
+
+                INSERT INTO [Categories]
+                    ([ShopId],[Name],[Description],[CategoryType],[IsActive],[DisplayOrder],[ParentCategoryId],[IsDeleted],[CreatedDate],[ModifiedDate])
+                SELECT s.Id, p.[Name], p.[Description], 'Inventory', 1, p.[DisplayOrder], NULL, 0, GETUTCDATE(), NULL
+                  FROM [Shops] s
+                  CROSS JOIN @InventoryParts p
+                 WHERE s.IsDeleted = 0
+                   AND NOT EXISTS (
+                       SELECT 1 FROM [Categories] c
+                        WHERE c.ShopId = s.Id AND c.[Name] = p.[Name]
+                          AND c.CategoryType = 'Inventory' AND c.IsDeleted = 0
+                   );
+
+                DECLARE @InventoryGroups TABLE ([Name] NVARCHAR(50), [Description] NVARCHAR(200), [DisplayOrder] INT);
+                INSERT INTO @InventoryGroups VALUES
+                    ('Repair Parts', 'Parts consumed while completing device repairs', 10),
+                    ('Accessories', 'Customer accessories and add-on products', 20),
+                    ('Devices', 'Phones, tablets, computers, and other devices', 30),
+                    ('Tools & Supplies', 'Repair tools and shop consumable supplies', 40);
+
+                INSERT INTO [InventoryCategories]
+                    ([ShopId],[Name],[Description],[IsActive],[DisplayOrder],[IsDeleted],[CreatedDate],[ModifiedDate])
+                SELECT s.Id, g.[Name], g.[Description], 1, g.[DisplayOrder], 0, GETUTCDATE(), NULL
+                  FROM [Shops] s
+                  CROSS JOIN @InventoryGroups g
+                 WHERE s.IsDeleted = 0
+                   AND NOT EXISTS (
+                       SELECT 1 FROM [InventoryCategories] ic
+                        WHERE ic.ShopId = s.Id AND ic.[Name] = g.[Name] AND ic.IsDeleted = 0
+                   );";
             await _context.Database.ExecuteSqlRawAsync(sql);
         }
     }

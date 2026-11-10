@@ -25,6 +25,8 @@ public class UpdateDeviceRequest
 
     public string IMEISerialNumber { get; set; } = string.Empty;
     public string? GB { get; set; }
+    public string Color { get; set; } = string.Empty;
+    public string Carrier { get; set; } = string.Empty;
     public int? BatteryHealthPercentage { get; set; }
     public string NetworkStatus { get; set; } = "Unlocked";
     public string ScratchesCondition { get; set; } = "None";

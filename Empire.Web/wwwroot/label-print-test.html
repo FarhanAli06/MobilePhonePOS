@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Empire DYMO Label Samples</title>
+  <style>
+    @page { size: 2.25in 1.25in; margin: 0; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: white; color: black; font-family: Arial, sans-serif; }
+    .label { width: 2.25in; height: 1.25in; padding: .055in .075in; display: flex; flex-direction: column; overflow: hidden; page-break-after: always; break-after: page; }
+    .label:last-child { page-break-after: auto; break-after: auto; }
+    .head { height: .30in; border-bottom: 1px solid #000; padding-bottom: .025in; margin-bottom: .03in; display: flex; align-items: center; justify-content: space-between; gap: .04in; }
+    .brand { display: flex; align-items: center; gap: .035in; min-width: 0; }
+    .logo { width: .27in; height: .27in; object-fit: contain; flex: 0 0 auto; }
+    .shop { font-weight: 900; font-size: 7.5pt; white-space: nowrap; }
+    .phone { font-size: 5.5pt; white-space: nowrap; }
+    .primary { font-size: 9pt; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: .035in; }
+    .row { display: flex; justify-content: space-between; align-items: baseline; gap: .05in; font-size: 7pt; white-space: nowrap; overflow: hidden; margin-bottom: .03in; }
+    .row strong { font-size: 8pt; overflow: hidden; text-overflow: ellipsis; }
+    .bottom { border-top: 1px solid #000; padding-top: .03in; margin-top: auto; }
+    .note { font-size: 6pt; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    @media screen { body { display: flex; flex-wrap: wrap; gap: 18px; padding: 20px; background: #eee; } .label { background: white; box-shadow: 0 2px 8px #999; page-break-after: auto; } }
+  </style>
+</head>
+<body>
+  <script>
+    const samples = [
+      ['Apple iPhone 17 Pro Max','IMEI','359876543210987','Unlocked','$899.99','Battery: 98% | Scratches: None'],
+      ['Samsung Galaxy S25 Ultra','IMEI','352222333344445','T-Mobile','$749.00','Battery: 91% | Scratches: Minor'],
+      ['Google Pixel 10 Pro XL','IMEI','358888777766665','Verizon','$629.95','Battery: 87% | Scratches: Good'],
+      ['Apple iPad 9th Generation','SERIAL','DMPQ1EXAMPLE9','Wi-Fi','$249.99','Condition: Excellent'],
+      ['Apple iPhone 17 Pro Max','REPAIR','#REP0120260901001','Empire Repair','$110.00','In Progress | Screen is cracked']
+    ];
+    document.body.innerHTML = samples.map(s => `<section class="label"><div class="head"><span class="brand"><img class="logo" src="/images/empire-logo.png" alt=""><span class="shop">EMPIRE PHONE REPAIR</span></span></div><div class="primary">${s[0]}</div><div class="row"><span>${s[1]}</span><strong>${s[2]}</strong></div><div class="row bottom"><span>${s[3]}</span><strong>${s[4]}</strong></div><div class="note">${s[5]}</div></section>`).join('');
+    Promise.all(Array.from(document.images).map(img => img.complete ? Promise.resolve() : new Promise(r => { img.onload = img.onerror = r; }))).then(() => setTimeout(() => window.print(), 150));
+  </script>
+</body>
+</html>

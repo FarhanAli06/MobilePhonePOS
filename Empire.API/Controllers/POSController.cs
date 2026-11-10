@@ -383,17 +383,49 @@ public class POSController : BaseApiController
                 return ValidationErrorResponse();
 
             var shopId = GetCurrentShopId();
-            request.ShopId = shopId;
+            if (shopId == 0)
+                return UnauthorizedResponse("No shop selected");
 
-            // Re-use CreateSaleAsync as a simple update path (idempotent for POS)
-            var sale = await _posService.CreateSaleAsync(request);
+            request.ShopId = shopId;
+            request.CreatedByUserId = GetCurrentUserId();
+
+            var sale = await _posService.UpdateSaleAsync(id, request);
             return SuccessResponse(sale, "Sale updated successfully");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating POS sale {SaleId}", id);
-            return ErrorResponse("Error updating sale", 500);
+            return ErrorResponse(ex.Message, 500);
         }
+    }
+
+    [HttpGet("sales/{id:int}/history")]
+    public async Task<IActionResult> GetSaleHistory(int id)
+    {
+        try { return SuccessResponse(await _posService.GetSaleHistoryAsync(id, GetCurrentShopId())); }
+        catch (KeyNotFoundException) { return NotFoundResponse("Sale not found"); }
+        catch (Exception ex) { _logger.LogError(ex, "Error getting sale history {SaleId}", id); return ErrorResponse(ex.Message, 500); }
+    }
+
+    [HttpPost("sales/{id:int}/returns")]
+    public async Task<IActionResult> ProcessReturn(int id, [FromBody] ProcessSaleReturnRequest request)
+    {
+        try
+        {
+            request.ShopId = GetCurrentShopId(); request.UserId = GetCurrentUserId();
+            return SuccessResponse(await _posService.ProcessReturnAsync(id, request), "Return processed successfully");
+        }
+        catch (KeyNotFoundException) { return NotFoundResponse("Sale not found"); }
+        catch (InvalidOperationException ex) { return ErrorResponse(ex.Message, 400); }
+        catch (Exception ex) { _logger.LogError(ex, "Error processing return for sale {SaleId}", id); return ErrorResponse(ex.Message, 500); }
+    }
+
+    [HttpGet("sales/{id:int}/returns")]
+    public async Task<IActionResult> GetSaleReturns(int id)
+    {
+        try { return SuccessResponse(await _posService.GetSaleReturnsAsync(id, GetCurrentShopId())); }
+        catch (KeyNotFoundException) { return NotFoundResponse("Sale not found"); }
+        catch (Exception ex) { _logger.LogError(ex, "Error getting returns for sale {SaleId}", id); return ErrorResponse(ex.Message, 500); }
     }
 
     [HttpPost("sales/search")]
@@ -485,6 +517,8 @@ public class POSController : BaseApiController
             imei          = d.IMEISerialNumber,
             network       = d.NetworkStatus,
             storage       = d.GB,
+            color         = d.Color,
+            carrier       = d.Carrier,
             condition     = d.ScratchesCondition,
             scratches     = d.ScratchesCondition,
             batteryHealth = d.BatteryHealthPercentage,

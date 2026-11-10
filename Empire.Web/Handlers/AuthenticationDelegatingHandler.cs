@@ -85,6 +85,18 @@ public class AuthenticationDelegatingHandler : DelegatingHandler
         {
             _logger.LogWarning("Received 401 Unauthorized response from {Uri}", request.RequestUri);
 
+            // Clear the server-side token too. Otherwise the session continues
+            // presenting an invalid JWT and shop lookup failures can be mistaken
+            // for an account with no shops.
+            try
+            {
+                _httpContextAccessor.HttpContext?.Session.Remove(SessionKeys.AuthToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogDebug(ex, "Could not clear the invalid session token.");
+            }
+
             // If the token is flagged as expired, remove it so the next request
             // forces a fresh login rather than retrying with a bad token.
             if (response.Headers.Contains("Token-Expired"))

@@ -4,5 +4,6 @@
     {
         public int CustomerId { get; set; }
         public decimal? SalePrice { get; set; }
+        public string PaymentMethod { get; set; } = "Cash";
     }
 }

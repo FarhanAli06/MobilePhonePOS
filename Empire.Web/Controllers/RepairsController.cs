@@ -13,6 +13,8 @@ using Empire.Web.Services.DeviceModel;
 using Empire.Web.Services.Shop;
 using Empire.Web.Services.Lookup;
 using Empire.Web.Services.Inventory;
+using Empire.Web.Services.Printing;
+using System.Text;
 using Empire.Web.Enums;
 namespace Empire.Web.Controllers;
 
@@ -63,6 +65,7 @@ public class RepairsController : BaseController
         string paymentStatus = AppConstants.EmptyString, 
         DateTime? startDate = null, 
         DateTime? endDate = null,
+        string view = "active",
         int pageNumber = 1,
         int pageSize = 20)
     {
@@ -82,9 +85,17 @@ public class RepairsController : BaseController
                 repairs = repairs?.Where(r => 
                     (r.RepairNumber != null && r.RepairNumber.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
                     (r.CustomerName != null && r.CustomerName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
-                    (r.Description != null && r.Description.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
+                    (r.Description != null && r.Description.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                    (r.CustomerPhone != null && r.CustomerPhone.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                    (r.DeviceBrand != null && r.DeviceBrand.Contains(searchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                    (r.DeviceModel != null && r.DeviceModel.Contains(searchTerm, StringComparison.OrdinalIgnoreCase))
                 ).ToList();
             }
+
+            var previousJobs = string.Equals(view, "previous", StringComparison.OrdinalIgnoreCase);
+            repairs = repairs?.Where(r => string.Equals(r.Status, "Completed", StringComparison.OrdinalIgnoreCase) == previousJobs).ToList();
+            ViewBag.RepairView = previousJobs ? "previous" : "active";
+            ViewBag.CanManageTrash = IsManager();
 
             if (!string.IsNullOrEmpty(status))
             {
@@ -266,45 +277,14 @@ public class RepairsController : BaseController
     }
 
     [HttpGet]
-    public async Task<IActionResult> Edit(int id)
+    public IActionResult Edit(int id)
     {
         if (!IsAuthenticated())
             return RedirectToLogin();
 
-        try
-        {
-            var repair = await _repairApiService.GetByIdAsync(id);
-            
-            if (repair == null)
-                return NotFound();
-
-            var model = new EditRepairViewModel
-            {
-                Id = repair.Id,
-                BrandId = repair.BrandId,
-                DeviceCategoryId = repair.DeviceCategoryId,
-                DeviceModelId = repair.DeviceModelId,
-                Description = repair.Description,
-                Comments = repair.Comments,
-                Status = repair.Status,
-                PaymentStatus = repair.PaymentStatus,
-                Cost = repair.Cost,
-                AmountPaid = repair.AmountPaid,
-                CustomerName = repair.CustomerName,
-                BrandName = repair.DeviceBrand
-            };
-
-            // Load lookup values using BaseController method
-            ViewBag.RepairStatuses = await GetLookupSelectListAsync(LookupCategories.RepairStatus);
-            ViewBag.PaymentStatuses = await GetLookupSelectListAsync(LookupCategories.PaymentStatus);
-
-            return View(model);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error loading repair {RepairId}", id);
-            return NotFound();
-        }
+        // Repairs are managed directly from their tiles. Keep old bookmarks safe,
+        // but do not expose the obsolete separate Edit screen.
+        return RedirectToAction(nameof(Index));
     }
 
     [HttpPost]
@@ -374,16 +354,10 @@ public class RepairsController : BaseController
 
         try
         {
-            var currentShopId = GetCurrentShopId();
-            
-            // Verify repair exists (ShopId check is enforced at the API level)
-            var repair = await _repairApiService.GetByIdAsync(id);
-            if (repair == null)
-            {
-                SetErrorMessage(PageConstants.Repair.RepairNotFound);
-                return RedirectToAction(RouteConstants.Actions.Index);
-            }
-            
+            // The API owns the shop-scoped existence check and treats an already
+            // trashed repair as a successful delete. Avoid a separate GET here:
+            // it created a race where a completed delete was reported as
+            // "Repair not found" when the page submitted twice or was stale.
             var success = await _repairApiService.DeleteAsync(id);
             
             if (success)
@@ -424,6 +398,7 @@ public class RepairsController : BaseController
             }
             var data = repairs.Select(r => new {
                 id            = r.Id,
+                customerId    = r.CustomerId,
                 repairNumber  = r.RepairNumber,
                 customerName  = r.CustomerName,
                 customerPhone = r.CustomerPhone,
@@ -433,6 +408,7 @@ public class RepairsController : BaseController
                 status        = r.Status,
                 paymentStatus = r.PaymentStatus,
                 cost          = r.Cost,
+                partCost      = r.PartCost,
                 remainingDues = r.RemainingDues,
                 createdDate   = ToUserTime(r.CreatedDate).ToString("MMM dd, yyyy hh:mm tt")
             });
@@ -457,12 +433,78 @@ public class RepairsController : BaseController
         try
         {
             var success = await _repairApiService.DeleteAsync(id);
-            return Json(new { success, message = success ? "Repair deleted successfully" : "Repair not found" });
+            return Json(new { success, message = success ? "Repair moved to Trash and its parts returned to inventory" : "Repair not found" });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error deleting repair {RepairId} via JSON", id);
             return Json(new { success = false, message = ex.Message });
+        }
+    }
+
+    [HttpGet]
+    [IgnoreAntiforgeryToken]
+    public async Task<IActionResult> GetRepairTrash()
+    {
+        if (!IsAuthenticated()) return Json(new { success = false, message = "Not authenticated" });
+        if (!IsManager()) return Json(new { success = false, message = "Only managers can view Repair Trash" });
+        try
+        {
+            var repairs = await _repairApiService.GetDeletedAsync();
+            return Json(new
+            {
+                success = true,
+                data = repairs.Select(repair => new
+                {
+                    id = repair.Id,
+                    repairNumber = repair.RepairNumber,
+                    customerName = repair.CustomerName,
+                    device = string.Join(" ", new[] { repair.DeviceBrand, repair.DeviceModel }.Where(value => !string.IsNullOrWhiteSpace(value))),
+                    status = repair.Status,
+                    deletedDate = ToUserTime(repair.ModifiedDate ?? repair.CreatedDate).ToString("MMM dd, yyyy h:mm tt")
+                })
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading Repair Trash");
+            return Json(new { success = false, message = "Could not load Repair Trash" });
+        }
+    }
+
+    [HttpPost]
+    [IgnoreAntiforgeryToken]
+    public async Task<IActionResult> RestoreRepairJson(int id)
+    {
+        if (!IsAuthenticated()) return Json(new { success = false, message = "Not authenticated" });
+        if (!IsManager()) return Json(new { success = false, message = "Only managers can restore repairs" });
+        try
+        {
+            var restored = await _repairApiService.RestoreAsync(id);
+            return Json(new { success = restored, message = restored ? "Repair restored with its inventory parts" : "Repair could not be restored. Confirm the parts are still available." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error restoring repair {RepairId}", id);
+            return Json(new { success = false, message = "Repair could not be restored. Confirm the parts are still available." });
+        }
+    }
+
+    [HttpPost]
+    [IgnoreAntiforgeryToken]
+    public async Task<IActionResult> EmptyRepairTrashJson()
+    {
+        if (!IsAuthenticated()) return Json(new { success = false, message = "Not authenticated" });
+        if (!IsManager()) return Json(new { success = false, message = "Only managers can permanently delete repairs" });
+        try
+        {
+            var deleted = await _repairApiService.EmptyTrashAsync();
+            return Json(new { success = deleted, message = deleted ? "Repair Trash permanently emptied" : "Could not empty Repair Trash" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error emptying Repair Trash");
+            return Json(new { success = false, message = "Could not empty Repair Trash" });
         }
     }
 
@@ -592,31 +634,87 @@ public class RepairsController : BaseController
         return await GetLookupJsonAsync(LookupCategories.PaymentStatus, "payment statuses");
     }
 
+    [HttpPost]
+    [IgnoreAntiforgeryToken]
+    public async Task<IActionResult> UpdateStatusJson([FromBody] UpdateRepairStatusRequest request)
+    {
+        try
+        {
+            if (request.RepairId <= 0 || string.IsNullOrWhiteSpace(request.Status))
+                return Json(new { success = false, message = "Select a valid status" });
+
+            var status = request.Status.Trim().ToLowerInvariant().Replace(" ", string.Empty).Replace("-", string.Empty) switch
+            {
+                "inprogress" => "InProgress",
+                "waiting" or "waitingparts" or "waitingforparts" => "WaitingForParts",
+                "ready" or "readyforpickup" => "ReadyForPickup",
+                "pending" => "Pending",
+                "completed" => "Completed",
+                "cancelled" or "canceled" => "Cancelled",
+                "onhold" => "OnHold",
+                "unrepairable" => "Unrepairable",
+                "abandoned" => "Abandoned",
+                _ => request.Status.Trim()
+            };
+
+            // Send only the field being changed. Fetching the repair first caused the
+            // inline status control to report "Repair not found" even though the same
+            // repair was already present in the shop list. The API update is patch-like
+            // and preserves every omitted field.
+            var updated = await _repairApiService.UpdateAsync(request.RepairId, new UpdateRepairRequestDto
+            {
+                Status = status
+            });
+            return Json(new { success = updated != null, status, message = updated != null ? "Status updated" : "Status update failed" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating repair {RepairId} status", request.RepairId);
+            return Json(new { success = false, message = "Could not update status" });
+        }
+    }
+
+    [HttpPost]
+    [IgnoreAntiforgeryToken]
+    public async Task<IActionResult> UpdatePaymentStatusJson([FromBody] UpdateRepairPaymentStatusRequest request)
+    {
+        // Payment status is derived from the payment ledger. A label-only change
+        // would make reports and the POS balance incorrect.
+        await Task.CompletedTask;
+        return Json(new
+        {
+            success = false,
+            message = "Record a payment or refund. Payment status updates automatically."
+        });
+    }
+
     [HttpGet]
     public async Task<IActionResult> GetInventoryParts(int brandId = 0, int categoryId = 0, int modelId = 0)
     {
         try
         {
             var currentShopId = GetCurrentShopId();
-            var items = await _inventoryApiService.GetInventoryAsync(currentShopId);
+            // Ask the API for only the selected model. Previously this downloaded
+            // the shop's entire inventory and then filtered it in the browser tier.
+            var items = await _inventoryApiService.GetInventoryAsync(
+                currentShopId,
+                brandId > 0 ? brandId : null,
+                categoryId > 0 ? categoryId : null,
+                modelId > 0 ? modelId : null);
 
             if (items == null)
                 return Json(new { success = false, message = ValidationMessages.Repair.FailedToRetrieveInventoryParts });
 
-            var filtered = items.AsEnumerable();
-
-            if (brandId > 0)
-                filtered = filtered.Where(i => i.BrandId == brandId);
-            if (categoryId > 0)
-                filtered = filtered.Where(i => i.DeviceCategoryId == categoryId);
-            if (modelId > 0)
-                filtered = filtered.Where(i => i.DeviceModelId == modelId);
-
-            var data = filtered.Select(i => new
+            var data = items.Select(i => new
             {
                 id = i.Id,
                 name = i.Name,
                 costPrice = i.CostPrice,
+                fifoCost = i.FifoCost,
+                latestCost = i.LatestCost,
+                averageCost = i.AverageCost,
+                fifoBatchRemaining = i.FifoBatchRemaining,
+                fifoBatchReceivedDate = i.FifoBatchReceivedDate,
                 retailPrice = i.RetailPrice,
                 wholesalePrice = i.WholesalePrice,
                 price = i.WholesalePrice > 0 ? i.WholesalePrice : i.RetailPrice,
@@ -626,6 +724,8 @@ public class RepairsController : BaseController
                 category = i.DeviceCategoryName,
                 model = i.DeviceModelName,
                 sku = i.SKU,
+                variant = i.Variant,
+                color = i.Color,
                 description = i.Description,
                 notes = i.Notes
             }).ToList();
@@ -659,13 +759,14 @@ public class RepairsController : BaseController
             // Validate stock for each part before saving
             if (request.Parts != null && request.Parts.Any())
             {
-                var allItems = await _inventoryApiService.GetInventoryAsync(currentShopId);
+                var requestedIds = request.Parts.Select(part => part.InventoryItemId).Distinct().ToList();
+                var inventoryTasks = requestedIds.Select(id => _inventoryApiService.GetByIdAsync(id));
+                var requestedItems = (await Task.WhenAll(inventoryTasks)).Where(item => item != null).ToDictionary(item => item!.Id);
                 foreach (var part in request.Parts)
                 {
-                    var item = allItems?.FirstOrDefault(i => i.Id == part.InventoryItemId);
-                    if (item == null)
+                    if (!requestedItems.TryGetValue(part.InventoryItemId, out var item))
                         return Json(new { success = false, message = $"Part ID {part.InventoryItemId} not found in inventory." });
-                    if (part.Quantity > item.CurrentStock)
+                    if (part.Quantity > item.CurrentStock && !part.AllowBackorder)
                         return Json(new { success = false, message = $"Insufficient stock for '{item.Name}': requested {part.Quantity}, available {item.CurrentStock}." });
                 }
             }
@@ -680,14 +781,11 @@ public class RepairsController : BaseController
                 Description = request.Description ?? string.Empty,
                 Comments = request.Comments ?? string.Empty,
                 Cost = request.Cost > 0 ? request.Cost : 0m,
-                AmountPaid = request.AmountPaid >= 0 ? request.AmountPaid : 0m,
-                // Map the string from JS ("Unpaid", "Paid", "Partial") to the enum
-                PaymentStatus = (request.PaymentStatus ?? "Unpaid").ToLower() switch
-                {
-                    "paid"    => PaymentStatus.Paid,
-                    "partial" => PaymentStatus.Partial,
-                    _         => PaymentStatus.Unpaid
-                },
+                PartCost = request.PartCost > 0 ? request.PartCost : 0m,
+                // The ledger below is the single source of truth. The API will
+                // recalculate AmountPaid and PaymentStatus after each transaction.
+                AmountPaid = 0m,
+                PaymentStatus = PaymentStatus.Unpaid,
                 CompanyId = request.CompanyId > 0 ? request.CompanyId : (int?)null
             };
             var repair = await _repairApiService.CreateAsync(createRequest);
@@ -703,7 +801,8 @@ public class RepairsController : BaseController
                         InventoryItemId = p.InventoryItemId,
                         Quantity = p.Quantity > 0 ? p.Quantity : 1,
                         UnitPrice = p.UnitPrice,
-                        PartName = p.PartName
+                        PartName = p.PartName,
+                        AllowBackorder = p.AllowBackorder
                     }).ToList(),
                     ShopId = currentShopId,
                     UserId = GetCurrentUserId()
@@ -738,6 +837,57 @@ public class RepairsController : BaseController
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error saving repair via JSON endpoint");
+            return Json(new { success = false, message = ex.Message });
+        }
+    }
+
+    [HttpPost]
+    [IgnoreAntiforgeryToken]
+    public async Task<IActionResult> PrintDropOffSlip([FromBody] PrintDropOffSlipRequest request)
+    {
+        if (!IsAuthenticated())
+            return Json(new { success = false, message = "Not authenticated" });
+
+        try
+        {
+            var repair = await _repairApiService.GetByIdAsync(request.RepairId);
+            if (repair == null)
+                return Json(new { success = false, message = "Repair not found" });
+
+            var repairNumber = string.IsNullOrWhiteSpace(repair.RepairNumber)
+                ? repair.Id.ToString()
+                : repair.RepairNumber;
+            var received = ToUserTime(repair.CreatedDate);
+            var service = repair.RepairPartNames?.Where(name => !string.IsNullOrWhiteSpace(name)).ToList() ?? new List<string>();
+            var serviceText = service.Count > 0
+                ? string.Join(", ", service)
+                : (!string.IsNullOrWhiteSpace(repair.IssueDescription) ? repair.IssueDescription : repair.Description ?? "Repair");
+
+            var slip = new StringBuilder();
+            slip.AppendLine($"Repair #: {repairNumber}");
+            slip.AppendLine($"Customer: {repair.CustomerName}");
+            if (!string.IsNullOrWhiteSpace(repair.CustomerPhone)) slip.AppendLine($"Phone: {repair.CustomerPhone}");
+            slip.AppendLine($"Device: {string.Join(" ", new[] { repair.DeviceBrand, repair.DeviceModel }.Where(value => !string.IsNullOrWhiteSpace(value)))}");
+            slip.AppendLine($"Repair: {serviceText}");
+            slip.AppendLine($"Received: {received:MM/dd/yyyy h:mm tt}");
+            slip.AppendLine("------------------------------------------");
+            slip.AppendLine($"Paid: ${repair.AmountPaid:N2}");
+            slip.AppendLine($"Balance: ${repair.RemainingDues:N2}");
+            slip.AppendLine("------------------------------------------");
+            slip.AppendLine("PICKUP NOTICE:");
+            slip.AppendLine("Device must be picked up within 45 days.");
+            slip.AppendLine("After 45 days, an unclaimed device may be");
+            slip.AppendLine("sold, recycled, or otherwise used to");
+            slip.AppendLine("recover unpaid charges.");
+
+            var logoPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "empire-original-logo.png");
+            RawReceiptPrinter.PrintRepairDropOff(slip.ToString(), repairNumber, logoPath);
+            _logger.LogInformation("Printed drop-off slip for repair {RepairId}", repair.Id);
+            return Json(new { success = true, message = "Drop-off slip printed." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error printing drop-off slip for repair {RepairId}", request.RepairId);
             return Json(new { success = false, message = ex.Message });
         }
     }
@@ -788,6 +938,11 @@ public class RepairsController : BaseController
     }
 
     #endregion
+
+    public sealed class PrintDropOffSlipRequest
+    {
+        public int RepairId { get; set; }
+    }
 
     #region Private Helper Methods
 
@@ -989,6 +1144,25 @@ public class RepairsController : BaseController
 
     [HttpPost]
     [IgnoreAntiforgeryToken]
+    public async Task<IActionResult> AllocateWaitingPart([FromBody] AllocateWaitingPartWebRequest request)
+    {
+        if (!IsAuthenticated())
+            return Json(new { success = false, message = "Not authenticated" });
+        if (request == null || request.RepairPartId <= 0)
+            return Json(new { success = false, message = "Invalid waiting part" });
+
+        var success = await _repairApiService.AllocateWaitingPartAsync(request.RepairPartId);
+        return Json(new
+        {
+            success,
+            message = success
+                ? "Part was deducted from inventory and assigned to the repair."
+                : "The part could not be assigned. Refresh and confirm stock is still available."
+        });
+    }
+
+    [HttpPost]
+    [IgnoreAntiforgeryToken]
     public async Task<IActionResult> UpdateRepairPayment([FromBody] UpdateRepairPaymentWebRequest request)
     {
         try
@@ -1068,8 +1242,9 @@ public class RepairsController : BaseController
                 "in-progress"  => "InProgress",
                 "inprogress"   => "InProgress",
                 "pending"      => "Pending",
-                "waiting"      => "WaitingParts",
-                "waitingparts" => "WaitingParts",
+                "waiting"         => "WaitingForParts",
+                "waitingparts"    => "WaitingForParts",
+                "waitingforparts" => "WaitingForParts",
                 "ready"        => "ReadyForPickup",
                 "completed"    => "Completed",
                 "cancelled"    => "Cancelled",
@@ -1080,6 +1255,16 @@ public class RepairsController : BaseController
                 var s when !string.IsNullOrWhiteSpace(s) => s,
                 _ => null
             };
+
+            if (string.Equals(statusStr, "Completed", StringComparison.OrdinalIgnoreCase) &&
+                (request.Parts == null || request.Parts.Count == 0) && !request.NoInventoryPartUsed)
+            {
+                return Json(new
+                {
+                    success = false,
+                    message = "Select the inventory part used before completing this repair, or confirm that no inventory part was used."
+                });
+            }
 
             var updateRequest = new UpdateRepairRequestDto
             {
@@ -1108,7 +1293,8 @@ public class RepairsController : BaseController
                     InventoryItemId = p.InventoryItemId,
                     Quantity        = p.Quantity > 0 ? p.Quantity : 1,
                     UnitPrice       = p.UnitPrice,
-                    PartName        = p.PartName
+                    PartName        = p.PartName,
+                    AllowBackorder  = p.AllowBackorder
                 }).ToList(),
                 ShopId = currentShopId,
                 UserId = GetCurrentUserId()

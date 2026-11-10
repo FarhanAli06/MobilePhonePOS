@@ -13,11 +13,15 @@ public class CreateSaleRequest
     public string? PaymentStatus { get; set; } // Added for partial payment support
     public string? Notes { get; set; }
     public int CreatedByUserId { get; set; }
+    public string? ChangeReason { get; set; }
 }
 
 public class SaleItemRequest
 {
-    public string ItemType { get; set; } = string.Empty; // "Device", "Inventory", "Repair", "Custom"
+    // Older saved invoices did not include ItemType in the edit payload.  Keep
+    // this optional so those invoices can still be corrected; create/update
+    // services infer the type from the linked IDs when it is absent.
+    public string? ItemType { get; set; } // "Device", "Inventory", "Repair", "Custom"
     public int? ItemReferenceId { get; set; } // Id of Device, Inventory, or Repair
     public int? InventoryItemId { get; set; } // Added for Inventory
     public string ItemName { get; set; } = string.Empty; // Added for Custom/Repair/Device
@@ -30,6 +34,7 @@ public class SaleItemRequest
     public bool IsCustomItem { get; set; } // Added IsCustomItem
     public bool IsTaxable { get; set; } // Added IsTaxable
     public string? Note { get; set; } // Added Note
+    public string ItemStatus { get; set; } = "In Stock";
     public int? RepairId { get; set; } // Added RepairId for tracking repair items
 }
 
@@ -38,4 +43,5 @@ public class PaymentRequest
     public decimal Amount { get; set; }
     public string PaymentMethod { get; set; } = string.Empty;
     public string? TransactionId { get; set; }
+    public string Type { get; set; } = "Payment";
 }

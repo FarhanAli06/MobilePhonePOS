@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<DesktopLabel Version="1">
+  <DYMOLabel Version="4">
+    <Description>Empire Phone Repair device inventory label</Description>
+    <Orientation>Portrait</Orientation><LabelName>Small30334</LabelName><InitialLength>0</InitialLength><BorderStyle>SolidLine</BorderStyle>
+    <DYMORect><DYMOPoint><X>0</X><Y>0</Y></DYMOPoint><Size><Width>2.25</Width><Height>1.25</Height></Size></DYMORect>
+    <BorderColor><SolidColorBrush><Color A="1" R="0" G="0" B="0" /></SolidColorBrush></BorderColor><BorderThickness>1</BorderThickness><Show_Border>False</Show_Border><HasFixedLength>False</HasFixedLength><FixedLengthValue>0</FixedLengthValue>
+    <DynamicLayoutManager><RotationBehavior>ClearObjects</RotationBehavior><LabelObjects>
+      <ImageObject>
+        <Name>EmpireLogo</Name>
+        <Brushes><BackgroundBrush><SolidColorBrush><Color A="0" R="0" G="0" B="0" /></SolidColorBrush></BackgroundBrush><BorderBrush><SolidColorBrush><Color A="1" R="0" G="0" B="0" /></SolidColorBrush></BorderBrush><StrokeBrush><SolidColorBrush><Color A="1" R="0" G="0" B="0" /></SolidColorBrush></StrokeBrush><FillBrush><SolidColorBrush><Color A="0" R="0" G="0" B="0" /></SolidColorBrush></FillBrush></Brushes>
+        <Rotation>Rotation0</Rotation><OutlineThickness>0</OutlineThickness><IsOutlined>False</IsOutlined><BorderStyle>SolidLine</BorderStyle><Margin><DYMOThickness Left="0" Top="0" Right="0" Bottom="0" /></Margin>
+        <Data></Data><ScaleMode>Uniform</ScaleMode><HorizontalAlignment>Center</HorizontalAlignment><VerticalAlignment>Middle</VerticalAlignment>
+        <ObjectLayout><DYMOPoint><X>0.91</X><Y>0.01</Y></DYMOPoint><Size><Width>0.43</Width><Height>0.20</Height></Size></ObjectLayout>
+      </ImageObject>
+      <TextObject>
+        <Name>CustomerName</Name>
+        <Brushes><BackgroundBrush><SolidColorBrush><Color A="0" R="0" G="0" B="0" /></SolidColorBrush></BackgroundBrush><BorderBrush><SolidColorBrush><Color A="1" R="0" G="0" B="0" /></SolidColorBrush></BorderBrush><StrokeBrush><SolidColorBrush><Color A="1" R="0" G="0" B="0" /></SolidColorBrush></StrokeBrush><FillBrush><SolidColorBrush><Color A="0" R="0" G="0" B="0" /></SolidColorBrush></FillBrush></Brushes>
+        <Rotation>Rotation0</Rotation><OutlineThickness>0</OutlineThickness><IsOutlined>False</IsOutlined><BorderStyle>SolidLine</BorderStyle><Margin><DYMOThickness Left="0" Top="0" Right="0" Bottom="0" /></Margin>
+        <HorizontalAlignment>Center</HorizontalAlignment><VerticalAlignment>Middle</VerticalAlignment><FitMode>ShrinkToFit</FitMode><IsVertical>False</IsVertical>
+        <FormattedText><FitMode>ShrinkToFit</FitMode><HorizontalAlignment>Center</HorizontalAlignment><VerticalAlignment>Middle</VerticalAlignment><IsVertical>False</IsVertical><LineTextSpan><TextSpan><Text>iPhone 17 Pro Max</Text><FontInfo><FontName>Arial</FontName><FontSize>16</FontSize><IsBold>True</IsBold><IsItalic>False</IsItalic><IsUnderline>False</IsUnderline><FontBrush><SolidColorBrush><Color A="1" R="0" G="0" B="0" /></SolidColorBrush></FontBrush></FontInfo></TextSpan></LineTextSpan></FormattedText>
+        <ObjectLayout><DYMOPoint><X>0.06</X><Y>0.20</Y></DYMOPoint><Size><Width>2.13</Width><Height>0.24</Height></Size></ObjectLayout>
+      </TextObject>
+      <TextObject>
+        <Name>SellingPrice</Name>
+        <Brushes><BackgroundBrush><SolidColorBrush><Color A="0" R="0" G="0" B="0" /></SolidColorBrush></BackgroundBrush><BorderBrush><SolidColorBrush><Color A="1" R="0" G="0" B="0" /></SolidColorBrush></BorderBrush><StrokeBrush><SolidColorBrush><Color A="1" R="0" G="0" B="0" /></SolidColorBrush></StrokeBrush><FillBrush><SolidColorBrush><Color A="0" R="0" G="0" B="0" /></SolidColorBrush></FillBrush></Brushes>
+        <Rotation>Rotation0</Rotation><OutlineThickness>0</OutlineThickness><IsOutlined>False</IsOutlined><BorderStyle>SolidLine</BorderStyle><Margin><DYMOThickness Left="0" Top="0" Right="0" Bottom="0" /></Margin>
+        <HorizontalAlignment>Left</HorizontalAlignment><VerticalAlignment>Middle</VerticalAlignment><FitMode>ShrinkToFit</FitMode><IsVertical>False</IsVertical>
+        <FormattedText><FitMode>ShrinkToFit</FitMode><HorizontalAlignment>Left</HorizontalAlignment><VerticalAlignment>Middle</VerticalAlignment><IsVertical>False</IsVertical><LineTextSpan><TextSpan><Text>$1,299.00</Text><FontInfo><FontName>Arial</FontName><FontSize>16</FontSize><IsBold>True</IsBold><IsItalic>False</IsItalic><IsUnderline>False</IsUnderline><FontBrush><SolidColorBrush><Color A="1" R="0" G="0" B="0" /></SolidColorBrush></FontBrush></FontInfo></TextSpan></LineTextSpan></FormattedText>
+        <ObjectLayout><DYMOPoint><X>0.06</X><Y>0.45</Y></DYMOPoint><Size><Width>0.96</Width><Height>0.26</Height></Size></ObjectLayout>
+      </TextObject>
+      <TextObject>
+        <Name>RepairDetails</Name>
+        <Brushes><BackgroundBrush><SolidColorBrush><Color A="0" R="0" G="0" B="0" /></SolidColorBrush></BackgroundBrush><BorderBrush><SolidColorBrush><Color A="1" R="0" G="0" B="0" /></SolidColorBrush></BorderBrush><StrokeBrush><SolidColorBrush><Color A="1" R="0" G="0" B="0" /></SolidColorBrush></StrokeBrush><FillBrush><SolidColorBrush><Color A="0" R="0" G="0" B="0" /></SolidColorBrush></FillBrush></Brushes>
+        <Rotation>Rotation0</Rotation><OutlineThickness>0</OutlineThickness><IsOutlined>False</IsOutlined><BorderStyle>SolidLine</BorderStyle><Margin><DYMOThickness Left="0" Top="0" Right="0" Bottom="0" /></Margin>
+        <HorizontalAlignment>Left</HorizontalAlignment><VerticalAlignment>Middle</VerticalAlignment><FitMode>ShrinkToFit</FitMode><IsVertical>False</IsVertical>
+        <FormattedText><FitMode>ShrinkToFit</FitMode><HorizontalAlignment>Left</HorizontalAlignment><VerticalAlignment>Middle</VerticalAlignment><IsVertical>False</IsVertical><LineTextSpan><TextSpan><Text>64 GB | Battery 84%&#xA;T-Mobile | Unlocked</Text><FontInfo><FontName>Arial</FontName><FontSize>8</FontSize><IsBold>True</IsBold><IsItalic>False</IsItalic><IsUnderline>False</IsUnderline><FontBrush><SolidColorBrush><Color A="1" R="0" G="0" B="0" /></SolidColorBrush></FontBrush></FontInfo></TextSpan></LineTextSpan></FormattedText>
+        <ObjectLayout><DYMOPoint><X>1.05</X><Y>0.43</Y></DYMOPoint><Size><Width>1.14</Width><Height>0.43</Height></Size></ObjectLayout>
+      </TextObject>
+      <BarcodeObject>
+        <Name>RepairBarcode</Name>
+        <Brushes><BackgroundBrush><SolidColorBrush><Color A="1" R="1" G="1" B="1" /></SolidColorBrush></BackgroundBrush><BorderBrush><SolidColorBrush><Color A="1" R="0" G="0" B="0" /></SolidColorBrush></BorderBrush><StrokeBrush><SolidColorBrush><Color A="1" R="0" G="0" B="0" /></SolidColorBrush></StrokeBrush><FillBrush><SolidColorBrush><Color A="1" R="0" G="0" B="0" /></SolidColorBrush></FillBrush></Brushes>
+        <Rotation>Rotation0</Rotation><OutlineThickness>0</OutlineThickness><IsOutlined>False</IsOutlined><BorderStyle>SolidLine</BorderStyle><Margin><DYMOThickness Left="0" Top="0" Right="0" Bottom="0" /></Margin>
+        <BarcodeFormat>Code128Auto</BarcodeFormat><Data><DataString>353069100877891</DataString></Data><HorizontalAlignment>Center</HorizontalAlignment><VerticalAlignment>Middle</VerticalAlignment><Size>AutoFit</Size><TextPosition>Bottom</TextPosition>
+        <FontInfo><FontName>Arial</FontName><FontSize>6</FontSize><IsBold>False</IsBold><IsItalic>False</IsItalic><IsUnderline>False</IsUnderline><FontBrush><SolidColorBrush><Color A="1" R="0" G="0" B="0" /></SolidColorBrush></FontBrush></FontInfo>
+        <ObjectLayout><DYMOPoint><X>0.13</X><Y>0.91</Y></DYMOPoint><Size><Width>1.99</Width><Height>0.22</Height></Size></ObjectLayout>
+      </BarcodeObject>
+    </LabelObjects></DynamicLayoutManager>
+  </DYMOLabel>
+  <LabelApplication>Blank</LabelApplication><DataTable><Columns></Columns><Rows></Rows></DataTable>
+</DesktopLabel>

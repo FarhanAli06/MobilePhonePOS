@@ -16,6 +16,7 @@
         public bool IsCustomItem { get; set; } // Added IsCustomItem
         public bool IsTaxable { get; set; } // Added IsTaxable
         public string? Note { get; set; } // Added Note
+        public string ItemStatus { get; set; } = "In Stock";
         public int? RepairId { get; set; } // Added RepairId for tracking repair items
     }
 }

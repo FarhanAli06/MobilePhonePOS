@@ -10,6 +10,13 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
+                <ul class="nav nav-tabs invoice-modern-tabs mb-4" role="tablist">
+                    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#saleDetailsTabPane" type="button"><i class="fas fa-receipt me-2"></i>Sale details</button></li>
+                    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#saleReturnsTabPane" type="button" onclick="loadSaleReturns()"><i class="fas fa-undo me-2"></i>Returns & refunds <span class="badge bg-danger ms-1" id="saleReturnCount" style="display:none">0</span></button></li>
+                    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#saleHistoryTabPane" type="button" onclick="loadSaleHistory()"><i class="fas fa-history me-2"></i>Modification history</button></li>
+                </ul>
+                <div class="tab-content">
+                <div class="tab-pane fade show active" id="saleDetailsTabPane">
                 <!-- Invoice Info Section -->
                 <div class="row mb-3">
                     <div class="col-md-4">
@@ -122,6 +129,33 @@
                         </select>
                     </div>
                 </div>
+                <div class="mt-3">
+                    <label class="form-label fw-bold">Reason for this correction *</label>
+                    <input class="form-control" id="editChangeReason" maxlength="500" placeholder="Example: corrected payment method or item price">
+                    <small class="text-muted">The original values and this reason are permanently recorded.</small>
+                </div>
+
+                </div>
+                <div class="tab-pane fade" id="saleReturnsTabPane">
+                    <div class="refund-workspace">
+                        <div class="refund-section-heading"><div><h6 class="mb-1">Previously refunded items</h6><small class="text-muted">Every completed refund is listed by item.</small></div></div>
+                        <div id="processedReturnsList" class="mb-4"><div class="text-muted py-3">Open this tab to load refund history.</div></div>
+                        <div class="refund-new-card">
+                            <h6 class="mb-1">Create a new return</h6>
+                            <small class="text-muted">Select only the items the customer is returning.</small>
+                            <div id="returnItemsList" class="my-3"></div>
+                            <div class="row g-3">
+                                <div class="col-md-4"><label class="form-label">Refund method</label><select id="returnMethod" class="form-select"><option>Cash</option><option>Card</option><option>Zelle</option><option>Store Credit</option><option>Other</option></select></div>
+                                <div class="col-md-8"><label class="form-label">Reason *</label><input id="returnReason" class="form-control" placeholder="Required reason for the return"></div>
+                            </div>
+                            <button type="button" class="btn btn-danger mt-3" onclick="processInvoiceReturn()"><i class="fas fa-undo me-1"></i>Process selected return</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="saleHistoryTabPane">
+                    <div id="saleHistoryList" class="sale-history-panel">Open this tab to load history.</div>
+                </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -179,6 +213,8 @@
 let currentEditingSaleId = null;
 let editingItems = [];
 let editingCustomerId = null;
+let editingPaymentAmount = 0;
+let editingPaymentReference = '';
 
 // Initialize invoice edit modal
 function initInvoiceEditModal() {
@@ -246,6 +282,7 @@ function loadInvoiceForEdit(saleId) {
 // Populate edit modal with invoice data
 function populateEditModal(data, saleId) {
     currentEditingSaleId = saleId;
+    editingCustomerId = data.customer && data.customer.id ? data.customer.id : null;
     
     // Set invoice info
     $('#editInvoiceNumber').text(data.invoice.number);
@@ -255,33 +292,96 @@ function populateEditModal(data, saleId) {
     // Set customer
     if (data.customer && data.customer.name !== 'Walk-in Customer') {
         // Try to find customer ID from name (will need to enhance this)
-        $('#editCustomerSelect').val(editingCustomerId || '');
+        $('#editCustomerSelect').val(editingCustomerId || '').trigger('change');
     }
     
     // Populate items
     editingItems = data.items.map(item => ({
+        id: item.id,
         name: item.name,
         description: item.description || '',
         quantity: item.quantity,
         unitPrice: item.unitPrice,
         totalPrice: item.totalPrice,
         inventoryItemId: item.inventoryItemId || null,
+        repairId: item.repairId || null,
         costPrice: item.costPrice || 0, // This is now the UNIT cost price
-        isCustomItem: false
+        isCustomItem: !!item.isCustomItem,
+        itemType: item.itemType || (item.repairId ? 'Repair' : (item.inventoryItemId ? 'Inventory' : (item.isCustomItem ? 'Custom' : 'Device'))),
+        itemStatus: item.itemStatus || 'In Stock',
+        isTaxable: item.isTaxable !== false
     }));
     
     renderEditItems();
+    renderReturnItems();
     
     // Set tax
     $('#editTax').val(data.totals.tax || 0);
     
     // Set payment info
     $('#editPaymentStatus').val(data.payment.status || 'Paid');
+    $('#editChangeReason').val('');
     if (data.payment.methods && data.payment.methods.length > 0) {
         $('#editPaymentMethod').val(data.payment.methods[0].method || 'Cash');
     }
+    editingPaymentAmount = (data.payment.methods || []).reduce((sum, payment) =>
+        sum + (parseFloat(payment.amount) || 0), 0);
+    editingPaymentReference = data.payment.methods && data.payment.methods.length
+        ? (data.payment.methods[0].reference || '')
+        : '';
     
     recalculateEditTotals();
+}
+
+function renderReturnItems() {
+    const host = $('#returnItemsList').empty();
+    editingItems.forEach((item, index) => host.append(`
+      <div class="row g-2 align-items-center border rounded p-2 mb-2 return-line" data-index="${index}">
+       <div class="col-md-4"><label><input type="checkbox" class="return-check me-2">${$('<div>').text(item.name).html()}</label></div>
+       <div class="col-md-2"><input type="number" class="form-control return-qty" min="1" max="${item.quantity}" value="1" title="Quantity"></div>
+       <div class="col-md-2"><input type="number" class="form-control return-amount" min="0" step="0.01" value="${item.unitPrice.toFixed(2)}" title="Refund amount"></div>
+       <div class="col-md-4"><select class="form-select return-disposition"><option value="Restock">Return to stock</option><option value="Available">Device: available for sale</option><option value="NeedsInspection">Device: needs inspection</option><option value="NeedsRepair">Device: needs repair</option><option value="ForParts">Device: for parts</option><option value="DefectiveVendorReturn">Defective / vendor return</option></select></div>
+      </div>`));
+}
+
+function loadSaleReturns() {
+    if (!currentEditingSaleId) return;
+    $('#processedReturnsList').html('<div class="text-center py-4"><div class="spinner-border spinner-border-sm text-primary"></div><span class="ms-2 text-muted">Loading refunds...</span></div>');
+    $.get('@Url.Action("GetSaleReturns", "POS")', { saleId: currentEditingSaleId }, function(response) {
+        const returns = response && response.success ? (response.data || []) : [];
+        $('#saleReturnCount').text(returns.length).toggle(returns.length > 0);
+        if (!returns.length) {
+            $('#processedReturnsList').html('<div class="refund-empty"><i class="fas fa-check-circle"></i><div><strong>No refunds on this sale</strong><small>This sale has no completed returns.</small></div></div>');
+            return;
+        }
+        $('#processedReturnsList').html(returns.map(function(refund) {
+            const items = (refund.items || []).map(function(item) {
+                return `<div class="refund-history-item"><div><strong>${$('<div>').text(item.itemName || 'Item').html()}</strong><small>Qty ${item.quantity} · ${$('<div>').text(item.disposition || '').html()}</small></div><strong class="text-danger">−$${Number(item.refundAmount || 0).toFixed(2)}</strong></div>`;
+            }).join('');
+            return `<article class="refund-history-card"><div class="refund-history-head"><div><strong>${$('<div>').text(refund.returnNumber || 'Return').html()}</strong><small>${new Date(refund.processedAt).toLocaleString()} · ${$('<div>').text(refund.processedBy || 'System').html()}</small></div><div class="text-end"><strong class="text-danger">−$${Number(refund.refundAmount || 0).toFixed(2)}</strong><small>${$('<div>').text(refund.refundMethod || '').html()}</small></div></div>${items}<div class="refund-reason"><strong>Reason:</strong> ${$('<div>').text(refund.reason || '').html()}</div></article>`;
+        }).join(''));
+    }).fail(function() {
+        $('#processedReturnsList').html('<div class="alert alert-danger">Refund history could not be loaded.</div>');
+    });
+}
+
+function loadSaleHistory() {
+    if (!currentEditingSaleId) return;
+    $('#saleHistoryList').html('Loading...');
+    $.get('@Url.Action("GetSaleHistory", "POS")', { saleId: currentEditingSaleId }, function(r) {
+        if (!r.success || !r.data.length) { $('#saleHistoryList').html('<span class="text-muted">No history yet.</span>'); return; }
+        $('#saleHistoryList').html(r.data.map(x => `<div class="border-start border-primary ps-3 mb-3"><strong>${x.action}</strong> — ${$('<div>').text(x.description || '').html()}<div class="small text-muted">${new Date(x.performedAt).toLocaleString()} · ${x.performedBy || 'System'}</div></div>`).join(''));
+    });
+}
+
+function processInvoiceReturn() {
+    const reason = $('#returnReason').val().trim();
+    const items = [];
+    $('.return-line').each(function(){ if ($(this).find('.return-check').is(':checked')) { const i = editingItems[$(this).data('index')]; items.push({ SaleItemId:i.id, Quantity:parseInt($(this).find('.return-qty').val())||0, RefundAmount:parseFloat($(this).find('.return-amount').val())||0, Disposition:$(this).find('.return-disposition').val() }); }});
+    if (!items.length) return alert('Select at least one item to return.');
+    if (!reason) return alert('Enter the return reason.');
+    if (!confirm('Process this return and record the refund?')) return;
+    $.ajax({ url:'@Url.Action("ProcessReturn", "POS")?saleId=' + currentEditingSaleId, type:'POST', contentType:'application/json', data:JSON.stringify({ RefundMethod:$('#returnMethod').val(), Reason:reason, Items:items }), success:function(r){ if(r.success){ alert(`Return ${r.data.returnNumber} recorded. Refund: $${Number(r.data.refundAmount).toFixed(2)}`); $('#returnReason').val(''); renderReturnItems(); loadSaleReturns(); loadSaleHistory(); } else alert(r.message || 'Return failed'); }, error:function(xhr){ alert(xhr.responseJSON?.message || 'Return failed'); } });
 }
 
 // Render items in edit table
@@ -464,8 +564,12 @@ function addNewItemToInvoice() {
         unitPrice: unitPrice,
         totalPrice: quantity * unitPrice,
         inventoryItemId: null,
+        repairId: null,
         costPrice: 0,
-        isCustomItem: true
+        isCustomItem: true,
+        itemType: 'Custom',
+        itemStatus: 'In Stock',
+        isTaxable: true
     });
     
     renderEditItems();
@@ -489,6 +593,8 @@ function saveInvoiceChanges() {
     const tax = parseFloat($('#editTax').val()) || 0;
     const paymentStatus = $('#editPaymentStatus').val();
     const paymentMethod = $('#editPaymentMethod').val();
+    const changeReason = $('#editChangeReason').val().trim();
+    if (!changeReason) { alert('Please enter a reason for this correction.'); return; }
     
     const updateData = {
         SaleId: currentEditingSaleId,
@@ -501,14 +607,20 @@ function saveInvoiceChanges() {
             DiscountAmount: 0,
             CostPrice: item.costPrice,
             InventoryItemId: item.inventoryItemId,
-            IsCustomItem: item.isCustomItem
+            RepairId: item.repairId,
+            IsCustomItem: item.isCustomItem,
+            ItemType: item.itemType,
+            ItemStatus: item.itemStatus,
+            IsTaxable: item.isTaxable
         })),
         TaxAmount: tax,
         PaymentStatus: paymentStatus,
+        ChangeReason: changeReason,
         Payments: [{
-            Amount: parseFloat($('#editTotal').text().replace('$', '')),
+            Amount: editingPaymentAmount,
             PaymentMethod: paymentMethod,
-            TransactionId: ''
+            TransactionId: editingPaymentReference,
+            ReferenceNumber: editingPaymentReference
         }]
     };
     
@@ -570,4 +682,21 @@ $(document).ready(function() {
 .modal-xl {
     max-width: 1200px;
 }
+.invoice-modern-tabs { gap:6px; border-bottom:1px solid #e2e8f0; }
+.invoice-modern-tabs .nav-link { color:#64748b; border:0; border-bottom:3px solid transparent; padding:12px 16px; font-weight:700; }
+.invoice-modern-tabs .nav-link:hover { color:#2563eb; background:#f8fafc; }
+.invoice-modern-tabs .nav-link.active { color:#2563eb; border-bottom-color:#2563eb; background:#eff6ff; }
+.refund-workspace { max-width:1000px; margin:0 auto; }
+.refund-section-heading { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.refund-new-card,.refund-history-card { border:1px solid #e2e8f0; border-radius:14px; background:#fff; padding:16px; }
+.refund-new-card { background:#f8fafc; }
+.refund-history-card { margin-bottom:12px; box-shadow:0 3px 12px rgba(15,23,42,.04); }
+.refund-history-head,.refund-history-item { display:flex; justify-content:space-between; gap:16px; align-items:center; }
+.refund-history-head { padding-bottom:11px; border-bottom:1px solid #e2e8f0; }
+.refund-history-head small,.refund-history-item small { display:block; color:#64748b; }
+.refund-history-item { padding:11px 2px; border-bottom:1px solid #f0f2f5; }
+.refund-reason { margin-top:10px; padding:9px 11px; border-radius:9px; background:#fff7ed; color:#7c2d12; }
+.refund-empty { display:flex; align-items:center; gap:12px; color:#067647; background:#ecfdf3; border:1px solid #abefc6; border-radius:12px; padding:15px; }
+.refund-empty i { font-size:22px; }.refund-empty small { display:block; color:#477565; }
+.sale-history-panel { border:1px solid #e2e8f0; border-radius:14px; padding:18px; min-height:160px; }
 </style>

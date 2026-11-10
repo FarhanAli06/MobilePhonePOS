@@ -13,5 +13,8 @@
         public string? ItemType { get; set; }
         public int? ItemReferenceId { get; set; }
         public decimal? TotalPrice { get; set; }
+        public int? RepairId { get; set; }
+        public string? ItemStatus { get; set; }
+        public bool IsTaxable { get; set; } = true;
     }
 }

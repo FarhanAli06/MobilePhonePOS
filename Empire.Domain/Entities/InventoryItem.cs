@@ -35,6 +35,12 @@ public class InventoryItem : BaseEntity
     
     [MaxLength(50)]
     public string SKU { get; set; } = string.Empty;
+
+    [MaxLength(50)]
+    public string Variant { get; set; } = string.Empty;
+
+    [MaxLength(50)]
+    public string Color { get; set; } = string.Empty;
     
     public int CurrentStock { get; set; } = 0;
     
@@ -66,6 +72,7 @@ public class InventoryItem : BaseEntity
     public virtual ICollection<StockMovement> StockMovements { get; set; } = new List<StockMovement>();
     public virtual ICollection<SaleItem> SaleItems { get; set; } = new List<SaleItem>();
     public virtual ICollection<InventoryTransaction> InventoryTransactions { get; set; } = new List<InventoryTransaction>();
+    public virtual ICollection<InventoryBatch> InventoryBatches { get; set; } = new List<InventoryBatch>();
     
     /// <summary>
     /// Minimum stock level for low stock alerts
@@ -77,4 +84,3 @@ public class InventoryItem : BaseEntity
     /// </summary>
     public int ReorderQuantity { get; set; } = 10;
 }
-

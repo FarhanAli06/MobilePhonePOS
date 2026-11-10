@@ -40,8 +40,14 @@ public class EmpireDbContext : DbContext
     public DbSet<Sale> Sales { get; set; }
     public DbSet<SaleItem> SaleItems { get; set; }
     public DbSet<Payment> Payments { get; set; }
+    public DbSet<SaleActivity> SaleActivities { get; set; }
+    public DbSet<DeviceActivity> DeviceActivities { get; set; }
+    public DbSet<SaleReturn> SaleReturns { get; set; }
+    public DbSet<SaleReturnItem> SaleReturnItems { get; set; }
     public DbSet<RepairPart> RepairParts { get; set; }
     public DbSet<InventoryTransaction> InventoryTransactions { get; set; }
+    public DbSet<InventoryBatch> InventoryBatches { get; set; }
+    public DbSet<RepairPartBatchAllocation> RepairPartBatchAllocations { get; set; }
 
     // ── Repair Activity / Audit Log ───────────────────────────────────────────
     public DbSet<RepairActivity> RepairActivities { get; set; }
@@ -75,7 +81,6 @@ public class EmpireDbContext : DbContext
             entity.HasMany(s => s.Items).WithOne(it => it.Shop).HasForeignKey(it => it.ShopId).OnDelete(DeleteBehavior.Restrict);
             // NOTE: LookupValues are NOT FK-linked to Shops because ShopId = 0 means "global".
             // The ShopId column is a plain filter column, not a FK constraint.
-            entity.HasMany(s => s.UserPagePermissions).WithOne().HasForeignKey(up => up.ShopId).OnDelete(DeleteBehavior.Restrict);
             entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
             entity.Property(e => e.Address).HasMaxLength(200);
             entity.Property(e => e.City).HasMaxLength(50);
@@ -135,6 +140,7 @@ public class EmpireDbContext : DbContext
         {
              entity.HasOne(e => e.Company).WithMany(c => c.Repairs).HasForeignKey(e => e.CompanyId).OnDelete(DeleteBehavior.SetNull);
              entity.HasMany(e => e.RepairParts).WithOne(rp => rp.Repair).HasForeignKey(rp => rp.RepairId).OnDelete(DeleteBehavior.Cascade);
+             entity.Property(e => e.PartCost).HasPrecision(18, 2).HasDefaultValue(0m);
              entity.Property(e => e.AmountPaid).HasPrecision(18, 2).HasDefaultValue(0m);
              entity.HasOne(e => e.CreatedByUser).WithMany().HasForeignKey(e => e.CreatedBy).OnDelete(DeleteBehavior.Restrict);
              entity.HasOne(e => e.ModifiedByUser).WithMany().HasForeignKey(e => e.ModifiedBy).OnDelete(DeleteBehavior.Restrict);
@@ -177,28 +183,52 @@ public class EmpireDbContext : DbContext
             entity.HasOne(e => e.InventoryItem).WithMany().HasForeignKey(e => e.InventoryItemId).OnDelete(DeleteBehavior.Restrict);
             entity.Property(e => e.Quantity).IsRequired();
             entity.Property(e => e.UnitPrice).HasPrecision(18, 2);
+            entity.Property(e => e.ActualUnitCost).HasPrecision(18, 2);
+            entity.Property(e => e.IsAllocatedFromStock).HasDefaultValue(true);
             entity.Ignore(e => e.TotalPrice); // Computed property, not stored in database
+        });
+
+        modelBuilder.Entity<InventoryBatch>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasOne(e => e.InventoryItem).WithMany(i => i.InventoryBatches).HasForeignKey(e => e.InventoryItemId).OnDelete(DeleteBehavior.Restrict);
+            entity.Property(e => e.UnitCost).HasPrecision(18, 2);
+            entity.HasIndex(e => new { e.InventoryItemId, e.ReceivedDate, e.Id });
+        });
+
+        modelBuilder.Entity<RepairPartBatchAllocation>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasOne(e => e.RepairPart).WithMany(r => r.BatchAllocations).HasForeignKey(e => e.RepairPartId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.InventoryBatch).WithMany(b => b.RepairAllocations).HasForeignKey(e => e.InventoryBatchId).OnDelete(DeleteBehavior.Restrict);
+            entity.Property(e => e.UnitCost).HasPrecision(18, 2);
+            entity.HasIndex(e => e.RepairPartId);
+            entity.HasIndex(e => e.InventoryBatchId);
         });
 
         // ── Device ────────────────────────────────────────────────────────────
         modelBuilder.Entity<Device>(entity =>
         {
             entity.HasOne(e => e.Shop).WithMany(s => s.Devices).HasForeignKey(e => e.ShopId).OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.Brand).WithMany().HasForeignKey(e => e.BrandId).OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.DeviceCategory).WithMany().HasForeignKey(e => e.DeviceCategoryId).OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.DeviceModel).WithMany().HasForeignKey(e => e.DeviceModelId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Brand).WithMany(b => b.Devices).HasForeignKey(e => e.BrandId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.DeviceCategory).WithMany(c => c.Devices).HasForeignKey(e => e.DeviceCategoryId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.DeviceModel).WithMany(m => m.Devices).HasForeignKey(e => e.DeviceModelId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(e => e.Company).WithMany(c => c.Devices).HasForeignKey(e => e.CompanyId).OnDelete(DeleteBehavior.SetNull);
             entity.HasOne(e => e.SoldToCustomer).WithMany(c => c.Devices).HasForeignKey(e => e.SoldToCustomerId).OnDelete(DeleteBehavior.SetNull);
+            entity.Property(e => e.BuyingPrice).HasPrecision(18, 2);
+            entity.Property(e => e.SellingPrice).HasPrecision(18, 2);
         });
 
         // ── InventoryItem ─────────────────────────────────────────────────────
         modelBuilder.Entity<InventoryItem>(entity =>
         {
+            entity.Property(e => e.Variant).HasMaxLength(50);
+            entity.Property(e => e.Color).HasMaxLength(50);
             entity.HasOne(e => e.Shop).WithMany().HasForeignKey(e => e.ShopId).OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.Brand).WithMany().HasForeignKey(e => e.BrandId).OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.DeviceCategory).WithMany().HasForeignKey(e => e.DeviceCategoryId).OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.DeviceModel).WithMany().HasForeignKey(e => e.DeviceModelId).OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.InventoryCategory).WithMany().HasForeignKey(e => e.InventoryCategoryId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Brand).WithMany(b => b.InventoryItems).HasForeignKey(e => e.BrandId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.DeviceCategory).WithMany(c => c.InventoryItems).HasForeignKey(e => e.DeviceCategoryId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.DeviceModel).WithMany(m => m.InventoryItems).HasForeignKey(e => e.DeviceModelId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.InventoryCategory).WithMany(c => c.InventoryItems).HasForeignKey(e => e.InventoryCategoryId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(e => e.Category).WithMany(c => c.InventoryItems).HasForeignKey(e => e.CategoryId).OnDelete(DeleteBehavior.SetNull);
         });
 
@@ -206,6 +236,30 @@ public class EmpireDbContext : DbContext
         modelBuilder.Entity<Payment>(entity =>
         {
             entity.HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Restrict);
+            entity.Property(e => e.Type).HasMaxLength(20).HasDefaultValue("Payment");
+        });
+
+        modelBuilder.Entity<SaleActivity>(entity =>
+        {
+            entity.HasOne(e => e.Sale).WithMany().HasForeignKey(e => e.SaleId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.PerformedByUser).WithMany().HasForeignKey(e => e.PerformedByUserId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(e => new { e.SaleId, e.PerformedAt });
+        });
+        modelBuilder.Entity<DeviceActivity>(entity =>
+        {
+            entity.HasOne(e => e.Device).WithMany().HasForeignKey(e => e.DeviceId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(e => e.PerformedByUser).WithMany().HasForeignKey(e => e.PerformedByUserId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasIndex(e => new { e.DeviceId, e.PerformedAt });
+        });
+        modelBuilder.Entity<SaleReturn>(entity =>
+        {
+            entity.HasOne(e => e.Sale).WithMany().HasForeignKey(e => e.SaleId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.ProcessedByUser).WithMany().HasForeignKey(e => e.ProcessedByUserId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasMany(e => e.Items).WithOne(e => e.SaleReturn).HasForeignKey(e => e.SaleReturnId).OnDelete(DeleteBehavior.Cascade);
+        });
+        modelBuilder.Entity<SaleReturnItem>(entity =>
+        {
+            entity.HasOne(e => e.SaleItem).WithMany().HasForeignKey(e => e.SaleItemId).OnDelete(DeleteBehavior.Restrict);
         });
         
         // ── StockMovement ─────────────────────────────────────────────────────
@@ -344,7 +398,7 @@ public class EmpireDbContext : DbContext
                   .HasForeignKey(e => e.PageId)
                   .OnDelete(DeleteBehavior.Cascade);
             entity.HasOne(e => e.Shop)
-                  .WithMany()
+                  .WithMany(e => e.UserPagePermissions)
                   .HasForeignKey(e => e.ShopId)
                   .OnDelete(DeleteBehavior.Restrict)
                   .IsRequired(false);

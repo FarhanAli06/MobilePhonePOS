@@ -14,6 +14,7 @@ public class UpdateRepairRequestDto
     public string? Description { get; set; }
     public string? Comments { get; set; }
     public decimal? Cost { get; set; }
+    public decimal? PartCost { get; set; }
     public decimal? AmountPaid { get; set; }
     public string? Status { get; set; }
     public string? PaymentStatus { get; set; }

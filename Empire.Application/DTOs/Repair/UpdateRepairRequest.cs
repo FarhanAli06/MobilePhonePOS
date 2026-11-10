@@ -22,6 +22,8 @@ public class UpdateRepairRequest
     
     public decimal? Cost { get; set; }
 
+    public decimal? PartCost { get; set; }
+
     public decimal? AmountPaid { get; set; }
 }
 

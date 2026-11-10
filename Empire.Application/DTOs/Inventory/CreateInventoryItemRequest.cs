@@ -33,6 +33,12 @@ public class CreateInventoryItemRequest
     [MaxLength(50)]
     public string? SKU { get; set; }
 
+    [MaxLength(50)]
+    public string? Variant { get; set; }
+
+    [MaxLength(50)]
+    public string? Color { get; set; }
+
     public int CurrentStock { get; set; } = 0;
 
     public int ReorderPoint { get; set; } = 5;

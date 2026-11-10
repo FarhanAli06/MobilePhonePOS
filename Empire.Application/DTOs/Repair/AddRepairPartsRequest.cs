@@ -37,4 +37,10 @@ public class RepairPartLineRequest
     public decimal UnitPrice { get; set; }
 
     public string? Notes { get; set; }
+
+    /// <summary>
+    /// Save this part as required when stock is unavailable instead of rejecting the repair.
+    /// Inventory is not deducted until the part is explicitly allocated.
+    /// </summary>
+    public bool AllowBackorder { get; set; }
 }

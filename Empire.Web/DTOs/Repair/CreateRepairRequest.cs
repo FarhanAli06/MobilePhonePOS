@@ -33,6 +33,7 @@ public class CreateRepairRequest
     public string? Description { get; set; }
     public string? Comments { get; set; }
     public decimal Cost { get; set; }
+    public decimal PartCost { get; set; } = 0m;
 
     /// <summary>
     /// Typed as enum so BaseApiService serialises it as "unpaid"/"paid" (camelCase string)

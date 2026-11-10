@@ -9,6 +9,7 @@
         public decimal UnitPrice { get; set; }
         public decimal TotalPrice { get; set; }
         public decimal CostPrice { get; set; }
+        public string ItemStatus { get; set; } = "In Stock";
         public int? InventoryItemId { get; set; }
         public bool IsCustomItem { get; set; }
         public int? RepairId { get; set; }

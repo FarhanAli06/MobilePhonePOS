@@ -30,12 +30,7 @@ public class HttpClientService : IHttpClientService
         _logger = logger;
         _httpContextAccessor = httpContextAccessor;
 
-        var apiBaseUrl = configuration["ApiSettings:BaseUrl"]
-            ?? throw new InvalidOperationException(
-                "ApiSettings:BaseUrl is not configured. Add it to appsettings.json: " +
-                "\"ApiSettings\": { \"BaseUrl\": \"http://your-api-host\" }");
-        // HttpClient BaseAddress must end with a trailing slash
-        if (!apiBaseUrl.EndsWith("/", StringComparison.Ordinal)) apiBaseUrl += "/";
+        var apiBaseUrl = configuration["ApiSettings:BaseUrl"] ?? "https://localhost:5002";
         _httpClient.BaseAddress = new Uri(apiBaseUrl);
         _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
@@ -229,6 +224,13 @@ public class HttpClientService : IHttpClientService
         var json = JsonSerializer.Serialize(data, _jsonOptions);
         var content = new StringContent(json, Encoding.UTF8, "application/json");
         return await _httpClient.PostAsync(endpoint, content);
+    }
+
+    public async Task<HttpResponseMessage> PutRawAsync<TRequest>(string endpoint, TRequest data)
+    {
+        SetAuthHeader();
+        var json = JsonSerializer.Serialize(data, _jsonOptions);
+        return await _httpClient.PutAsync(endpoint, new StringContent(json, Encoding.UTF8, "application/json"));
     }
 }
 

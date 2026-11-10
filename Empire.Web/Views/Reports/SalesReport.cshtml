@@ -307,8 +307,6 @@
                             <th>Total</th>
                             <th>Status</th>
                             <th>Payment Method</th>
-                            <th>Paid</th>
-                            <th>Balance</th>
                             <th>Cashier</th>
                             <th>Actions</th>
                         </tr>
@@ -711,18 +709,6 @@
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script>
-        // ── Utility helpers ──────────────────────────────────────────────────────
-        function formatCurrency(value) {
-            var n = parseFloat(value) || 0;
-            return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-        }
-        function formatDate(dateStr) {
-            if (!dateStr) return 'N/A';
-            var d = new Date(dateStr);
-            return isNaN(d.getTime()) ? dateStr : d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
-        }
-        // ────────────────────────────────────────────────────────────────────────
-
         let salesData = null;
         let charts = {};
 
@@ -1007,7 +993,15 @@
                 return;
             }
 
+            sales = sales.slice().sort((a, b) => {
+                const aTime = a.date ? new Date(a.date).getTime() : 0;
+                const bTime = b.date ? new Date(b.date).getTime() : 0;
+                return bTime - aTime;
+            });
+
             sales.forEach(sale => {
+                const saleDate = sale.date ? new Date(sale.date) : null;
+                const saleTimestamp = saleDate && !Number.isNaN(saleDate.getTime()) ? saleDate.getTime() : 0;
                 const statusBadge = 
                     sale.paymentStatus === 'Paid' ? 'success' :
                     sale.paymentStatus === 'Partial' ? 'warning' : 'danger';
@@ -1015,7 +1009,7 @@
                 const row = `
                     <tr>
                         <td>${sale.invoiceNumber}</td>
-                        <td>${sale.date ? new Date(sale.date).toLocaleDateString() : ''}</td>
+                        <td data-order="${saleTimestamp}">${saleDate && saleTimestamp ? saleDate.toLocaleDateString() : ''}</td>
                         <td>${sale.customer || ''}</td>
                         <td>${sale.items}</td>
                         <td>$${(sale.subtotal||0).toFixed(2)}</td>
@@ -1024,8 +1018,6 @@
                         <td><strong>$${(sale.total||0).toFixed(2)}</strong></td>
                         <td><span class="badge bg-${statusBadge}">${sale.paymentStatus}</span></td>
                         <td>${sale.paymentMethods || sale.paymentMethod || ''}</td>
-                        <td>${formatCurrency(sale.totalPaid || 0)}</td>
-                        <td class="${(sale.balance||0)>0?'text-danger fw-bold':''}">${ formatCurrency(sale.balance || 0)}</td>
                         <td>${sale.cashier || ''}</td>
                         <td>
                             <button class="btn btn-sm btn-success me-1" onclick="loadInvoiceForEdit(${sale.id})" title="Edit Invoice">
@@ -1106,65 +1098,58 @@
                 alert('Invalid sale ID');
                 return;
             }
-
-            // Use GetSaleDetail which returns full shop, customer, items, and payments
+            
+            // Fetch invoice data from server
             $.ajax({
-                url: '@Url.Action("GetSaleDetail", "Reports")' + '?id=' + saleId,
+                url: '@Url.Action("GetInvoiceData", "POS")',
                 type: 'GET',
+                data: { saleId: saleId },
                 success: function(response) {
-                    if (response.success && response.data) {
-                        const d = response.data;
-                        const shop     = d.shop     || {};
-                        const customer = d.customer || {};
-                        const items    = d.items    || [];
-                        const payments = d.payments || [];
-
+                    if (response.success) {
+                        // Transform data to match the printInvoice function format
+                        // Note: GetInvoiceData returns data at root level, not nested under 'data'
+                        const invoice = response.invoice || {};
+                        const customer = response.customer || {};
+                        const shop = response.shop || {};
+                        const items = response.items || [];
+                        const payment = response.payment || {};
+                        const totals = response.totals || {};
+                        
                         const invoiceData = {
-                            companyName:     shop.name    || '',
-                            shopName:        shop.name    || '',
-                            shopEmail:       shop.email   || '',
-                            shopPhone:       shop.phone   || '',
-                            shopAddress:     [shop.address, shop.city, shop.state, shop.zip].filter(Boolean).join(', '),
-                            shopCity:        shop.city    || '',
-                            shopState:       shop.state   || '',
-                            shopZip:         shop.zip     || '',
-                            shopLogo:        shop.logo    || '',
-                            website:         '',
-
-                            customerName:    customer.name    || 'Walk-in Customer',
-                            customerEmail:   customer.email   || '',
-                            customerPhone:   customer.phone   || '',
+                            companyName: shop.name || '',
+                            customerName: customer.name || 'Walk-in Customer',
+                            customerEmail: customer.email || '',
                             customerAddress: customer.address || '',
-
-                            invoiceNumber:   d.invoiceNumber || '',
-                            invoiceDate:     d.saleDate ? new Date(d.saleDate).toLocaleDateString() : '',
-
-                            items: items.map(function(i) {
-                                return {
-                                    name:        i.name        || '',
-                                    description: i.description || '',
-                                    quantity:    i.qty         || 1,
-                                    price:       parseFloat(i.unitPrice || 0),
-                                    total:       parseFloat(i.total     || 0)
-                                };
-                            }),
-
-                            subtotal:    parseFloat(d.subtotal  || 0),
-                            tax:         parseFloat(d.tax       || 0),
-                            discount:    parseFloat(d.discount  || 0),
-                            totalAmount: parseFloat(d.total     || 0),
-
-                            paymentMethods: payments.map(function(p) {
-                                return { method: p.method || 'Cash', amount: parseFloat(p.amount || 0) };
-                            }),
-
-                            notes: ''
+                            customerPhone: customer.phone || '',
+                            invoiceDate: invoice.date ? new Date(invoice.date).toLocaleDateString() : '',
+                            invoiceNumber: invoice.number || '',
+                            shopName: shop.name || '',
+                            shopEmail: shop.email || '',
+                            shopAddress: shop.address || '',
+                            shopLogo: shop.logoPath || shop.logo || '',
+                            items: items.map(item => ({
+                                name: item.name || item.itemName || '',
+                                description: item.description || '',
+                                imei: item.imei || '',
+                                serialNumber: item.serialNumber || '',
+                                quantity: item.quantity || 1,
+                                price: parseFloat(item.price || item.unitPrice || 0),
+                                total: parseFloat(item.total || item.totalPrice || 0)
+                            })),
+                            subtotal: parseFloat(totals.subtotal || 0),
+                            tax: parseFloat(totals.tax || 0),
+                            discount: parseFloat(totals.discount || 0),
+                            totalAmount: parseFloat(totals.total || totals.totalAmount || 0),
+                            paymentMethods: payment.methods || [],
+                            notes: invoice.notes || '',
+                            website: shop.website || ''
                         };
-
+                        
+                        // Use the global printInvoice function from the partial
                         if (typeof window.printInvoice === 'function') {
                             window.printInvoice(invoiceData);
                         } else {
-                            console.error('printInvoice function not found.');
+                            console.error('printInvoice function not found. Make sure _InvoicePrintTemplate partial is loaded.');
                             alert('Print function not available. Please refresh the page and try again.');
                         }
                     } else {
@@ -1445,107 +1430,6 @@
                 }
             });
         }
-
-        // ── Sale Detail Modal ─────────────────────────────────────────────────
-        let currentSaleId = 0;
-
-        function loadInvoiceForEdit(saleId) {
-            currentSaleId = saleId;
-            $('#saleDetailModal').modal('show');
-            loadSaleDetail(saleId);
-        }
-
-        function loadSaleDetail(saleId) {
-            $.get('/Reports/GetSaleDetail', { id: saleId }, function(res) {
-                if (!res.success) { alert('Error loading sale: ' + (res.message || 'Unknown error')); return; }
-                const d = res.data;
-                $('#sdInvoiceNumber').text(d.invoiceNumber || '—');
-                $('#sdCustomer').text(d.customer || 'Walk-in');
-                $('#sdTotal').text(formatCurrency(d.total));
-                $('#sdTotalPaid').text(formatCurrency(d.totalPaid));
-                $('#sdBalance').text(formatCurrency(d.balance));
-                $('#sdPaymentStatus').text(d.paymentStatus || '—')
-                    .removeClass('bg-success bg-warning bg-danger bg-secondary')
-                    .addClass(d.paymentStatus === 'Paid' ? 'bg-success' :
-                              d.paymentStatus === 'Partial' ? 'bg-warning text-dark' : 'bg-danger');
-                let itemsHtml = '';
-                (d.items || []).forEach(i => {
-                    itemsHtml += `<tr><td>${i.name}</td><td>${i.qty}</td><td>${formatCurrency(i.unitPrice)}</td><td>${formatCurrency(i.total)}</td></tr>`;
-                });
-                $('#sdItemsBody').html(itemsHtml || '<tr><td colspan="4" class="text-center text-muted">No items</td></tr>');
-                renderSalePayments(d.payments || []);
-            });
-        }
-
-        function renderSalePayments(payments) {
-            let html = '';
-            payments.forEach(p => {
-                html += `<tr>
-                    <td>${p.method}</td>
-                    <td>${formatCurrency(p.amount)}</td>
-                    <td><small class="text-muted">${p.transactionId || '—'}</small></td>
-                    <td>
-                        <button class="btn btn-xs btn-outline-primary me-1" onclick="openEditPaymentForm(${p.id},'${p.method}',${p.amount},'${p.transactionId||''}')"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-xs btn-outline-danger" onclick="deleteSalePayment(${p.id})"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>`;
-            });
-            $('#sdPaymentsBody').html(html || '<tr><td colspan="4" class="text-center text-muted">No payments yet</td></tr>');
-        }
-
-        function openAddPaymentForm() {
-            $('#editPaymentId').val(0);
-            $('#paymentFormTitle').text('Add Payment');
-            $('#newPaymentMethod').val('Cash');
-            $('#newPaymentAmount').val('');
-            $('#newPaymentRef').val('');
-            $('#addPaymentForm').show();
-        }
-
-        function openEditPaymentForm(id, method, amount, ref) {
-            $('#editPaymentId').val(id);
-            $('#paymentFormTitle').text('Edit Payment');
-            $('#newPaymentMethod').val(method);
-            $('#newPaymentAmount').val(amount);
-            $('#newPaymentRef').val(ref);
-            $('#addPaymentForm').show();
-        }
-
-        function cancelPaymentForm() { $('#addPaymentForm').hide(); }
-
-        function savePaymentForm() {
-            const paymentId = parseInt($('#editPaymentId').val());
-            const method    = $('#newPaymentMethod').val();
-            const amount    = parseFloat($('#newPaymentAmount').val());
-            const ref       = $('#newPaymentRef').val();
-            if (!amount || amount <= 0) { alert('Please enter a valid amount'); return; }
-            if (paymentId > 0) {
-                $.ajax({ url: '/Reports/UpdateSalePayment', type: 'POST', contentType: 'application/json',
-                    data: JSON.stringify({ paymentId, paymentMethod: method, amount, transactionId: ref }),
-                    success: function(res) {
-                        if (res.success) { cancelPaymentForm(); loadSaleDetail(currentSaleId); }
-                        else alert('Error: ' + (res.message || 'Failed'));
-                    }
-                });
-            } else {
-                $.ajax({ url: '/Reports/AddSalePayment', type: 'POST', contentType: 'application/json',
-                    data: JSON.stringify({ saleId: currentSaleId, paymentMethod: method, amount, transactionId: ref }),
-                    success: function(res) {
-                        if (res.success) { cancelPaymentForm(); loadSaleDetail(currentSaleId); }
-                        else alert('Error: ' + (res.message || 'Failed'));
-                    }
-                });
-            }
-        }
-
-        function deleteSalePayment(paymentId) {
-            if (!confirm('Delete this payment?')) return;
-            $.post('/Reports/DeleteSalePayment', { paymentId }, function(res) {
-                if (res.success) loadSaleDetail(currentSaleId);
-                else alert('Error: ' + (res.message || 'Failed'));
-            });
-        }
-
     </script>
 
 @* _InvoiceEditModal is already included in _Layout.cshtml — do NOT include again here *@
@@ -1553,216 +1437,3 @@
 @* Include shared invoice print template *@
 @await Html.PartialAsync("_InvoicePrintTemplate")
 }
-
-<!-- Sale Detail & Payment Management Modal -->
-<div class="modal fade" id="saleDetailModal" tabindex="-1" aria-labelledby="saleDetailModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="saleDetailModalLabel">
-                    <i class="fas fa-receipt me-2"></i>Sale Detail
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <!-- Sale Summary Row -->
-                <div class="row mb-3">
-                    <div class="col-md-3">
-                        <div class="card border-0 bg-light">
-                            <div class="card-body py-2">
-                                <small class="text-muted">Invoice</small>
-                                <div class="fw-bold" id="sdInvoiceNumber">—</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card border-0 bg-light">
-                            <div class="card-body py-2">
-                                <small class="text-muted">Customer</small>
-                                <div class="fw-bold" id="sdCustomer">—</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="card border-0 bg-light">
-                            <div class="card-body py-2">
-                                <small class="text-muted">Total</small>
-                                <div class="fw-bold text-primary" id="sdTotal">$0.00</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="card border-0 bg-success text-white">
-                            <div class="card-body py-2">
-                                <small>Paid</small>
-                                <div class="fw-bold" id="sdTotalPaid">$0.00</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <div class="card border-0 bg-danger text-white">
-                            <div class="card-body py-2">
-                                <small>Balance Due</small>
-                                <div class="fw-bold" id="sdBalance">$0.00</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <!-- Items -->
-                    <div class="col-md-6">
-                        <h6 class="text-muted mb-2"><i class="fas fa-box me-1"></i>Items Sold</h6>
-                        <div class="table-responsive">
-                            <table class="table table-sm table-bordered">
-                                <thead class="table-light">
-                                    <tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr>
-                                </thead>
-                                <tbody id="sdItemsBody"></tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <!-- Payments -->
-                    <div class="col-md-6">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 class="text-muted mb-0"><i class="fas fa-money-bill-wave me-1"></i>Payments</h6>
-                            <button class="btn btn-sm btn-success" onclick="openAddPaymentForm()">
-                                <i class="fas fa-plus me-1"></i>Add Payment
-                            </button>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table table-sm table-bordered">
-                                <thead class="table-light">
-                                    <tr><th>Method</th><th>Amount</th><th>Ref</th><th></th></tr>
-                                </thead>
-                                <tbody id="sdPaymentsBody"></tbody>
-                            </table>
-                        </div>
-
-                        <!-- Add/Edit Payment Form -->
-                        <div id="addPaymentForm" class="card border-primary mt-3" style="display:none;">
-                            <div class="card-header bg-primary text-white py-2">
-                                <span id="paymentFormTitle">Add Payment</span>
-                            </div>
-                            <div class="card-body">
-                                <input type="hidden" id="editPaymentId" value="0" />
-                                <div class="row g-2">
-                                    <div class="col-md-4">
-                                        <label class="form-label form-label-sm">Method</label>
-                                        <select class="form-select form-select-sm" id="newPaymentMethod">
-                                            <option value="Cash">Cash</option>
-                                            <option value="Card">Card</option>
-                                            <option value="Zelle">Zelle</option>
-                                            <option value="Venmo">Venmo</option>
-                                            <option value="Check">Check</option>
-                                            <option value="Other">Other</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label form-label-sm">Amount</label>
-                                        <input type="number" class="form-control form-control-sm" id="newPaymentAmount" step="0.01" min="0.01" placeholder="0.00" />
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label form-label-sm">Ref / Transaction ID</label>
-                                        <input type="text" class="form-control form-control-sm" id="newPaymentRef" placeholder="Optional" />
-                                    </div>
-                                </div>
-                                <div class="mt-2 d-flex gap-2">
-                                    <button class="btn btn-sm btn-primary" onclick="savePaymentForm()">
-                                        <i class="fas fa-save me-1"></i>Save
-                                    </button>
-                                    <button class="btn btn-sm btn-secondary" onclick="cancelPaymentForm()">Cancel</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <span class="badge bg-secondary me-auto" id="sdPaymentStatus">—</span>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Sale Detail & Payment Management Modal -->
-<div class="modal fade" id="saleDetailModal" tabindex="-1" aria-labelledby="saleDetailModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="saleDetailModalLabel"><i class="fas fa-receipt me-2"></i>Sale Detail &amp; Payments</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="row mb-3">
-                    <div class="col-md-3"><div class="card border-0 bg-light"><div class="card-body py-2"><small class="text-muted">Invoice</small><div class="fw-bold" id="sdInvoiceNumber">—</div></div></div></div>
-                    <div class="col-md-3"><div class="card border-0 bg-light"><div class="card-body py-2"><small class="text-muted">Customer</small><div class="fw-bold" id="sdCustomer">—</div></div></div></div>
-                    <div class="col-md-2"><div class="card border-0 bg-light"><div class="card-body py-2"><small class="text-muted">Total</small><div class="fw-bold text-primary" id="sdTotal">$0.00</div></div></div></div>
-                    <div class="col-md-2"><div class="card border-0 bg-success text-white"><div class="card-body py-2"><small>Paid</small><div class="fw-bold" id="sdTotalPaid">$0.00</div></div></div></div>
-                    <div class="col-md-2"><div class="card border-0 bg-danger text-white"><div class="card-body py-2"><small>Balance Due</small><div class="fw-bold" id="sdBalance">$0.00</div></div></div></div>
-                </div>
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6 class="text-muted mb-2"><i class="fas fa-box me-1"></i>Items Sold</h6>
-                        <div class="table-responsive">
-                            <table class="table table-sm table-bordered">
-                                <thead class="table-light"><tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
-                                <tbody id="sdItemsBody"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <h6 class="text-muted mb-0"><i class="fas fa-money-bill-wave me-1"></i>Payments</h6>
-                            <button class="btn btn-sm btn-success" onclick="openAddPaymentForm()"><i class="fas fa-plus me-1"></i>Add Payment</button>
-                        </div>
-                        <div class="table-responsive">
-                            <table class="table table-sm table-bordered">
-                                <thead class="table-light"><tr><th>Method</th><th>Amount</th><th>Ref</th><th></th></tr></thead>
-                                <tbody id="sdPaymentsBody"></tbody>
-                            </table>
-                        </div>
-                        <div id="addPaymentForm" class="card border-primary mt-3" style="display:none;">
-                            <div class="card-header bg-primary text-white py-2"><span id="paymentFormTitle">Add Payment</span></div>
-                            <div class="card-body">
-                                <input type="hidden" id="editPaymentId" value="0" />
-                                <div class="row g-2">
-                                    <div class="col-md-4">
-                                        <label class="form-label form-label-sm">Method</label>
-                                        <select class="form-select form-select-sm" id="newPaymentMethod">
-                                            <option value="Cash">Cash</option>
-                                            <option value="Card">Card</option>
-                                            <option value="Zelle">Zelle</option>
-                                            <option value="Venmo">Venmo</option>
-                                            <option value="Check">Check</option>
-                                            <option value="Other">Other</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label form-label-sm">Amount</label>
-                                        <input type="number" class="form-control form-control-sm" id="newPaymentAmount" step="0.01" min="0.01" placeholder="0.00" />
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label form-label-sm">Ref / Transaction ID</label>
-                                        <input type="text" class="form-control form-control-sm" id="newPaymentRef" placeholder="Optional" />
-                                    </div>
-                                </div>
-                                <div class="mt-2 d-flex gap-2">
-                                    <button class="btn btn-sm btn-primary" onclick="savePaymentForm()"><i class="fas fa-save me-1"></i>Save</button>
-                                    <button class="btn btn-sm btn-secondary" onclick="cancelPaymentForm()">Cancel</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <span class="badge bg-secondary me-auto" id="sdPaymentStatus">—</span>
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-            </div>
-        </div>
-    </div>
-</div>
-

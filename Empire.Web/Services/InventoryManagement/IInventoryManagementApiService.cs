@@ -10,7 +10,8 @@ public interface IInventoryManagementApiService
         int? deviceCategoryId = null,
         int? deviceModelId = null,
         int? inventoryCategoryId = null,
-        string? stockStatus = null);
+        string? stockStatus = null,
+        string? search = null);
 
     Task<InventoryItemDto?> GetInventoryItemByIdAsync(int id, int shopId);
     
@@ -28,4 +29,6 @@ public interface IInventoryManagementApiService
     /// Maps inventory items to anonymous objects for JSON response
     /// </summary>
     IEnumerable<object> MapInventoryItemsForResponse(IEnumerable<InventoryItemDto> items);
+    Task<InventoryBatchDto?> ReceiveBatchAsync(int id, ReceiveInventoryBatchRequest request);
+    Task<List<InventoryBatchDto>> GetBatchesAsync(int id);
 }

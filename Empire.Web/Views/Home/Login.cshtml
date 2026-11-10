@@ -3,16 +3,20 @@
     ViewData["Title"] = "Login";
 }
 
-<div class="min-vh-100 d-flex align-items-center justify-content-center" style="background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);">
-    <div class="container">
+<div class="empire-login-shell min-vh-100 d-flex align-items-center justify-content-center">
+    <div class="login-orb login-orb-one"></div>
+    <div class="login-orb login-orb-two"></div>
+    <div class="container position-relative">
         <div class="row justify-content-center">
             <div class="col-md-6 col-lg-4">
-                <div class="card shadow-lg border-0" style="border-radius: 20px;">
+                <div class="card empire-login-card">
                     <div class="card-body p-5">
                         <div class="text-center mb-4">
-                            <i class="fas fa-mobile-alt fa-3x text-primary mb-3"></i>
-                            <h2 class="fw-bold text-primary">Empire Solution</h2>
-                            <p class="text-muted">Sign in to your account</p>
+                            <div class="login-logo-wrap">
+                                <img src="~/images/empire-logo-glass.png" asp-append-version="true" class="login-logo" alt="Empire Solutions" />
+                            </div>
+                            <h2 class="fw-bold login-title">Welcome back</h2>
+                            <p class="login-subtitle">Sign in to Empire Solutions</p>
                         </div>
 
                         <form asp-action="Login" method="post">
@@ -48,17 +52,17 @@
                             </div>
 
                             <div class="d-grid">
-                                <button type="submit" class="btn btn-primary btn-lg">
+                                <button type="submit" class="btn btn-primary btn-lg login-button">
                                     <i class="fas fa-sign-in-alt me-2"></i>
                                     Sign In
                                 </button>
                             </div>
                         </form>
 
-                        <div class="mt-4 p-3 bg-light rounded">
+                        <div class="mt-4 p-3 login-demo-card">
                             <h6 class="mb-2 text-center">Demo Credentials</h6>
                             <p class="small mb-1 text-center"><strong>Username:</strong> superadmin</p>
-                            <p class="small mb-0 text-center"><strong>Password:</strong> Admin@123</p>
+                            <p class="small mb-0 text-center"><strong>Password:</strong> admin123</p>
                         </div>
 
                         <div class="text-center mt-3">
@@ -74,7 +78,55 @@
     </div>
 </div>
 
+@section Styles {
+    <style>
+        .empire-login-shell {
+            position: relative;
+            overflow: hidden;
+            background:
+                radial-gradient(circle at 12% 18%, rgba(71, 196, 255, .28), transparent 29%),
+                radial-gradient(circle at 87% 20%, rgba(119, 82, 255, .22), transparent 28%),
+                linear-gradient(145deg, #061224 0%, #0d2340 50%, #071426 100%);
+        }
+        .empire-login-shell::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            opacity: .22;
+            background-image: linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+            background-size: 42px 42px;
+            mask-image: linear-gradient(to bottom, black, transparent 75%);
+        }
+        .login-orb { position:absolute; border-radius:50%; filter:blur(2px); opacity:.7; }
+        .login-orb-one { width:340px; height:340px; left:-130px; bottom:-120px; background:radial-gradient(circle at 35% 35%,#68dfff,rgba(26,100,255,.06) 65%); }
+        .login-orb-two { width:430px; height:430px; right:-190px; top:-180px; background:radial-gradient(circle at 40% 40%,#8b70ff,rgba(77,43,190,.03) 68%); }
+        .empire-login-card {
+            overflow:hidden;
+            color:#eaf4ff;
+            background:linear-gradient(145deg,rgba(255,255,255,.17),rgba(255,255,255,.065)) !important;
+            border:1px solid rgba(255,255,255,.26) !important;
+            border-radius:30px !important;
+            box-shadow:0 35px 90px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.3) !important;
+            backdrop-filter:blur(32px) saturate(165%);
+            -webkit-backdrop-filter:blur(32px) saturate(165%);
+        }
+        .empire-login-card::before { content:""; position:absolute; inset:0 0 auto; height:1px; background:linear-gradient(90deg,transparent,rgba(133,224,255,.9),transparent); }
+        .login-logo-wrap { width:150px; height:150px; margin:-12px auto 5px; display:grid; place-items:center; border-radius:32px; background:linear-gradient(145deg,rgba(255,255,255,.16),rgba(255,255,255,.035)); border:1px solid rgba(255,255,255,.22); box-shadow:inset 0 1px 0 rgba(255,255,255,.34),0 18px 45px rgba(0,0,0,.22); backdrop-filter:blur(20px) saturate(150%); -webkit-backdrop-filter:blur(20px) saturate(150%); }
+        .login-logo { width:145px; height:145px; object-fit:contain; filter:drop-shadow(0 16px 28px rgba(25,162,255,.3)); }
+        .login-title { margin-top:0; color:#fff; letter-spacing:-.04em; font-size:2rem; }
+        .login-subtitle { color:rgba(224,239,255,.65); }
+        .empire-login-card .form-label { color:rgba(236,246,255,.82); }
+        .empire-login-card .form-control,.empire-login-card .input-group-text { color:#f4f9ff; background:rgba(7,22,42,.34) !important; border-color:rgba(178,221,255,.17) !important; }
+        .empire-login-card .form-control::placeholder { color:rgba(220,237,255,.43); }
+        .empire-login-card .input-group-text { color:#80d9ff; }
+        .login-button { min-height:52px; margin-top:8px; border-radius:15px !important; }
+        .login-demo-card { color:rgba(228,240,255,.74); background:rgba(5,18,37,.26); border:1px solid rgba(255,255,255,.1); border-radius:16px; }
+        .empire-login-card a { color:#82d9ff; }
+        .empire-login-card .form-check-label { color:rgba(232,243,255,.72); }
+        @@media (max-width:575.98px) { .empire-login-card .card-body { padding:2rem !important; } .login-logo-wrap { width:125px;height:125px; } .login-logo { width:120px;height:120px; } }
+    </style>
+}
+
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 }
-

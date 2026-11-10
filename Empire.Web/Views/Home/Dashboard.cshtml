@@ -134,6 +134,42 @@
     </div>
 </div>
 
+@if (Model.ReadyWaitingParts.Any())
+{
+    <div class="card border-success mb-4" id="readyWaitingPartsCard">
+        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+            <h6 class="m-0 fw-bold"><i class="fas fa-bell me-2"></i>Parts Arrived — Ready to Use</h6>
+            <span class="badge bg-light text-success">@Model.ReadyWaitingParts.Count()</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr><th>Customer / Device</th><th>Part</th><th>Waiting</th><th>Stock</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var alert in Model.ReadyWaitingParts)
+                    {
+                        <tr id="waitingPartRow-@alert.RepairPartId">
+                            <td><strong>@alert.CustomerName</strong><br><small class="text-muted">@alert.Device · @alert.CustomerPhone</small></td>
+                            <td><strong>@alert.PartName</strong><br><small class="text-muted">@alert.SKU</small></td>
+                            <td>@alert.DaysWaiting day@(alert.DaysWaiting == 1 ? "" : "s")</td>
+                            <td><span class="badge bg-success">@alert.AvailableStock available / @alert.QuantityNeeded needed</span></td>
+                            <td class="text-end">
+                                <button type="button" class="btn btn-sm btn-success" onclick="allocateWaitingPart(@alert.RepairPartId, this)">
+                                    <i class="fas fa-check me-1"></i>Use Part
+                                </button>
+                                <a class="btn btn-sm btn-outline-secondary" asp-controller="Repairs" asp-action="Index">Open Repair</a>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
 <!-- Recent Activity -->
 <div class="row">
     <div class="col-lg-6 mb-4">
@@ -151,21 +187,21 @@
                         <table class="table table-sm">
                             <thead>
                                 <tr>
-                                    <th>Repair #</th>
                                     <th>Customer</th>
+                                    <th>Device</th>
                                     <th>Status</th>
                                     <th>Payment</th>
+                                    <th class="text-center" aria-label="Repair details"></th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach (var repair in Model.RecentRepairs)
                                 {
                                     <tr>
-                                        <td class="fw-semibold">@repair.RepairNumber</td>
                                         <td>
-                                            <div>@repair.CustomerName</div>
-                                            <small class="text-muted">@repair.DeviceBrand @repair.DeviceModel</small>
+                                            <div class="fw-semibold">@repair.CustomerName</div>
                                         </td>
+                                        <td><small class="text-muted">@repair.DeviceBrand @repair.DeviceModel</small></td>
                                         <td>
                                             @switch (repair.Status)
                                             {
@@ -192,6 +228,14 @@
                                             {
                                                 <span class="badge bg-danger">Unpaid</span>
                                             }
+                                        </td>
+                                        <td class="text-center text-nowrap">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                    onclick="toggleDashboardRepairNumber(this)"
+                                                    aria-label="Show repair number" title="Show repair number">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <span class="dashboard-repair-number d-none ms-2 fw-semibold">@repair.RepairNumber</span>
                                         </td>
                                     </tr>
                                 }
@@ -287,3 +331,37 @@
     </div>
 </div>
 
+<script>
+    async function allocateWaitingPart(repairPartId, button) {
+        if (!confirm('Use this part for the repair now? The quantity will be deducted from inventory.')) return;
+        button.disabled = true;
+        try {
+            const response = await fetch('/Repairs/AllocateWaitingPart', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                body: JSON.stringify({ repairPartId: repairPartId })
+            });
+            const result = await response.json();
+            if (!result.success) throw new Error(result.message || 'The part could not be assigned.');
+            const row = document.getElementById('waitingPartRow-' + repairPartId);
+            if (row) row.remove();
+            if (!document.querySelector('#readyWaitingPartsCard tbody tr')) {
+                document.getElementById('readyWaitingPartsCard')?.remove();
+            }
+            alert(result.message);
+        } catch (error) {
+            button.disabled = false;
+            alert(error.message || 'The part could not be assigned.');
+        }
+    }
+
+    function toggleDashboardRepairNumber(button) {
+        const number = button.parentElement.querySelector('.dashboard-repair-number');
+        const icon = button.querySelector('i');
+        const revealing = number.classList.contains('d-none');
+        number.classList.toggle('d-none', !revealing);
+        icon.className = revealing ? 'fas fa-eye-slash' : 'fas fa-eye';
+        button.title = revealing ? 'Hide repair number' : 'Show repair number';
+        button.setAttribute('aria-label', button.title);
+    }
+</script>

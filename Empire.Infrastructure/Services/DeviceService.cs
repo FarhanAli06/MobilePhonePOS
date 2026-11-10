@@ -4,6 +4,8 @@ using Empire.Application.Interfaces;
 using Empire.Domain.Entities;
 using Empire.Domain.Interfaces;
 using Empire.Domain.Enums;
+using Empire.Infrastructure.Data;
+using System.Text.Json;
 
 namespace Empire.Infrastructure.Services;
 
@@ -11,11 +13,13 @@ public class DeviceService : IDeviceService
 {
     private readonly IDeviceRepository _deviceRepository;
     private readonly ICustomerRepository _customerRepository;
+    private readonly EmpireDbContext _context;
 
-    public DeviceService(IDeviceRepository deviceRepository, ICustomerRepository customerRepository)
+    public DeviceService(IDeviceRepository deviceRepository, ICustomerRepository customerRepository, EmpireDbContext context)
     {
         _deviceRepository = deviceRepository;
         _customerRepository = customerRepository;
+        _context = context;
     }
 
     public async Task<DeviceSelectionDto> CreateDeviceAsync(CreateDeviceRequest request, int userId)
@@ -28,6 +32,8 @@ public class DeviceService : IDeviceService
             DeviceModelId = request.DeviceModelId, // Updated to use lookup ID
             IMEISerialNumber = request.IMEISerialNumber,
             GB = request.GB,
+            Color = request.Color?.Trim() ?? string.Empty,
+            Carrier = request.Carrier?.Trim() ?? string.Empty,
             BatteryHealthPercentage = request.BatteryHealthPercentage,
             NetworkStatus = request.NetworkStatus,
             ScratchesCondition = request.ScratchesCondition,
@@ -37,11 +43,14 @@ public class DeviceService : IDeviceService
             Notes = request.Notes,
             IsAvailableForSale = request.IsAvailableForSale,
             IsSold = false,
+            LifecycleStatus = "Available",
             CreatedDate = DateTime.UtcNow
         };
 
         var createdDevice = await _deviceRepository.AddAsync(device);
         await _deviceRepository.SaveChangesAsync();
+        _context.DeviceActivities.Add(new DeviceActivity { DeviceId = createdDevice.Id, Action = "Created", Description = "Device added to inventory", NewValues = DeviceSnapshot(createdDevice), PerformedByUserId = userId, PerformedAt = DateTime.UtcNow });
+        await _context.SaveChangesAsync();
         return MapToDeviceSelectionDto(createdDevice);
     }
 
@@ -133,12 +142,17 @@ public class DeviceService : IDeviceService
         if (device == null)
             throw new ArgumentException("Device not found");
 
+        var oldSnapshot = DeviceSnapshot(device);
+
         // Update all device properties
+        var wasSold = device.IsSold;
         device.BrandId = request.BrandId;
         device.DeviceCategoryId = request.DeviceCategoryId;
         device.DeviceModelId = request.DeviceModelId;
         device.IMEISerialNumber = request.IMEISerialNumber;
         device.GB = request.GB;
+        device.Color = request.Color?.Trim() ?? string.Empty;
+        device.Carrier = request.Carrier?.Trim() ?? string.Empty;
         device.BatteryHealthPercentage = request.BatteryHealthPercentage;
         device.NetworkStatus = request.NetworkStatus;
         device.ScratchesCondition = request.ScratchesCondition;
@@ -148,14 +162,15 @@ public class DeviceService : IDeviceService
         device.Notes = request.Notes;
         device.IsAvailableForSale = request.IsAvailableForSale;
         device.IsSold = request.IsSold;
+        device.LifecycleStatus = request.IsSold ? "Sold" : (request.IsAvailableForSale ? "Available" : "NotForSale");
         device.SoldToCustomerId = request.SoldToCustomerId;
         device.ModifiedDate = DateTime.UtcNow;
 
-        if (request.IsSold && !device.IsSold)
+        if (request.IsSold && !wasSold)
         {
             device.SoldDate = DateTime.UtcNow;
         }
-        else if (!request.IsSold && device.IsSold)
+        else if (!request.IsSold && wasSold)
         {
             device.SoldDate = null;
             device.SoldToCustomerId = null;
@@ -163,6 +178,18 @@ public class DeviceService : IDeviceService
 
         await _deviceRepository.UpdateAsync(device);
         await _deviceRepository.SaveChangesAsync();
+        var newSnapshot = DeviceSnapshot(device);
+        _context.DeviceActivities.Add(new DeviceActivity
+        {
+            DeviceId = device.Id,
+            Action = "Updated",
+            Description = BuildDeviceChangeSummary(oldSnapshot, newSnapshot),
+            OldValues = oldSnapshot,
+            NewValues = newSnapshot,
+            PerformedByUserId = userId,
+            PerformedAt = DateTime.UtcNow
+        });
+        await _context.SaveChangesAsync();
         return MapToDeviceSelectionDto(device);
     }
 
@@ -187,6 +214,7 @@ public class DeviceService : IDeviceService
         device.SoldDate = DateTime.UtcNow;
         device.SoldToCustomerId = customerId;
         device.IsAvailableForSale = false;
+        device.LifecycleStatus = "Sold";
         device.ModifiedDate = DateTime.UtcNow;
 
         if (salePrice.HasValue)
@@ -196,7 +224,64 @@ public class DeviceService : IDeviceService
 
         await _deviceRepository.UpdateAsync(device);
         await _deviceRepository.SaveChangesAsync();
+        _context.DeviceActivities.Add(new DeviceActivity { DeviceId = device.Id, Action = "Sold", Description = "Device marked sold", NewValues = DeviceSnapshot(device), PerformedByUserId = userId, PerformedAt = DateTime.UtcNow });
+        await _context.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<IEnumerable<DeviceHistoryDto>> GetDeviceHistoryAsync(int deviceId)
+    {
+        return await _context.DeviceActivities.AsNoTracking()
+            .Where(x => x.DeviceId == deviceId)
+            .OrderByDescending(x => x.PerformedAt)
+            .Select(x => new DeviceHistoryDto { Id = x.Id, Action = x.Action, Description = x.Description, OldValues = x.OldValues, NewValues = x.NewValues, PerformedAt = x.PerformedAt, PerformedBy = x.PerformedByUser == null ? "System" : x.PerformedByUser.FirstName + " " + x.PerformedByUser.LastName })
+            .ToListAsync();
+    }
+
+    private static string DeviceSnapshot(Device d) => JsonSerializer.Serialize(new { d.IMEISerialNumber, d.GB, d.Color, d.Carrier, d.BuyingPrice, d.SellingPrice, d.IsAvailableForSale, d.IsSold, d.LifecycleStatus, d.SoldToCustomerId });
+
+    private static string BuildDeviceChangeSummary(string oldSnapshot, string newSnapshot)
+    {
+        using var oldDocument = JsonDocument.Parse(oldSnapshot);
+        using var newDocument = JsonDocument.Parse(newSnapshot);
+        var labels = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ["IMEISerialNumber"] = "IMEI/serial",
+            ["GB"] = "Storage",
+            ["Color"] = "Color",
+            ["Carrier"] = "Carrier",
+            ["BuyingPrice"] = "Cost price",
+            ["SellingPrice"] = "Selling price",
+            ["IsAvailableForSale"] = "Available for sale",
+            ["IsSold"] = "Sold",
+            ["LifecycleStatus"] = "Status",
+            ["SoldToCustomerId"] = "Customer"
+        };
+
+        var changes = new List<string>();
+        foreach (var property in newDocument.RootElement.EnumerateObject())
+        {
+            if (!oldDocument.RootElement.TryGetProperty(property.Name, out var oldValue) || oldValue.ToString() == property.Value.ToString())
+                continue;
+
+            var label = labels.GetValueOrDefault(property.Name, property.Name);
+            changes.Add($"{label}: {FormatHistoryValue(property.Name, oldValue)} → {FormatHistoryValue(property.Name, property.Value)}");
+        }
+
+        return changes.Count == 0 ? "No device values changed" : string.Join("; ", changes);
+    }
+
+    private static string FormatHistoryValue(string propertyName, JsonElement value)
+    {
+        if (value.ValueKind is JsonValueKind.Null or JsonValueKind.Undefined)
+            return "Not set";
+        if ((propertyName.Equals("BuyingPrice", StringComparison.OrdinalIgnoreCase) || propertyName.Equals("SellingPrice", StringComparison.OrdinalIgnoreCase))
+            && value.TryGetDecimal(out var amount))
+            return amount.ToString("C2", System.Globalization.CultureInfo.GetCultureInfo("en-US"));
+        if (value.ValueKind is JsonValueKind.True or JsonValueKind.False)
+            return value.GetBoolean() ? "Yes" : "No";
+        var text = value.ToString();
+        return string.IsNullOrWhiteSpace(text) ? "Not set" : text;
     }
 
     public async Task<DeviceHierarchyDto> GetDeviceHierarchyAsync()
@@ -264,6 +349,8 @@ public class DeviceService : IDeviceService
             DeviceType = DeviceType.Phone, // Default for now, will be determined by category
             IMEISerialNumber = device.IMEISerialNumber,
             GB = device.GB,
+            Color = device.Color,
+            Carrier = device.Carrier,
             BatteryHealthPercentage = device.BatteryHealthPercentage,
             NetworkStatus = device.NetworkStatus,
             ScratchesCondition = device.ScratchesCondition,
@@ -273,6 +360,7 @@ public class DeviceService : IDeviceService
             Notes = device.Notes,
             IsAvailableForSale = device.IsAvailableForSale,
             IsSold = device.IsSold,
+            LifecycleStatus = device.LifecycleStatus,
             SoldDate = device.SoldDate,
             SoldToCustomerId = device.SoldToCustomerId,
             SoldToCustomerName = device.SoldToCustomer?.FirstName + " " + device.SoldToCustomer?.LastName ?? "",

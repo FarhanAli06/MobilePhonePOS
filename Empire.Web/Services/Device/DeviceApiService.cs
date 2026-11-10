@@ -62,6 +62,12 @@ public class DeviceApiService : BaseApiService, IDeviceApiService
         }
     }
 
+    public async Task<IEnumerable<DeviceHistoryDto>> GetHistoryAsync(int deviceId)
+    {
+        var result = await GetAsync<IEnumerable<DeviceHistoryDto>>($"{RouteConstants.ApiPaths.Devices}/{deviceId}/history");
+        return result ?? Enumerable.Empty<DeviceHistoryDto>();
+    }
+
     public async Task<DeviceDto?> CreateAsync(CreateDeviceRequestDto request)
     {
         try

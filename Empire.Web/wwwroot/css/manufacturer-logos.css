@@ -1,0 +1,139 @@
+.manufacturer-logo {
+    display: inline-block;
+    width: auto;
+    max-width: 112px;
+    height: 28px;
+    max-height: 100%;
+    object-fit: contain;
+    vertical-align: middle;
+}
+.eds-brand-name .manufacturer-logo,
+.brand-name .manufacturer-logo,
+.brand-card > span .manufacturer-logo { height: 26px; }
+.eds-banner-brand .manufacturer-logo { height: 20px; max-width: 90px; }
+.brand-card.logo-only {
+    min-height: 96px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.brand-card.logo-only > span,
+.brand-card.logo-only .brand-name {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.brand-card.logo-only > span .manufacturer-logo,
+.brand-card.logo-only .brand-name .manufacturer-logo {
+    height: 52px;
+    max-width: 145px;
+}
+/* POS cart hot-layout override: keeps the full cart visible from the top edge. */
+body:has(.pos-modern-shell) .pos-modern-body {
+    position: relative;
+}
+
+body:has(.pos-modern-shell) .pos-modern-topbar,
+body:has(.pos-modern-shell) .pos-main-content {
+    padding-right: 406px !important;
+}
+
+body:has(.pos-modern-shell) .pos-cart-section {
+    position: absolute !important;
+    z-index: 4;
+    top: 18px !important;
+    right: 18px !important;
+    bottom: 18px !important;
+    width: 390px !important;
+    min-width: 360px !important;
+    height: auto !important;
+    overflow: hidden !important;
+}
+
+body:has(.pos-modern-shell) .cart-items {
+    overflow-x: hidden !important;
+}
+
+body:has(.pos-modern-shell) #cartTableBody {
+    display: block;
+    width: 100%;
+}
+
+body:has(.pos-modern-shell) #cartTable tbody tr:not(.table-light) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 84px 30px;
+    grid-template-rows: auto auto;
+    column-gap: 7px;
+    padding: 10px 0;
+}
+
+body:has(.pos-modern-shell) #cartTable tbody tr:not(.table-light) td:first-child {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    width: auto !important;
+    max-width: none !important;
+}
+
+body:has(.pos-modern-shell) #cartTable tbody tr:not(.table-light) td:first-child .fw-semibold {
+    display: block;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+}
+
+body:has(.pos-modern-shell) #cartTable tbody tr:not(.table-light) td:first-child > .d-flex > .badge,
+body:has(.pos-modern-shell) #cartTable tbody tr:not(.table-light) td:nth-child(4),
+body:has(.pos-modern-shell) #cartTable tbody tr.table-light {
+    display: none !important;
+}
+
+body:has(.pos-modern-shell) #cartTable tbody tr:not(.table-light) td:nth-child(2) {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+body:has(.pos-modern-shell) #cartTable tbody tr:not(.table-light) td:nth-child(3) {
+    grid-column: 2;
+    grid-row: 2;
+    margin-top: 3px;
+}
+
+body:has(.pos-modern-shell) #cartTable tbody tr:not(.table-light) td:nth-child(5) {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    align-self: center;
+}
+
+body:has(.pos-modern-shell) #cartTable tbody tr:not(.table-light) td:nth-child(2) .input-group,
+body:has(.pos-modern-shell) #cartTable tbody tr:not(.table-light) td:nth-child(3) .input-group {
+    width: 84px !important;
+}
+
+@media (max-width: 1100px) {
+    body:has(.pos-modern-shell) .pos-modern-topbar,
+    body:has(.pos-modern-shell) .pos-main-content {
+        padding-right: 376px !important;
+    }
+
+    body:has(.pos-modern-shell) .pos-cart-section {
+        width: 360px !important;
+        min-width: 330px !important;
+    }
+}
+
+@media (max-width: 850px) {
+    body:has(.pos-modern-shell) .pos-modern-topbar,
+    body:has(.pos-modern-shell) .pos-main-content {
+        padding-right: 0 !important;
+    }
+
+    body:has(.pos-modern-shell) .pos-cart-section {
+        position: relative !important;
+        inset: auto !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        height: auto !important;
+        overflow: visible !important;
+    }
+}

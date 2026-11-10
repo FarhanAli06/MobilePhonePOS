@@ -22,7 +22,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="text-white-50 mb-1">Total Revenue</h6>
+                        <h6 class="text-white-50 mb-1">Total Sales</h6>
                         <h3 class="mb-0" id="totalRevenue">$0.00</h3>
                     </div>
                     <i class="fas fa-dollar-sign fa-2x opacity-50"></i>
@@ -35,8 +35,8 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="text-white-50 mb-1">Total Cost</h6>
-                        <h3 class="mb-0" id="totalCost">$0.00</h3>
+                        <h6 class="text-white-50 mb-1">Collected</h6>
+                        <h3 class="mb-0" id="totalCollected">$0.00</h3>
                     </div>
                     <i class="fas fa-shopping-cart fa-2x opacity-50"></i>
                 </div>
@@ -48,8 +48,8 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="text-white-50 mb-1">Total Profit</h6>
-                        <h3 class="mb-0" id="totalProfit">$0.00</h3>
+                        <h6 class="text-white-50 mb-1">Outstanding</h6>
+                        <h3 class="mb-0" id="outstandingBalance">$0.00</h3>
                     </div>
                     <i class="fas fa-chart-line fa-2x opacity-50"></i>
                 </div>
@@ -61,8 +61,8 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="text-white-50 mb-1">Profit Margin</h6>
-                        <h3 class="mb-0" id="profitMargin">0%</h3>
+                        <h6 class="text-white-50 mb-1">Gross Profit</h6>
+                        <h3 class="mb-0" id="totalProfit">$0.00</h3>
                     </div>
                     <i class="fas fa-percentage fa-2x opacity-50"></i>
                 </div>
@@ -149,15 +149,18 @@
                         <th>Category</th>
                         <th>Qty</th>
                         <th>Revenue</th>
+                        <th>Collected</th>
+                        <th>Balance</th>
                         <th>Cost</th>
                         <th>Profit</th>
                         <th>Margin %</th>
                         <th>Status</th>
+                        <th>Method</th>
                     </tr>
                 </thead>
                 <tbody id="reportBody">
                     <tr>
-                        <td colspan="12" class="text-center">
+                        <td colspan="15" class="text-center">
                             <div class="spinner-border" role="status">
                                 <span class="visually-hidden">Loading...</span>
                             </div>
@@ -168,9 +171,12 @@
                     <tr class="fw-bold">
                         <td colspan="7" class="text-end">TOTAL:</td>
                         <td id="footerRevenue">$0.00</td>
+                        <td id="footerCollected">$0.00</td>
+                        <td id="footerBalance">$0.00</td>
                         <td id="footerCost">$0.00</td>
                         <td id="footerProfit">$0.00</td>
                         <td id="footerMargin">0%</td>
+                        <td></td>
                         <td></td>
                     </tr>
                 </tfoot>
@@ -220,16 +226,16 @@
     function displayReport(data, summary) {
         // Update summary cards
         $('#totalRevenue').text('$' + summary.totalRevenue.toFixed(2));
-        $('#totalCost').text('$' + summary.totalCost.toFixed(2));
+        $('#totalCollected').text('$' + summary.totalCollected.toFixed(2));
+        $('#outstandingBalance').text('$' + summary.outstandingBalance.toFixed(2));
         $('#totalProfit').text('$' + summary.totalProfit.toFixed(2));
-        $('#profitMargin').text(summary.profitMargin.toFixed(2) + '%');
 
         // Update table
         const tbody = $('#reportBody');
         tbody.empty();
 
         if (data.length === 0) {
-            tbody.html('<tr><td colspan="12" class="text-center">No data found for selected filters</td></tr>');
+            tbody.html('<tr><td colspan="15" class="text-center">No data found for selected filters</td></tr>');
             $('#reportFooter').hide();
             return;
         }
@@ -248,10 +254,13 @@
                     <td>${row.category}</td>
                     <td>${row.quantity}</td>
                     <td>$${row.revenue.toFixed(2)}</td>
+                    <td>$${row.collected.toFixed(2)}</td>
+                    <td>$${row.balance.toFixed(2)}</td>
                     <td>$${row.cost.toFixed(2)}</td>
                     <td class="${profitClass} fw-bold">$${row.profit.toFixed(2)}</td>
                     <td class="${profitClass}">${row.margin.toFixed(2)}%</td>
                     <td><span class="badge bg-${statusClass}">${row.paymentStatus}</span></td>
+                    <td>${row.paymentMethod || '—'}</td>
                 </tr>
             `;
             tbody.append(tr);
@@ -259,6 +268,8 @@
 
         // Update footer
         $('#footerRevenue').text('$' + summary.totalRevenue.toFixed(2));
+        $('#footerCollected').text('$' + summary.totalCollected.toFixed(2));
+        $('#footerBalance').text('$' + summary.outstandingBalance.toFixed(2));
         $('#footerCost').text('$' + summary.totalCost.toFixed(2));
         $('#footerProfit').text('$' + summary.totalProfit.toFixed(2));
         $('#footerMargin').text(summary.profitMargin.toFixed(2) + '%');
@@ -284,7 +295,7 @@
         }
 
         // Create CSV content
-        let csv = 'Date,Invoice #,Customer,Item,Brand,Category,Qty,Revenue,Cost,Profit,Margin %,Status\\n';
+        let csv = 'Date,Invoice #,Customer,Item,Brand,Category,Qty,Revenue,Collected,Balance,Cost,Profit,Margin %,Status,Method\\n';
         
         reportData.forEach(function(row) {
             csv += `${new Date(row.saleDate).toLocaleDateString()},`;
@@ -295,10 +306,13 @@
             csv += `${row.category},`;
             csv += `${row.quantity},`;
             csv += `${row.revenue.toFixed(2)},`;
+            csv += `${row.collected.toFixed(2)},`;
+            csv += `${row.balance.toFixed(2)},`;
             csv += `${row.cost.toFixed(2)},`;
             csv += `${row.profit.toFixed(2)},`;
             csv += `${row.margin.toFixed(2)},`;
-            csv += `${row.paymentStatus}\\n`;
+            csv += `${row.paymentStatus},`;
+            csv += `"${row.paymentMethod || ''}"\\n`;
         });
 
         // Download CSV

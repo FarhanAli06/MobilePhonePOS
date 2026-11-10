@@ -17,6 +17,10 @@ public class Payment : AuditableEntity
     [MaxLength(50)]
     public string PaymentMethod { get; set; } = "Cash"; // Cash, Card, Zelle, Venmo, etc.
 
+    [Required]
+    [MaxLength(20)]
+    public string Type { get; set; } = "Payment"; // Payment or Refund
+
     [MaxLength(255)]
     public string? TransactionId { get; set; }
 

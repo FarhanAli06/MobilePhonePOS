@@ -100,7 +100,13 @@ public class LookupManagementController : Controller
                 return Json(new { success = false, message = "Error creating brand" });
             }
 
-            return Json(new { success = true, message = "Brand created successfully" });
+            return Json(new
+            {
+                success = true,
+                message = "Brand created successfully",
+                id = result.Id,
+                data = result
+            });
         }
         catch (Exception ex)
         {
@@ -222,13 +228,25 @@ public class LookupManagementController : Controller
                 return Json(new { success = false, message = "Invalid data provided" });
             }
 
+            var isDuplicate = await _deviceCategoryApi.CheckDuplicateNameAsync(request.Name, 0);
+            if (isDuplicate)
+            {
+                return Json(new { success = false, message = "A device type with this name already exists" });
+            }
+
             var result = await _deviceCategoryApi.CreateAsync(request);
             if (result == null)
             {
                 return Json(new { success = false, message = "Error creating device category" });
             }
 
-            return Json(new { success = true, message = "Device category created successfully" });
+            return Json(new
+            {
+                success = true,
+                message = "Device type created successfully",
+                id = result.Id,
+                data = result
+            });
         }
         catch (Exception ex)
         {
@@ -328,13 +346,30 @@ public class LookupManagementController : Controller
                 return Json(new { success = false, message = "Invalid data provided" });
             }
 
+            var existingModels = await _deviceModelApi.GetByBrandAndCategoryAsync(request.BrandId, request.DeviceCategoryId);
+            var normalizedName = request.Name.Trim();
+            var normalizedNumber = request.ModelNumber?.Trim() ?? string.Empty;
+            var isDuplicate = existingModels.Any(model =>
+                string.Equals(model.Name?.Trim(), normalizedName, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(model.ModelNumber?.Trim() ?? string.Empty, normalizedNumber, StringComparison.OrdinalIgnoreCase));
+            if (isDuplicate)
+            {
+                return Json(new { success = false, message = "This model already exists for the selected brand and device type" });
+            }
+
             var result = await _deviceModelApi.CreateAsync(request);
             if (result == null)
             {
                 return Json(new { success = false, message = "Error creating device model" });
             }
 
-            return Json(new { success = true, message = "Device model created successfully" });
+            return Json(new
+            {
+                success = true,
+                message = "Device model created successfully",
+                id = result.Id,
+                data = result
+            });
         }
         catch (Exception ex)
         {

@@ -10,6 +10,8 @@ namespace Empire.Web.DTOs.Pos
         public string? Imei { get; set; }
         public string? Network { get; set; }
         public string? Storage { get; set; }
+        public string? Color { get; set; }
+        public string? Carrier { get; set; }
         public string? Condition { get; set; }
         public string? Scratches { get; set; }
         public int? BatteryHealth { get; set; }

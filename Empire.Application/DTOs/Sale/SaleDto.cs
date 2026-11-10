@@ -6,6 +6,7 @@ public class SaleDto
     public string SaleNumber { get; set; } = string.Empty;
     public string InvoiceNumber { get; set; } = string.Empty;
     public DateTime SaleDate { get; set; }
+    public int? CustomerId { get; set; }
     public string? CustomerName { get; set; }
     public decimal SubTotal { get; set; }
     public decimal TaxAmount { get; set; }
@@ -27,6 +28,7 @@ public class SaleItemDto
     public decimal UnitPrice { get; set; }
     public decimal TotalPrice { get; set; }
     public decimal CostPrice { get; set; }
+    public string ItemStatus { get; set; } = "In Stock";
     public bool IsCustomItem { get; set; }
     public int? InventoryItemId { get; set; }
     public int? RepairId { get; set; }
@@ -38,4 +40,5 @@ public class SalePaymentDto
     public string PaymentMethod { get; set; } = string.Empty;
     public decimal Amount { get; set; }
     public string? TransactionId { get; set; }
+    public string Type { get; set; } = "Payment";
 }

@@ -10,4 +10,8 @@ public class RepairPartDto
     public int Quantity { get; set; }
     public decimal UnitPrice { get; set; }
     public decimal TotalPrice { get; set; }
+    public decimal ActualUnitCost { get; set; }
+    public bool IsAllocatedFromStock { get; set; }
+    public bool IsStockReady { get; set; }
+    public int AvailableStock { get; set; }
 }

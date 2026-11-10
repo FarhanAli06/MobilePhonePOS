@@ -16,15 +16,21 @@ namespace Empire.Web.DTOs.Reports
         public string Category { get; set; } = string.Empty;
         public int Quantity { get; set; }
         public decimal Revenue { get; set; }
+        public decimal Collected { get; set; }
+        public decimal Balance { get; set; }
         public decimal Cost { get; set; }
         public decimal Profit { get; set; }
         public decimal Margin { get; set; }
         public string PaymentStatus { get; set; } = string.Empty;
+        public string PaymentMethod { get; set; } = string.Empty;
+        public string Source { get; set; } = "Sale";
     }
 
     public class ProfitReportSummaryDto
     {
         public decimal TotalRevenue { get; set; }
+        public decimal TotalCollected { get; set; }
+        public decimal OutstandingBalance { get; set; }
         public decimal TotalCost { get; set; }
         public decimal TotalProfit { get; set; }
         public decimal ProfitMargin { get; set; }

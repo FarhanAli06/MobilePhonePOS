@@ -10,6 +10,26 @@ let partsInventory = {};
 let repairStatuses = [];
 let paymentStatuses = [];
 
+// Cache only stable lookup lists for one minute. Inventory is deliberately
+// excluded so quantities remain current after every repair or sale.
+const LOOKUP_CACHE_TTL_MS = 60000;
+async function fetchLookupJson(url) {
+    const cacheKey = `empire.lookup:${url}`;
+    try {
+        const saved = sessionStorage.getItem(cacheKey);
+        if (saved) {
+            const entry = JSON.parse(saved);
+            if (entry && Date.now() - entry.savedAt < LOOKUP_CACHE_TTL_MS) return entry.value;
+        }
+    } catch (_) { }
+
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    const result = await response.json();
+    try { sessionStorage.setItem(cacheKey, JSON.stringify({ savedAt: Date.now(), value: result })); } catch (_) { }
+    return result;
+}
+
 // Promise that resolves once all initial data is loaded
 let _readyResolve;
 const _readyPromise = new Promise(resolve => { _readyResolve = resolve; });
@@ -17,9 +37,7 @@ const _readyPromise = new Promise(resolve => { _readyResolve = resolve; });
 // Load device categories from RepairsController
 async function loadDeviceCategories() {
     try {
-        const response = await fetch('/Repairs/GetDeviceCategories');
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const result = await response.json();
+        const result = await fetchLookupJson('/Repairs/GetDeviceCategories');
         
         if (result.success && result.data) {
             deviceCategories = result.data.map(cat => ({
@@ -44,9 +62,7 @@ async function loadDeviceCategories() {
 // Load brands from RepairsController
 async function loadBrands() {
     try {
-        const response = await fetch('/Repairs/GetBrands');
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const result = await response.json();
+        const result = await fetchLookupJson('/Repairs/GetBrands');
         
         if (result.success && result.data) {
             brands = result.data.map(brand => ({
@@ -75,9 +91,7 @@ async function loadDeviceModels(brandId, categoryId) {
         if (brandId) url += `brandId=${brandId}&`;
         if (categoryId) url += `categoryId=${categoryId}`;
         
-        const response = await fetch(url);
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const result = await response.json();
+        const result = await fetchLookupJson(url);
         
         if (result.success && result.data) {
             const models = result.data.map(model => ({
@@ -165,11 +179,18 @@ async function loadInventoryParts(brandId, categoryId, modelId) {
                 category: part.category,
                 model: part.model,
                 sku: part.sku,
+                variant: part.variant || '',
+                color: part.color || '',
                 // stock quantity — server returns as 'stock'
                 quantity: part.stock != null ? part.stock : (part.quantity || 0),
                 stock: part.stock != null ? part.stock : (part.quantity || 0),
                 // pricing
                 costPrice: parseFloat(part.costPrice || 0),
+                fifoCost: parseFloat(part.fifoCost || part.costPrice || 0),
+                latestCost: parseFloat(part.latestCost || part.costPrice || 0),
+                averageCost: parseFloat(part.averageCost || part.costPrice || 0),
+                fifoBatchRemaining: parseInt(part.fifoBatchRemaining || 0),
+                fifoBatchReceivedDate: part.fifoBatchReceivedDate,
                 retailPrice: parseFloat(part.retailPrice || 0),
                 wholesalePrice: parseFloat(part.wholesalePrice || 0),
                 price: parseFloat(part.price || 0),
@@ -205,9 +226,7 @@ async function loadInventoryParts(brandId, categoryId, modelId) {
 // Load payment methods from RepairsController
 async function loadPaymentMethods() {
     try {
-        const response = await fetch('/Repairs/GetPaymentMethods');
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const result = await response.json();
+        const result = await fetchLookupJson('/Repairs/GetPaymentMethods');
         
         if (result.success && result.data) {
             paymentMethods = result.data.map(method => ({
@@ -233,9 +252,7 @@ async function loadPaymentMethods() {
 // Load repair statuses from RepairsController
 async function loadRepairStatuses() {
     try {
-        const response = await fetch('/Repairs/GetRepairStatuses');
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const result = await response.json();
+        const result = await fetchLookupJson('/Repairs/GetRepairStatuses');
         
         if (result.success && result.data) {
             repairStatuses = result.data.map(status => ({
@@ -261,9 +278,7 @@ async function loadRepairStatuses() {
 // Load payment statuses from RepairsController
 async function loadPaymentStatuses() {
     try {
-        const response = await fetch('/Repairs/GetPaymentStatuses');
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        const result = await response.json();
+        const result = await fetchLookupJson('/Repairs/GetPaymentStatuses');
         
         if (result.success && result.data) {
             paymentStatuses = result.data.map(status => ({

@@ -39,6 +39,12 @@ public class Repair : BaseEntity
     [Required]
     public decimal Cost { get; set; }
 
+    /// <summary>
+    /// Private internal part cost for a custom repair that is not linked to an
+    /// inventory item. This value is never printed on customer documents.
+    /// </summary>
+    public decimal PartCost { get; set; } = 0;
+
     /// <summary>Total amount paid so far (used for partial payment tracking).</summary>
     public decimal AmountPaid { get; set; } = 0;
     

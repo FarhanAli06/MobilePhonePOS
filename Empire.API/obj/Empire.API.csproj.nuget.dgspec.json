@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\User\\Desktop\\POSApp\\FarhanAli06\\MobilePhonePOS\\Empire.API\\Empire.API.csproj": {}
+    "C:\\Users\\User\\source\\repos\\MobilePhonePOS\\Empire.API\\Empire.API.csproj": {}
   },
   "projects": {
-    "C:\\Users\\User\\Desktop\\POSApp\\FarhanAli06\\MobilePhonePOS\\Empire.API\\Empire.API.csproj": {
+    "C:\\Users\\User\\source\\repos\\MobilePhonePOS\\Empire.API\\Empire.API.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\User\\Desktop\\POSApp\\FarhanAli06\\MobilePhonePOS\\Empire.API\\Empire.API.csproj",
+        "projectUniqueName": "C:\\Users\\User\\source\\repos\\MobilePhonePOS\\Empire.API\\Empire.API.csproj",
         "projectName": "Empire.API",
-        "projectPath": "C:\\Users\\User\\Desktop\\POSApp\\FarhanAli06\\MobilePhonePOS\\Empire.API\\Empire.API.csproj",
+        "projectPath": "C:\\Users\\User\\source\\repos\\MobilePhonePOS\\Empire.API\\Empire.API.csproj",
         "packagesPath": "C:\\Users\\User\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\User\\Desktop\\POSApp\\FarhanAli06\\MobilePhonePOS\\Empire.API\\obj\\",
+        "outputPath": "C:\\Users\\User\\source\\repos\\MobilePhonePOS\\Empire.API\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -32,14 +32,14 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "C:\\Users\\User\\Desktop\\POSApp\\FarhanAli06\\MobilePhonePOS\\Empire.Application\\Empire.Application.csproj": {
-                "projectPath": "C:\\Users\\User\\Desktop\\POSApp\\FarhanAli06\\MobilePhonePOS\\Empire.Application\\Empire.Application.csproj"
+              "C:\\Users\\User\\source\\repos\\MobilePhonePOS\\Empire.Application\\Empire.Application.csproj": {
+                "projectPath": "C:\\Users\\User\\source\\repos\\MobilePhonePOS\\Empire.Application\\Empire.Application.csproj"
               },
-              "C:\\Users\\User\\Desktop\\POSApp\\FarhanAli06\\MobilePhonePOS\\Empire.Domain\\Empire.Domain.csproj": {
-                "projectPath": "C:\\Users\\User\\Desktop\\POSApp\\FarhanAli06\\MobilePhonePOS\\Empire.Domain\\Empire.Domain.csproj"
+              "C:\\Users\\User\\source\\repos\\MobilePhonePOS\\Empire.Domain\\Empire.Domain.csproj": {
+                "projectPath": "C:\\Users\\User\\source\\repos\\MobilePhonePOS\\Empire.Domain\\Empire.Domain.csproj"
               },
-              "C:\\Users\\User\\Desktop\\POSApp\\FarhanAli06\\MobilePhonePOS\\Empire.Infrastructure\\Empire.Infrastructure.csproj": {
-                "projectPath": "C:\\Users\\User\\Desktop\\POSApp\\FarhanAli06\\MobilePhonePOS\\Empire.Infrastructure\\Empire.Infrastructure.csproj"
+              "C:\\Users\\User\\source\\repos\\MobilePhonePOS\\Empire.Infrastructure\\Empire.Infrastructure.csproj": {
+                "projectPath": "C:\\Users\\User\\source\\repos\\MobilePhonePOS\\Empire.Infrastructure\\Empire.Infrastructure.csproj"
               }
             }
           }
@@ -102,18 +102,18 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.314/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.312/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\User\\Desktop\\POSApp\\FarhanAli06\\MobilePhonePOS\\Empire.Application\\Empire.Application.csproj": {
+    "C:\\Users\\User\\source\\repos\\MobilePhonePOS\\Empire.Application\\Empire.Application.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\User\\Desktop\\POSApp\\FarhanAli06\\MobilePhonePOS\\Empire.Application\\Empire.Application.csproj",
+        "projectUniqueName": "C:\\Users\\User\\source\\repos\\MobilePhonePOS\\Empire.Application\\Empire.Application.csproj",
         "projectName": "Empire.Application",
-        "projectPath": "C:\\Users\\User\\Desktop\\POSApp\\FarhanAli06\\MobilePhonePOS\\Empire.Application\\Empire.Application.csproj",
+        "projectPath": "C:\\Users\\User\\source\\repos\\MobilePhonePOS\\Empire.Application\\Empire.Application.csproj",
         "packagesPath": "C:\\Users\\User\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\User\\Desktop\\POSApp\\FarhanAli06\\MobilePhonePOS\\Empire.Application\\obj\\",
+        "outputPath": "C:\\Users\\User\\source\\repos\\MobilePhonePOS\\Empire.Application\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -134,8 +134,8 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "C:\\Users\\User\\Desktop\\POSApp\\FarhanAli06\\MobilePhonePOS\\Empire.Domain\\Empire.Domain.csproj": {
-                "projectPath": "C:\\Users\\User\\Desktop\\POSApp\\FarhanAli06\\MobilePhonePOS\\Empire.Domain\\Empire.Domain.csproj"
+              "C:\\Users\\User\\source\\repos\\MobilePhonePOS\\Empire.Domain\\Empire.Domain.csproj": {
+                "projectPath": "C:\\Users\\User\\source\\repos\\MobilePhonePOS\\Empire.Domain\\Empire.Domain.csproj"
               }
             }
           }
@@ -185,18 +185,18 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.314/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.312/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\User\\Desktop\\POSApp\\FarhanAli06\\MobilePhonePOS\\Empire.Domain\\Empire.Domain.csproj": {
+    "C:\\Users\\User\\source\\repos\\MobilePhonePOS\\Empire.Domain\\Empire.Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\User\\Desktop\\POSApp\\FarhanAli06\\MobilePhonePOS\\Empire.Domain\\Empire.Domain.csproj",
+        "projectUniqueName": "C:\\Users\\User\\source\\repos\\MobilePhonePOS\\Empire.Domain\\Empire.Domain.csproj",
         "projectName": "Empire.Domain",
-        "projectPath": "C:\\Users\\User\\Desktop\\POSApp\\FarhanAli06\\MobilePhonePOS\\Empire.Domain\\Empire.Domain.csproj",
+        "projectPath": "C:\\Users\\User\\source\\repos\\MobilePhonePOS\\Empire.Domain\\Empire.Domain.csproj",
         "packagesPath": "C:\\Users\\User\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\User\\Desktop\\POSApp\\FarhanAli06\\MobilePhonePOS\\Empire.Domain\\obj\\",
+        "outputPath": "C:\\Users\\User\\source\\repos\\MobilePhonePOS\\Empire.Domain\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -250,18 +250,18 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.314/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.312/PortableRuntimeIdentifierGraph.json"
         }
       }
     },
-    "C:\\Users\\User\\Desktop\\POSApp\\FarhanAli06\\MobilePhonePOS\\Empire.Infrastructure\\Empire.Infrastructure.csproj": {
+    "C:\\Users\\User\\source\\repos\\MobilePhonePOS\\Empire.Infrastructure\\Empire.Infrastructure.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\User\\Desktop\\POSApp\\FarhanAli06\\MobilePhonePOS\\Empire.Infrastructure\\Empire.Infrastructure.csproj",
+        "projectUniqueName": "C:\\Users\\User\\source\\repos\\MobilePhonePOS\\Empire.Infrastructure\\Empire.Infrastructure.csproj",
         "projectName": "Empire.Infrastructure",
-        "projectPath": "C:\\Users\\User\\Desktop\\POSApp\\FarhanAli06\\MobilePhonePOS\\Empire.Infrastructure\\Empire.Infrastructure.csproj",
+        "projectPath": "C:\\Users\\User\\source\\repos\\MobilePhonePOS\\Empire.Infrastructure\\Empire.Infrastructure.csproj",
         "packagesPath": "C:\\Users\\User\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\User\\Desktop\\POSApp\\FarhanAli06\\MobilePhonePOS\\Empire.Infrastructure\\obj\\",
+        "outputPath": "C:\\Users\\User\\source\\repos\\MobilePhonePOS\\Empire.Infrastructure\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -282,11 +282,11 @@
           "net8.0": {
             "targetAlias": "net8.0",
             "projectReferences": {
-              "C:\\Users\\User\\Desktop\\POSApp\\FarhanAli06\\MobilePhonePOS\\Empire.Application\\Empire.Application.csproj": {
-                "projectPath": "C:\\Users\\User\\Desktop\\POSApp\\FarhanAli06\\MobilePhonePOS\\Empire.Application\\Empire.Application.csproj"
+              "C:\\Users\\User\\source\\repos\\MobilePhonePOS\\Empire.Application\\Empire.Application.csproj": {
+                "projectPath": "C:\\Users\\User\\source\\repos\\MobilePhonePOS\\Empire.Application\\Empire.Application.csproj"
               },
-              "C:\\Users\\User\\Desktop\\POSApp\\FarhanAli06\\MobilePhonePOS\\Empire.Domain\\Empire.Domain.csproj": {
-                "projectPath": "C:\\Users\\User\\Desktop\\POSApp\\FarhanAli06\\MobilePhonePOS\\Empire.Domain\\Empire.Domain.csproj"
+              "C:\\Users\\User\\source\\repos\\MobilePhonePOS\\Empire.Domain\\Empire.Domain.csproj": {
+                "projectPath": "C:\\Users\\User\\source\\repos\\MobilePhonePOS\\Empire.Domain\\Empire.Domain.csproj"
               }
             }
           }
@@ -360,7 +360,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.314/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.312/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

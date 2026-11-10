@@ -13,6 +13,9 @@ namespace Empire.Web.Services.Repair
         Task<RepairDto?> CreateAsync(CreateRepairRequest request);
         Task<RepairDto?> UpdateAsync(int id, UpdateRepairRequestDto request);
         Task<bool> DeleteAsync(int id);
+        Task<IEnumerable<RepairDto>> GetDeletedAsync();
+        Task<bool> RestoreAsync(int id);
+        Task<bool> EmptyTrashAsync();
         Task<IEnumerable<RepairDto>> SearchAsync(string searchTerm);
         Task<IEnumerable<RepairDto>> GetByCustomerIdAsync(int customerId);
         Task<IEnumerable<RepairDto>> GetByStatusAsync(string status);
@@ -22,6 +25,8 @@ namespace Empire.Web.Services.Repair
         Task<bool> AddPartsToRepairAsync(int repairId, object request);
         Task<bool> ReplacePartsAsync(int repairId, object request);
         Task<IEnumerable<RepairPartDto>> GetRepairPartsAsync(int repairId);
+        Task<IEnumerable<WaitingPartAlertDto>> GetReadyWaitingPartsAsync();
+        Task<bool> AllocateWaitingPartAsync(int repairPartId);
         Task<IEnumerable<RepairActivityDto>> GetRepairActivitiesAsync(int repairId);
 
         // Payment Ledger

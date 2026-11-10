@@ -13,6 +13,7 @@ public class SaveRepairJsonRequest
     public string? Description { get; set; }
     public string? Comments { get; set; }
     public decimal Cost { get; set; }
+    public decimal PartCost { get; set; } = 0m;
     public string PaymentStatus { get; set; } = "Unpaid";
     public decimal AmountPaid { get; set; } = 0m;
     public int CompanyId { get; set; }
@@ -30,6 +31,7 @@ public class RepairPartRequest
     public int Quantity { get; set; }
     public string? PartName { get; set; }
     public decimal UnitPrice { get; set; }
+    public bool AllowBackorder { get; set; }
 }
 
 /// <summary>
@@ -44,4 +46,9 @@ public class InitialRepairPaymentRequest
     public string? Notes { get; set; }
     /// <summary>ISO date string, e.g. "2025-06-07T00:00:00". Null = now.</summary>
     public string? PaidAt { get; set; }
+}
+
+public class AllocateWaitingPartWebRequest
+{
+    public int RepairPartId { get; set; }
 }

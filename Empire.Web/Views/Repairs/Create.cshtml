@@ -6,8 +6,6 @@
 @section Styles {
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <style>
         :root {
             --primary: #2196f3;
@@ -53,6 +51,9 @@
         .brand-card { background:white; padding:15px; border-radius:var(--radius); text-align:center; cursor:pointer; border:2px solid transparent; transition:0.3s; box-shadow:0 2px 5px rgba(0,0,0,0.05); }
         .brand-card:hover { transform:translateY(-3px); box-shadow:0 5px 15px rgba(0,0,0,0.1); }
         .brand-card.active { border-color:var(--primary); background:rgba(33,150,243,0.05); }
+        .brand-card.logo-only { min-height:105px; display:flex; align-items:center; justify-content:center; }
+        .brand-card.logo-only .brand-name { width:100%; display:flex; align-items:center; justify-content:center; }
+        .brand-card.logo-only .manufacturer-logo { height:52px; max-height:52px; max-width:145px; }
         .brand-icon { width:50px; height:50px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 10px; color:white; font-size:24px; }
         .brand-name { font-weight:600; font-size:14px; }
         .categories-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:15px; margin-bottom:20px; }
@@ -109,6 +110,55 @@
         .device-issue-input { width:100%; padding:12px; border:1px solid var(--border); border-radius:var(--radius); font-size:14px; margin-top:10px; }
         .device-issue-input:focus { outline:none; border-color:var(--primary); }
         .chip { background:var(--bg-light); padding:5px 15px; border-radius:20px; font-size:14px; color:var(--text-light); }
+        /* UI-only four-step intake layout. Existing form controls and handlers stay in place. */
+        .intake-progress { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:14px 0 18px; }
+        .intake-progress-btn { border:0; border-radius:10px; padding:11px 13px; text-align:left; background:#e9edf3; color:#6b7280; cursor:pointer; transition:.2s; }
+        .intake-progress-btn small { display:block; font-size:11px; margin-bottom:2px; }
+        .intake-progress-btn strong { font-size:14px; }
+        .intake-progress-btn.active { background:var(--primary-dark); color:white; }
+        .intake-progress-btn.complete { background:#e2f4e8; color:#287342; }
+        .intake-layout { display:grid; grid-template-columns:minmax(0,1fr) 290px; gap:16px; align-items:start; }
+        .intake-panel { display:none; }
+        .intake-panel.active { display:block; }
+        .intake-panel-actions { display:flex; justify-content:space-between; gap:10px; margin:12px 0; }
+        .intake-summary { position:sticky; top:14px; background:white; border-radius:var(--radius); padding:18px; box-shadow:var(--shadow); border:1px solid var(--border); }
+        .intake-summary h3 { font-size:18px; margin:0 0 10px; }
+        .intake-summary-row { display:flex; justify-content:space-between; gap:12px; padding:9px 0; border-bottom:1px solid var(--border); font-size:13px; }
+        .intake-summary-row span:first-child { color:var(--text-light); }
+        .intake-summary-services { margin:12px 0; padding-left:18px; font-size:13px; min-height:38px; }
+        .intake-summary-total { display:flex; justify-content:space-between; gap:12px; padding:12px 0; color:var(--primary-dark); font-weight:700; }
+        .intake-print-note { padding:10px; border-radius:var(--radius); background:#eaf6ee; color:#287342; font-size:12px; margin-top:10px; }
+        #repairDeviceServices:empty::before { content:'Choose a device and model first. Your repair options will appear here.'; display:block; padding:30px; text-align:center; color:var(--text-light); background:var(--bg-light); border-radius:var(--radius); }
+        .add-new-customer-btn { width:100%; justify-content:center; margin-top:8px; min-height:46px; }
+        .custom-repair-launch { width:100%; min-height:54px; justify-content:center; margin-bottom:12px; border:2px dashed #2196f3; background:#f2f8ff; color:#1769aa; }
+        .custom-repair-launch:hover { background:#e5f2ff; color:#0d5e9e; }
+        .custom-repair-panel { display:none; margin-bottom:16px; padding:16px; border:1px solid #b9dcfb; border-radius:12px; background:#f8fbff; }
+        .custom-repair-panel.open { display:block; }
+        .custom-repair-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px; }
+        .custom-repair-summary { padding:18px; border:2px solid #2196f3; border-radius:14px; background:#f5faff; }
+        .custom-repair-summary-device { font-size:20px; font-weight:800; color:#172333; }
+        .custom-repair-summary-service { margin-top:6px; font-size:18px; font-weight:800; color:#1769aa; }
+        .custom-repair-summary-price { margin-top:12px; font-size:22px; font-weight:800; color:#198754; }
+        @@media (min-width:769px) {
+            .repair-page { height:calc(100vh - 28px); overflow:hidden; }
+            .repair-page > .section-header { min-height:54px; }
+            .intake-progress { margin:8px 0 10px; }
+            .intake-progress-btn { padding:8px 11px; }
+            .intake-layout { height:calc(100vh - 130px); overflow:hidden; }
+            .intake-main, .intake-summary { max-height:100%; overflow-y:auto; }
+            .intake-summary { top:0; padding:14px; }
+            .intake-panel[data-intake-panel="confirm"].active { display:grid; grid-template-columns:minmax(0,.9fr) minmax(0,1.2fr); gap:10px; }
+            .intake-panel[data-intake-panel="confirm"] > .form-section { margin-bottom:0; }
+            .intake-panel[data-intake-panel="confirm"] > .action-buttons { grid-column:1/-1; margin-top:8px; padding-top:8px; }
+            .intake-panel[data-intake-panel="confirm"] .form-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; margin-bottom:8px; }
+            .intake-panel[data-intake-panel="confirm"] .status-options { grid-template-columns:repeat(3,1fr); gap:7px; margin-top:8px !important; }
+            .intake-panel[data-intake-panel="confirm"] .status-option { padding:7px 4px; }
+            .intake-panel[data-intake-panel="confirm"] .status-icon { font-size:20px; margin-bottom:2px; }
+            .intake-panel[data-intake-panel="confirm"] .status-desc { display:none; }
+            .intake-panel[data-intake-panel="confirm"] .payment-summary { padding:10px; margin-top:8px; }
+            .intake-panel[data-intake-panel="confirm"] .payment-row { padding:4px 0; font-size:12px; }
+            .intake-panel[data-intake-panel="confirm"] .form-textarea { min-height:54px; }
+        }
         /* Shared section-card styles (matches Edit page) */
         .section-card { background:white; border-radius:var(--radius); box-shadow:0 2px 8px rgba(0,0,0,.06); margin-bottom:16px; overflow:hidden; }
         .section-header { padding:12px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; font-weight:600; font-size:.82rem; text-transform:uppercase; letter-spacing:.04em; color:var(--primary); background:#f8fbff; }
@@ -132,7 +182,13 @@
             .brand-grid { grid-template-columns:repeat(3,1fr); }
             .categories-grid,.models-grid,.payment-methods-grid { grid-template-columns:repeat(2,1fr); }
             .action-buttons,.payment-action-buttons { flex-direction:column; }
+            .intake-layout { grid-template-columns:1fr; }
+            .intake-summary { position:static; }
+            .intake-progress-btn { text-align:center; padding:9px 5px; }
+            .intake-progress-btn strong { font-size:12px; }
+            .custom-repair-grid { grid-template-columns:1fr; }
         }
+
     </style>
 }
 
@@ -141,7 +197,7 @@
     <div class="section-header">
         <div>
             <h1 style="font-size:24px;font-weight:700;margin-bottom:5px;">New Repair Order</h1>
-            <div class="repair-id">Repair ID: <span id="repairId">#REP-00123</span></div>
+            <span id="repairId" hidden></span>
         </div>
         <div style="display:flex;gap:10px;">
             <button class="btn btn-secondary" onclick="saveRepair()">
@@ -153,6 +209,16 @@
         </div>
     </div>
 
+    <nav class="intake-progress" aria-label="Repair intake steps">
+        <button type="button" class="intake-progress-btn active" data-intake-target="customer" onclick="showIntakeStep('customer')"><small>Step 1</small><strong>Customer</strong></button>
+        <button type="button" class="intake-progress-btn" data-intake-target="device" onclick="showIntakeStep('device')"><small>Step 2</small><strong>Device</strong></button>
+        <button type="button" class="intake-progress-btn" data-intake-target="repair" onclick="showIntakeStep('repair')"><small>Step 3</small><strong>Repair</strong></button>
+        <button type="button" class="intake-progress-btn" data-intake-target="confirm" onclick="showIntakeStep('confirm')"><small>Step 4</small><strong>Confirm &amp; Print</strong></button>
+    </nav>
+
+    <div class="intake-layout">
+        <div class="intake-main">
+    <div class="intake-panel active" data-intake-panel="customer">
     <!-- SECTION 1: Customer Information -->
     <div class="form-section">
         <div class="section-header">
@@ -164,14 +230,12 @@
         <div class="form-grid">
             <div class="form-group">
                 <label class="form-label">Customer Name *</label>
-                <div style="display:flex;gap:8px;align-items:flex-start;">
-                    <select class="form-input" id="customerName" required style="flex:1;">
-                        <option value="">Select or search customer...</option>
-                    </select>
-                    <button type="button" class="btn btn-primary btn-sm" style="height:46px;padding:0 14px;white-space:nowrap;font-size:13px;" data-bs-toggle="modal" data-bs-target="#addNewCustomerModal" title="Add New Customer">
-                        <i class="material-icons" style="font-size:18px;vertical-align:middle;">person_add</i>
-                    </button>
-                </div>
+                <select class="form-input" id="customerName" required>
+                    <option value="">Select or search customer...</option>
+                </select>
+                <button type="button" class="btn btn-primary add-new-customer-btn" data-bs-toggle="modal" data-bs-target="#addNewCustomerModal">
+                    <i class="material-icons">person_add</i> Add New Customer
+                </button>
             </div>
             <div class="form-group">
                 <label class="form-label">Phone Number</label>
@@ -187,7 +251,10 @@
             </div>
         </div>
     </div>
+        <div class="intake-panel-actions"><span></span><button type="button" class="btn btn-primary" onclick="showIntakeStep('device')">Continue to Device <i class="material-icons">arrow_forward</i></button></div>
+    </div>
 
+    <div class="intake-panel" data-intake-panel="device">
     <!-- SECTION 2: Device Selection -->
     <div class="form-section">
         <div class="section-header">
@@ -197,12 +264,32 @@
             </div>
             <span class="chip" id="deviceCount">1 device added</span>
         </div>
+        <button type="button" class="btn custom-repair-launch" onclick="toggleCustomRepair()">
+            <i class="material-icons">bolt</i> Quick Custom Repair
+        </button>
+        <div class="custom-repair-panel" id="customRepairPanel">
+            <div class="custom-repair-grid">
+                <div class="form-group"><label class="form-label" for="customRepairBrand">Brand</label><input type="text" class="form-input" id="customRepairBrand" placeholder="Example: Apple"></div>
+                <div class="form-group"><label class="form-label" for="customRepairModel">Model</label><input type="text" class="form-input" id="customRepairModel" placeholder="Example: iPhone 15 Pro"></div>
+                <div class="form-group"><label class="form-label" for="customRepairPart">Repair / Part</label><input type="text" class="form-input" id="customRepairPart" placeholder="Example: Home Button Repair"></div>
+                <div class="form-group"><label class="form-label" for="customRepairPartCost">Part Cost <span class="text-muted">(private)</span></label><input type="number" class="form-input" id="customRepairPartCost" min="0" step="0.01" placeholder="0.00"></div>
+                <div class="form-group"><label class="form-label" for="customRepairPrice">Customer Price</label><input type="number" class="form-input" id="customRepairPrice" min="0" step="0.01" placeholder="0.00"></div>
+            </div>
+            <button type="button" class="btn btn-primary" style="margin-top:14px;" onclick="applyCustomRepair()"><i class="material-icons">check_circle</i> Use Custom Repair</button>
+        </div>
         <div id="devicesContainer"></div>
         <button class="add-device-btn" onclick="addDeviceSection()">
             <i class="material-icons">add</i> Add Another Device
         </button>
     </div>
+        <div class="intake-panel-actions"><button type="button" class="btn btn-secondary" onclick="showIntakeStep('customer')"><i class="material-icons">arrow_back</i> Customer</button><button type="button" class="btn btn-primary" onclick="showIntakeStep('repair')">Continue to Repair <i class="material-icons">arrow_forward</i></button></div>
+    </div>
 
+    <div class="intake-panel" data-intake-panel="repair">
+    <div class="form-section">
+        <div class="section-title" style="margin-bottom:16px;"><i class="material-icons">build</i><span>Choose Repair Service</span></div>
+        <div id="repairDeviceServices"></div>
+    </div>
     <!-- SECTION 3: Repair Notes -->
     <div class="form-section">
         <div class="section-title" style="margin-bottom:20px;">
@@ -224,7 +311,10 @@
             <textarea class="form-textarea" id="additionalNotes" placeholder="Any additional notes or special instructions..." rows="2"></textarea>
         </div>
     </div>
+        <div class="intake-panel-actions"><button type="button" class="btn btn-secondary" onclick="showIntakeStep('device')"><i class="material-icons">arrow_back</i> Device</button><button type="button" class="btn btn-primary" onclick="showIntakeStep('confirm')">Continue to Confirm <i class="material-icons">arrow_forward</i></button></div>
+    </div>
 
+    <div class="intake-panel" data-intake-panel="confirm">
     <!-- SECTION 4: Repair Status -->
     <div class="form-section">
         <div class="section-title" style="margin-bottom:20px;">
@@ -288,24 +378,13 @@
                 <label class="form-label">Discount ($)</label>
                 <input type="number" class="form-input" id="discount" value="0" min="0" step="0.01" onchange="calculateTotal()">
             </div>
-            <!-- Tax UI Component -->
             <div class="form-group">
-                <label class="form-label">Tax</label>
-                <div class="tax-toggle-group" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                    <div class="btn-group btn-group-sm" role="group">
-                        <input type="radio" class="btn-check" name="taxMode" id="taxModeExempt" value="exempt" checked onchange="onTaxModeChange()">
-                        <label class="btn btn-outline-secondary" for="taxModeExempt"><i class="material-icons" style="font-size:14px;vertical-align:middle;">block</i> Exempt</label>
-                        <input type="radio" class="btn-check" name="taxMode" id="taxModeApply" value="apply" onchange="onTaxModeChange()">
-                        <label class="btn btn-outline-primary" for="taxModeApply"><i class="material-icons" style="font-size:14px;vertical-align:middle;">percent</i> Apply</label>
-                    </div>
-                    <div id="taxRateWrapper" style="display:none;flex:1;min-width:100px;">
-                        <div class="input-group input-group-sm">
-                            <input type="number" class="form-input" id="taxRate" value="10.25" min="0" max="100" step="0.01" onchange="calculateTotal()" style="border-radius:4px 0 0 4px;">
-                            <span class="input-group-text">%</span>
-                        </div>
-                    </div>
-                </div>
-                <input type="hidden" id="taxRateHidden" value="0">
+                <label class="form-label">Sales Tax</label>
+                <input type="hidden" id="taxRate" value="11">
+                <button type="button" id="repairTaxToggle" class="btn btn-outline-secondary w-100" aria-pressed="false" onclick="toggleRepairTax()">
+                    <i class="material-icons" style="font-size:18px;vertical-align:middle;">toggle_off</i>
+                    <span>Tax Not Applied</span>
+                </button>
             </div>
         </div>
         <!-- Payment Status -->
@@ -379,11 +458,11 @@
         <!-- Payment Summary -->
         <div class="payment-summary">
             <div class="payment-row"><span>Parts Total:</span><span id="partsTotal">$0.00</span></div>
-            <div class="payment-row"><span>Service Charge:</span><span id="serviceTotal">$49.99</span></div>
-            <div class="payment-row"><span>Diagnostic Fee:</span><span id="diagnosticTotal">$19.99</span></div>
+            <div class="payment-row"><span>Service Charge:</span><span id="serviceTotal">$0.00</span></div>
+            <div class="payment-row"><span>Diagnostic Fee:</span><span id="diagnosticTotal">$0.00</span></div>
             <div class="payment-row"><span>Discount:</span><span id="discountTotal">-$0.00</span></div>
-            <div class="payment-row"><span>Tax (<span id="taxRateDisplay">8.5</span>%):</span><span id="taxTotal">$0.00</span></div>
-            <div class="payment-row total"><span>GRAND TOTAL:</span><span id="grandTotal">$69.98</span></div>
+            <div class="payment-row"><span>Tax (<span id="taxRateDisplay">11.0</span>%):</span><span id="taxTotal">$0.00</span></div>
+            <div class="payment-row total"><span>GRAND TOTAL:</span><span id="grandTotal">$0.00</span></div>
             <div class="payment-row"><span>Total Paid:</span><span id="totalPaidDisplay">$0.00</span></div>
             <div class="payment-row" id="refundedRow" style="display:none;"><span>Total Refunded:</span><span id="totalRefundedDisplay" style="color:#e53935;">-$0.00</span></div>
             <div class="payment-row balance" id="balanceRow"><span>BALANCE DUE:</span><span id="balanceDue">$69.98</span></div>
@@ -396,15 +475,56 @@
 
     <!-- Action Buttons -->
     <div class="action-buttons">
-        <button class="btn btn-secondary" onclick="resetForm()">
-            <i class="material-icons">clear</i> Clear Form
+        <button type="button" class="btn btn-primary" id="footerSaveButton" onclick="saveRepair(this)">
+            <i class="material-icons">save</i> Save
         </button>
-        <button class="btn btn-primary" onclick="saveRepair()">
-            <i class="material-icons">save</i> Save as Draft
+        <button type="button" class="btn btn-success" id="footerPrintButton" onclick="printSavedRepair(this)" disabled>
+            <i class="material-icons">print</i> Print
         </button>
-        <button class="btn btn-success" onclick="submitRepair()">
-            <i class="material-icons">check_circle</i> Submit Repair Order
-        </button>
+    </div>
+    </div>
+        </div>
+
+        <aside class="intake-summary" aria-live="polite">
+            <h3>Repair Summary</h3>
+            <div class="intake-summary-row"><span>Customer</span><strong id="intakeSummaryCustomer">Not selected</strong></div>
+            <div class="intake-summary-row"><span>Phone</span><strong id="intakeSummaryPhone">—</strong></div>
+            <div class="intake-summary-row"><span>Device</span><strong id="intakeSummaryDevice">Not selected</strong></div>
+            <ul class="intake-summary-services" id="intakeSummaryServices"><li>No repair selected</li></ul>
+            <div class="intake-summary-total"><span>Estimated Total</span><span id="intakeSummaryTotal">$0.00</span></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <button type="button" class="btn btn-primary" id="confirmSaveButton" style="justify-content:center;" onclick="saveRepair(this)"><i class="material-icons">save</i> Save</button>
+                <button type="button" class="btn btn-success" id="confirmPrintButton" style="justify-content:center;" onclick="printSavedRepair(this)" disabled><i class="material-icons">print</i> Print</button>
+            </div>
+            <div class="intake-print-note"><i class="material-icons" style="font-size:14px;vertical-align:middle;">info</i> Save records the repair without printing. Print becomes available after the repair is saved.</div>
+        </aside>
+    </div>
+</div>
+
+<!-- Persistent model-specific repair type, stored through the existing inventory backend. -->
+<div class="modal fade" id="addRepairTypeModal" tabindex="-1" aria-labelledby="addRepairTypeTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addRepairTypeTitle">Add New Repair Type</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3"><label class="form-label" for="newRepairTypeName">Repair name</label><input class="form-control" id="newRepairTypeName" placeholder="Example: Home Button Repair"></div>
+                <div class="row g-3">
+                    <div class="col-6"><label class="form-label" for="newRepairTypeStock">Starting inventory</label><input class="form-control" id="newRepairTypeStock" type="number" min="0" value="0"></div>
+                    <div class="col-6"><label class="form-label" for="newRepairTypeReorder">Low-stock alert</label><input class="form-control" id="newRepairTypeReorder" type="number" min="0" value="2"></div>
+                    <div class="col-6"><label class="form-label" for="newRepairTypeCategory">Part type</label><select class="form-select" id="newRepairTypeCategory"></select></div>
+                    <div class="col-6"><label class="form-label" for="newRepairInventoryCategory">Inventory group</label><select class="form-select" id="newRepairInventoryCategory"></select></div>
+                </div>
+                <div class="form-text mt-3">The selling price stays blank on each new repair so you can enter it at intake.</div>
+                <div class="text-danger mt-2" id="newRepairTypeError" style="display:none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveRepairTypeButton" onclick="saveNewRepairType()"><i class="material-icons">save</i> Save Repair Type</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -421,7 +541,10 @@
         let paymentHistoryItems = [];
         let totalPaid = 0;
         let totalRefunded = 0;
+        let repairTaxEnabled = false;
         let selectedPaymentMethod = null;
+        let activeRepairTypeSelector = null;
+        let confirmedRepairResult = null;
 
         // ── Render callbacks invoked by repair-data-loader after data is fetched ──
         function renderBrands() {
@@ -450,14 +573,146 @@
         function getDeviceCategories() { return (window.repairData && window.repairData.deviceCategories) ? window.repairData.deviceCategories : []; }
         function getPaymentMethods() { return (window.repairData && window.repairData.paymentMethods) ? window.repairData.paymentMethods : []; }
 
+        function fillRepairTypeSelect(selectId, items) {
+            var select = document.getElementById(selectId);
+            select.textContent = '';
+            (items || []).filter(function(item) { return item.isActive !== false; }).forEach(function(item) {
+                var option = document.createElement('option');
+                option.value = item.id || item.Id;
+                option.textContent = item.name || item.Name;
+                select.appendChild(option);
+            });
+        }
+
+        async function openAddRepairType(selectorId) {
+            var state = EmpireDeviceSelector.getState(selectorId);
+            if (!state || !state.modelId) { showNotification('Select a device model first.', 'warning'); return; }
+            activeRepairTypeSelector = selectorId;
+            document.getElementById('newRepairTypeName').value = '';
+            document.getElementById('newRepairTypeStock').value = '0';
+            document.getElementById('newRepairTypeError').style.display = 'none';
+            try {
+                var responses = await Promise.all([
+                    fetch('/LookupManagement/GetCategories?categoryType=Inventory').then(function(response) { return response.json(); }),
+                    fetch('/LookupManagement/GetInventoryCategories').then(function(response) { return response.json(); })
+                ]);
+                fillRepairTypeSelect('newRepairTypeCategory', responses[0].success ? responses[0].data : responses[0]);
+                fillRepairTypeSelect('newRepairInventoryCategory', responses[1].success ? responses[1].data : responses[1]);
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('addRepairTypeModal')).show();
+            } catch (error) {
+                showNotification('Unable to load repair type options.', 'error');
+            }
+        }
+
+        async function saveNewRepairType() {
+            var state = EmpireDeviceSelector.getState(activeRepairTypeSelector);
+            var name = document.getElementById('newRepairTypeName').value.trim();
+            var categoryId = parseInt(document.getElementById('newRepairTypeCategory').value) || 0;
+            var inventoryCategoryId = parseInt(document.getElementById('newRepairInventoryCategory').value) || 0;
+            var errorBox = document.getElementById('newRepairTypeError');
+            if (!state || !name || !categoryId || !inventoryCategoryId) {
+                errorBox.textContent = 'Enter a repair name and select both inventory options.';
+                errorBox.style.display = 'block';
+                return;
+            }
+            var button = document.getElementById('saveRepairTypeButton');
+            button.disabled = true;
+            try {
+                var response = await fetch('/Inventories/CreateInventoryItem', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        CategoryId: categoryId,
+                        Name: name,
+                        SKU: '',
+                        Description: 'Repair type created from repair intake',
+                        BrandId: state.brandId,
+                        DeviceCategoryId: state.categoryId,
+                        DeviceModelId: state.modelId,
+                        InventoryCategoryId: inventoryCategoryId,
+                        CurrentStock: Math.max(0, parseInt(document.getElementById('newRepairTypeStock').value) || 0),
+                        ReorderPoint: Math.max(0, parseInt(document.getElementById('newRepairTypeReorder').value) || 0),
+                        CostPrice: 0,
+                        RetailPrice: 0,
+                        WholesalePrice: 0,
+                        EnableLowStockNotifications: true,
+                        IsActive: true,
+                        Notes: 'Model-specific repair type'
+                    })
+                });
+                var result = await response.json();
+                if (!result.success) throw new Error(result.message || 'Unable to save repair type.');
+                bootstrap.Modal.getInstance(document.getElementById('addRepairTypeModal')).hide();
+                EmpireDeviceSelector.reloadParts(activeRepairTypeSelector);
+                showNotification(name + ' was added to this model and inventory.', 'success');
+            } catch (error) {
+                errorBox.textContent = error.message;
+                errorBox.style.display = 'block';
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        // UI-only intake navigation. It shows the existing controls in four compact steps.
+        function showIntakeStep(stepName) {
+            var order = ['customer', 'device', 'repair', 'confirm'];
+            var activeIndex = order.indexOf(stepName);
+            document.querySelectorAll('[data-intake-panel]').forEach(function(panel) {
+                panel.classList.toggle('active', panel.dataset.intakePanel === stepName);
+            });
+            document.querySelectorAll('[data-intake-target]').forEach(function(button) {
+                var index = order.indexOf(button.dataset.intakeTarget);
+                button.classList.toggle('active', index === activeIndex);
+                button.classList.toggle('complete', index < activeIndex);
+            });
+            updateIntakeSummary();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Moves the existing selector's repair/parts step into the Repair panel.
+        // IDs, events, selection state, inventory calls and save flow are preserved.
+        function mountRepairSelector(selectorId) {
+            var repairHost = document.getElementById('repairDeviceServices');
+            var repairStep = document.getElementById(selectorId + '-step4');
+            if (repairHost && repairStep && repairStep.parentElement !== repairHost) {
+                repairStep.dataset.selectorId = selectorId;
+                repairHost.appendChild(repairStep);
+            }
+        }
+
+        function updateIntakeSummary() {
+            var customerSelect = document.getElementById('customerName');
+            var customerText = customerSelect && customerSelect.selectedIndex > 0 ? customerSelect.options[customerSelect.selectedIndex].text : 'Not selected';
+            var summaryCustomer = document.getElementById('intakeSummaryCustomer');
+            var summaryPhone = document.getElementById('intakeSummaryPhone');
+            var summaryDevice = document.getElementById('intakeSummaryDevice');
+            var summaryServices = document.getElementById('intakeSummaryServices');
+            var summaryTotal = document.getElementById('intakeSummaryTotal');
+            var states = Object.keys(deviceStates).map(function(key) { return deviceStates[key]; });
+            var deviceNames = states.filter(function(state) { return state.modelName; }).map(function(state) { return ((state.brandName || '') + ' ' + state.modelName).trim(); });
+            var services = states.filter(function(state) { return state.issue; }).map(function(state) { return state.issue; });
+            if (summaryCustomer) summaryCustomer.textContent = customerText;
+            if (summaryPhone) summaryPhone.textContent = (document.getElementById('customerPhone') || {}).value || '—';
+            if (summaryDevice) summaryDevice.textContent = deviceNames.join(', ') || 'Not selected';
+            if (summaryServices) {
+                summaryServices.textContent = '';
+                (services.length ? services : ['No repair selected']).forEach(function(service) {
+                    var item = document.createElement('li');
+                    item.textContent = service;
+                    summaryServices.appendChild(item);
+                });
+            }
+            if (summaryTotal) summaryTotal.textContent = (document.getElementById('grandTotal') || {}).textContent || '$0.00';
+        }
+
         function buildBrandCards(deviceId) {
             var brands = getBrands();
             if (!brands.length) return '<p style="color:var(--text-light);padding:10px;">Loading brands...</p>';
             return brands.map(function(b) {
-                return '<div class="brand-card" onclick="selectBrand(\'' + deviceId + '\', \'' + b.id + '\', event)">'
-                    + '<div class="brand-icon" style="background:' + (b.color || '#757575') + '">'
-                    + '<i class="' + (b.icon || 'fas fa-mobile-alt') + '"></i></div>'
-                    + '<div class="brand-name">' + b.name + '</div></div>';
+                var hasLogo = window.EmpireManufacturerLogos && window.EmpireManufacturerLogos.hasLogo(b.name);
+                return '<div class="brand-card' + (hasLogo ? ' logo-only' : '') + '" role="button" tabindex="0" aria-label="' + String(b.name || '').replace(/"/g, '&quot;') + '" onclick="selectBrand(\'' + deviceId + '\', \'' + b.id + '\', event)">'
+                    + (hasLogo ? '' : '<div class="brand-icon" style="background:' + (b.color || '#757575') + '"><i class="' + (b.icon || 'fas fa-mobile-alt') + '"></i></div>')
+                    + '<div class="brand-name">' + (window.EmpireManufacturerLogos ? window.EmpireManufacturerLogos.markup(b.name) : b.name) + '</div></div>';
             }).join('');
         }
 
@@ -504,6 +759,56 @@
             calculateTotal();
         }
 
+        function toggleCustomRepair() {
+            document.getElementById('customRepairPanel').classList.toggle('open');
+            var first = document.getElementById('customRepairBrand');
+            if (document.getElementById('customRepairPanel').classList.contains('open')) setTimeout(function() { first.focus(); }, 50);
+        }
+
+        function applyCustomRepair() {
+            var brand = document.getElementById('customRepairBrand').value.trim();
+            var model = document.getElementById('customRepairModel').value.trim();
+            var part = document.getElementById('customRepairPart').value.trim();
+            var partCost = parseFloat(document.getElementById('customRepairPartCost').value) || 0;
+            var price = parseFloat(document.getElementById('customRepairPrice').value);
+            if (!brand || !model || !part || !Number.isFinite(partCost) || partCost < 0 || !Number.isFinite(price) || price < 0) {
+                showNotification('Enter the brand, model, repair or part, part cost, and customer price.', 'warning');
+                return;
+            }
+
+            var selectorId = Object.keys(deviceStates)[0];
+            if (!selectorId) return;
+            var state = deviceStates[selectorId];
+            state.custom = true;
+            state.brand = null;
+            state.category = null;
+            state.model = null;
+            state.brandName = brand;
+            state.categoryName = 'Custom';
+            state.modelName = model;
+            state.issue = part;
+            state.selectedParts = [{ id: 'custom-repair', name: part, price: price, partCost: partCost, quantity: 1, custom: true }];
+
+            var host = document.getElementById('repairDeviceServices');
+            host.innerHTML = '<div class="custom-repair-summary">'
+                + '<div class="custom-repair-summary-device"><i class="material-icons" style="vertical-align:middle;margin-right:7px;">devices</i>' + escapeCustomRepairText(brand + ' ' + model) + '</div>'
+                + '<div class="custom-repair-summary-service">' + escapeCustomRepairText(part) + '</div>'
+                + '<div class="custom-repair-summary-price">Customer Price: $' + price.toFixed(2) + '</div>'
+                + '<div style="margin-top:7px;color:#526170;font-weight:700;">Private Part Cost: $' + partCost.toFixed(2)
+                + ' &nbsp;·&nbsp; Estimated Profit: $' + (price - partCost).toFixed(2) + '</div>'
+                + '<button type="button" class="btn btn-secondary" style="margin-top:13px;" onclick="showIntakeStep(\'device\')"><i class="material-icons">edit</i> Change Custom Repair</button>'
+                + '</div>';
+            calculateTotal();
+            updateIntakeSummary();
+            showIntakeStep('repair');
+        }
+
+        function escapeCustomRepairText(value) {
+            return String(value || '').replace(/[&<>"']/g, function(character) {
+                return ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#039;' })[character];
+            });
+        }
+
         // ── Device Sections ───────────────────────────────────────────────────────
         function addDeviceSection() {
             var container = document.getElementById('devicesContainer');
@@ -530,6 +835,7 @@
                 onModelSelected: function(detail) {
                     var st = deviceStates[detail.selectorId];
                     if (st) {
+                        st.custom = false;
                         st.brand     = detail.brandId;
                         st.brandName = detail.brandName;
                         st.category  = detail.categoryId;
@@ -537,14 +843,17 @@
                         st.model     = detail.modelId;
                         st.modelName = detail.modelName;
                     }
+                    mountRepairSelector(detail.selectorId);
+                    showIntakeStep('repair');
                 },
                 onPartToggled: function(detail) {
                     var st = deviceStates[detail.selectorId];
                     if (st) {
                         st.selectedParts = detail.selectedParts.map(function(p) {
-                            return { id: p.id, name: p.name, price: parseFloat(p.price || 0), quantity: 1 };
+                            return { id: p.id, name: p.name, price: parseFloat(p.price || 0), quantity: 1, custom: !!p.custom };
                         });
                         calculateTotal();
+                        updateIntakeSummary();
                     }
                 }
             });
@@ -554,6 +863,7 @@
                 if (e.detail.selectorId === selectorId) {
                     var st = deviceStates[selectorId];
                     if (st) st.issue = e.detail.issue;
+                    updateIntakeSummary();
                 }
             });
             // Keep reset in sync
@@ -561,11 +871,13 @@
                 if (e.detail.selectorId === selectorId) {
                     var st = deviceStates[selectorId];
                     if (st) { st.brand = null; st.category = null; st.model = null; st.modelName = ''; st.selectedParts = []; calculateTotal(); }
+                    updateIntakeSummary();
                 }
             });
 
             deviceCounter++;
             updateDeviceCount();
+            updateIntakeSummary();
         }
 
         function removeDevice(selectorId) {
@@ -661,7 +973,7 @@
             // Parts section — same section-card structure as Edit page
             step4.innerHTML = '<div class="d-flex align-items-center gap-2 mb-3">'
                 + '<button class="btn btn-sm btn-outline-secondary" onclick="goToStep(\'' + deviceId + '\',3)" style="padding:6px 10px;"><i class="material-icons" style="font-size:16px;vertical-align:middle;">arrow_back</i></button>'
-                + '<span class="fw-semibold" style="font-size:.9rem;color:var(--primary);"><i class="material-icons" style="font-size:16px;vertical-align:middle;margin-right:4px;">smartphone</i>' + brand.name + ' &mdash; ' + (state.modelName || 'Selected model') + '</span></div>'
+                + '<span class="fw-semibold" style="font-size:.9rem;color:var(--primary);"><i class="material-icons" style="font-size:16px;vertical-align:middle;margin-right:4px;">smartphone</i>' + (window.EmpireManufacturerLogos ? window.EmpireManufacturerLogos.markup(brand.name) : brand.name) + ' &mdash; ' + (state.modelName || 'Selected model') + '</span></div>'
                 + '<div class="mb-3"><label class="form-label fw-semibold">Device Issue / Problem</label>'
                 + '<input type="text" class="form-control form-control-sm device-issue-input" placeholder="Describe the issue (e.g. cracked screen, battery replacement)" oninput="updateDeviceIssue(\'' + deviceId + '\',this.value)" value="' + (state.issue || '') + '"></div>'
                 + '<div class="section-card repair-parts-section">'
@@ -697,44 +1009,59 @@
                     gridEl.style.display = 'grid';
                     gridEl.innerHTML = parts.map(function(p) {
                         var availStock = p.stock != null ? p.stock : (p.quantity || 0);
-                        var stockColor = availStock === 0 ? '#dc3545' : (availStock <= 3 ? '#fd7e14' : '#28a745');
-                        var stockLabel = availStock === 0 ? '\u26a0 Out of Stock' : (availStock + ' in stock');
-                        var sellPrice  = parseFloat(p.wholesalePrice || p.price || p.retailPrice || 0);
-                        var costPrice  = parseFloat(p.costPrice || 0);
+                        var isServiceOnly = /SERVICE_ONLY/i.test(p.notes || '');
+                        var stockColor = isServiceOnly ? '#0d6efd' : (availStock === 0 ? '#dc3545' : (availStock <= 3 ? '#fd7e14' : '#28a745'));
+                        var stockLabel = isServiceOnly ? 'Service' : (availStock === 0 ? '\u26a0 Out of Stock' : (availStock + ' in stock'));
+                        var sellPrice  = 0;
+                        var fifoCost   = parseFloat(p.fifoCost || p.costPrice || 0);
+                        var latestCost = parseFloat(p.latestCost || p.costPrice || 0);
+                        var costDrop   = latestCost - fifoCost;
+                        var fifoLeft   = parseInt(p.fifoBatchRemaining || 0);
+                        var screenQuality = /screen|display|lcd/i.test(p.name || '') ? (p.variant || 'Unspecified quality') : '';
+                        var displayName = (p.name || '') + (screenQuality ? ' — ' + screenQuality : '');
                         var skuText    = p.sku ? '<div style="font-size:11px;color:#888;text-align:center;margin-bottom:4px;letter-spacing:0.5px;">SKU: ' + p.sku + '</div>' : '';
-                        // Price breakdown: Cost Price (grey) | Sell Price (green, prominent)
+                        // FIFO cost is private shop information and is never sent to customer printouts.
                         var priceBlock = '<div style="border:1px solid #e9ecef;border-radius:8px;padding:10px 12px;margin-bottom:12px;background:#f8f9fa;">'
+                            + (isServiceOnly ? '' :
+                            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
+                            + '<span style="font-size:12px;color:#6c757d;font-weight:500;">Actual FIFO cost</span>'
+                            + '<span style="font-size:13px;font-weight:700;color:#495057;">$' + fifoCost.toFixed(2) + '</span></div>'
                             + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">'
-                            + '<span style="font-size:12px;color:#6c757d;font-weight:500;">Cost Price</span>'
-                            + '<span style="font-size:13px;font-weight:600;color:#495057;">$' + costPrice.toFixed(2) + '</span></div>'
+                            + '<span style="font-size:12px;color:#6c757d;">Latest cost</span>'
+                            + '<span style="font-size:12px;color:' + (costDrop < 0 ? '#198754' : '#6c757d') + ';">$' + latestCost.toFixed(2) + (costDrop === 0 ? '' : ' (' + (costDrop < 0 ? '↓ ' : '↑ ') + '$' + Math.abs(costDrop).toFixed(2) + ')') + '</span></div>'
+                            + '<div style="font-size:11px;color:#6c757d;margin-bottom:8px;">' + fifoLeft + ' remaining in oldest batch</div>')
                             + '<div style="border-top:1px dashed #dee2e6;padding-top:6px;display:flex;justify-content:space-between;align-items:center;">'
-                            + '<span style="font-size:12px;color:#6c757d;font-weight:500;">Sell Price</span>'
-                            + '<span style="font-size:16px;font-weight:700;color:#198754;">$' + sellPrice.toFixed(2) + '</span></div>'
+                            + '<label for="' + deviceId + '-price-' + p.id + '" style="font-size:12px;color:#6c757d;font-weight:500;">Customer price</label>'
+                            + '<input type="number" min="0" step="0.01" id="' + deviceId + '-price-' + p.id + '" placeholder="Enter price" style="width:110px;padding:5px 7px;border:1px solid #ced4da;border-radius:5px;text-align:right;">'
+                            + '</div>'
                             + '</div>';
-                        var disabledAttr = availStock === 0 ? ' disabled' : '';
-                        var disabledStyle = availStock === 0 ? 'opacity:0.5;pointer-events:none;' : '';
+                        var isOutOfStock = !isServiceOnly && availStock === 0;
+                        var disabledAttr = '';
+                        var disabledStyle = '';
                         // Quantity input: user can type any number OR use +/- buttons; max enforced on Add
-                        var qtyBlock = '<div style="margin-bottom:12px;' + disabledStyle + '">'
+                        var qtyBlock = isServiceOnly
+                            ? '<input type="hidden" id="' + deviceId + '-part-' + p.id + '" value="1" data-stock="1">'
+                            : '<div style="margin-bottom:12px;' + disabledStyle + '">'
                             + '<label style="font-size:11px;color:#6c757d;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:6px;">Quantity</label>'
                             + '<div style="display:flex;align-items:center;gap:6px;">'
                             + '<button type="button" onclick="adjustPartQty(\'' + deviceId + '\',\'' + p.id + '\',-1)" style="width:36px;height:36px;border:1px solid #dee2e6;border-radius:6px;background:#f8f9fa;cursor:pointer;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0;"' + disabledAttr + '><i class="material-icons" style="font-size:18px;">remove</i></button>'
-                            + '<input type="number" id="' + deviceId + '-part-' + p.id + '" value="1" min="1" max="' + (availStock > 0 ? availStock : 1) + '" data-stock="' + availStock + '" placeholder="Qty" style="flex:1;text-align:center;padding:8px 4px;border:2px solid #dee2e6;border-radius:6px;font-size:16px;font-weight:700;min-width:0;"' + disabledAttr + '>'
+                            + '<input type="number" id="' + deviceId + '-part-' + p.id + '" value="1" min="1"' + (availStock > 0 ? ' max="' + availStock + '"' : '') + ' data-stock="' + availStock + '" placeholder="Qty" style="flex:1;text-align:center;padding:8px 4px;border:2px solid #dee2e6;border-radius:6px;font-size:16px;font-weight:700;min-width:0;"' + disabledAttr + '>'
                             + '<button type="button" onclick="adjustPartQty(\'' + deviceId + '\',\'' + p.id + '\',1)" style="width:36px;height:36px;border:none;border-radius:6px;background:#0d6efd;color:white;cursor:pointer;font-size:18px;line-height:1;display:flex;align-items:center;justify-content:center;flex-shrink:0;"' + disabledAttr + '><i class="material-icons" style="font-size:18px;">add</i></button>'
                             + '</div>'
                             + (availStock > 0 ? '<div style="font-size:11px;color:#6c757d;margin-top:4px;text-align:right;">Max: ' + availStock + '</div>' : '')
                             + '</div>';
-                        return '<div class="part-card" style="position:relative;' + (availStock === 0 ? 'opacity:0.65;' : '') + '">'
+                        return '<div class="part-card" style="position:relative;' + (!isServiceOnly && availStock === 0 ? 'opacity:0.65;' : '') + '">'
                             + '<div style="font-size:44px;text-align:center;margin-bottom:8px;height:56px;display:flex;align-items:center;justify-content:center;">' + getPartIcon(p.name) + '</div>'
-                            + '<div style="font-weight:700;font-size:14px;margin-bottom:4px;text-align:center;line-height:1.3;">' + p.name + '</div>'
+                            + '<div style="font-weight:700;font-size:14px;margin-bottom:4px;text-align:center;line-height:1.3;">' + displayName + '</div>'
                             + skuText
                             + '<div style="text-align:center;margin-bottom:10px;">'
                             + '<span style="background:' + stockColor + ';color:white;padding:3px 10px;border-radius:12px;font-weight:600;font-size:12px;">' + stockLabel + '</span>'
                             + '</div>'
                             + priceBlock
                             + qtyBlock
-                            + '<button type="button" class="btn btn-primary" style="width:100%;font-size:13px;padding:9px;' + disabledStyle + '" onclick="addPart(\'' + deviceId + '\',\'' + p.id + '\',\'' + (p.name || '').replace(/'/g, "\\'") + '\',' + sellPrice + ',' + availStock + ')"' + disabledAttr + '>'
+                            + '<button type="button" class="btn ' + (isOutOfStock ? 'btn-warning' : 'btn-primary') + '" style="width:100%;font-size:13px;padding:9px;' + disabledStyle + '" onclick="addPart(\'' + deviceId + '\',\'' + p.id + '\',\'' + displayName.replace(/'/g, "\\'") + '\',' + sellPrice + ',' + (isServiceOnly ? 1 : availStock) + ',' + isServiceOnly + ',' + isOutOfStock + ')"' + disabledAttr + '>'
                             + '<i class="material-icons" style="font-size:16px;vertical-align:middle;">add_shopping_cart</i> '
-                            + (availStock === 0 ? 'Out of Stock' : 'Add to Repair') + '</button></div>';
+                            + (isOutOfStock ? 'Add — Waiting for Stock' : 'Add to Repair') + '</button></div>';
                     }).join('');
                 }
             } else {
@@ -744,26 +1071,38 @@
         }
 
         // ── Parts Management ──────────────────────────────────────────────────────
-        function addPart(deviceId, partId, partName, price, maxStock) {
+        function addPart(deviceId, partId, partName, price, maxStock, serviceOnly, allowBackorder) {
             var state = deviceStates[deviceId];
             var qInput = document.getElementById(deviceId + '-part-' + partId);
             var qty = parseInt(qInput ? qInput.value : 1) || 1;
+            var priceInput = document.getElementById(deviceId + '-price-' + partId);
+            if (priceInput) price = parseFloat(priceInput.value);
+            if (isNaN(price) || price < 0) { showNotification('Enter the customer price for ' + partName + '.', 'warning'); return; }
             if (qty < 1) { showNotification('Please enter a quantity of at least 1 for ' + partName, 'warning'); return; }
             // Stock validation
             var stock = maxStock != null ? maxStock : (qInput ? parseInt(qInput.getAttribute('data-stock') || qInput.max) : 99);
             var alreadySelected = 0;
             var existing = state.selectedParts.findIndex(function(p) { return String(p.id) === String(partId); });
             if (existing !== -1) alreadySelected = state.selectedParts[existing].quantity;
-            if ((alreadySelected + qty) > stock) {
+            if (!serviceOnly && !allowBackorder && (alreadySelected + qty) > stock) {
                 showNotification('Cannot add ' + qty + ' × ' + partName + '. Only ' + (stock - alreadySelected) + ' unit(s) available in stock.', 'error');
                 return;
             }
+            if (allowBackorder && !window.confirm(partName + ' is out of stock. Do you still want to add it to this repair?\n\nThe repair will be placed in Waiting for Parts and cannot be completed until the part is received and assigned.')) {
+                return;
+            }
             if (existing !== -1) { state.selectedParts[existing].quantity += qty; }
-            else { state.selectedParts.push({ id: partId, name: partName, price: price, quantity: qty, maxStock: stock }); }
+            else { state.selectedParts.push({ id: partId, name: partName, price: price, quantity: qty, maxStock: allowBackorder ? null : stock, custom: !!serviceOnly, serviceOnly: !!serviceOnly, allowBackorder: !!allowBackorder }); }
+            if (allowBackorder) {
+                repairStatus = 'waiting';
+                document.querySelectorAll('#repairStatusOptions .status-option').forEach(function(option) {
+                    option.classList.toggle('active', option.getAttribute('onclick').indexOf("'waiting'") !== -1);
+                });
+            }
             if (qInput) qInput.value = 1; // reset to 1 (not 0) so next add is ready
             updateSelectedPartsList(deviceId);
             calculateTotal();
-            showNotification('Added ' + qty + ' \u00d7 ' + partName, 'success');
+            showNotification(allowBackorder ? (partName + ' added as Waiting for Stock') : ('Added ' + qty + ' \u00d7 ' + partName), allowBackorder ? 'warning' : 'success');
         }
 
         function adjustPartQty(deviceId, partId, delta) {
@@ -818,7 +1157,8 @@
                     + '<div style="display:flex;align-items:center;gap:15px;">'
                     + '<div style="font-size:24px;color:var(--primary);">' + getPartIcon(p.name) + '</div>'
                     + '<div><div style="font-weight:600;margin-bottom:5px;font-size:14px;">' + p.name + '</div>'
-                    + '<div style="font-size:13px;color:var(--text-light);">$' + p.price.toFixed(2) + ' each</div></div></div>'
+                    + '<div style="font-size:13px;color:var(--text-light);">$' + p.price.toFixed(2) + ' each</div>'
+                    + (p.allowBackorder ? '<span class="badge bg-warning text-dark mt-1">Waiting for Stock</span>' : '') + '</div></div>'
                     + '<div style="display:flex;align-items:center;gap:15px;">'
                     + '<div style="display:flex;align-items:center;gap:10px;">'
                     + '<button onclick="adjustSelectedPartQty(\'' + deviceId + '\',\'' + p.id + '\',-1)" style="width:32px;height:32px;border:1px solid var(--border);border-radius:var(--radius);background:var(--bg-light);cursor:pointer;display:flex;align-items:center;justify-content:center;"><i class="material-icons" style="font-size:16px;">remove</i></button>'
@@ -861,6 +1201,15 @@
         }
 
         function selectPaymentStatus(status, el) {
+            if (status === 'unpaid' && paymentHistoryItems.length > 0) {
+                var netPaid = totalPaid - totalRefunded;
+                paymentStatus = netPaid > 0 ? 'partial' : 'unpaid';
+                document.querySelectorAll('.status-option[onclick*="selectPaymentStatus"]').forEach(function(option) {
+                    option.classList.toggle('active', option.getAttribute('onclick').indexOf("'" + paymentStatus + "'") !== -1);
+                });
+                if (netPaid > 0) showNotification('Remove or refund the recorded payment before marking this repair unpaid.', 'warning');
+                return;
+            }
             paymentStatus = status;
             document.querySelectorAll('.status-option[onclick*="selectPaymentStatus"]').forEach(function(o) { o.classList.remove('active'); });
             if (el) el.classList.add('active');
@@ -874,6 +1223,19 @@
                 phSection.style.display = 'none';
                 clearPaymentForm();
             }
+        }
+
+        function toggleRepairTax() {
+            repairTaxEnabled = !repairTaxEnabled;
+            var button = document.getElementById('repairTaxToggle');
+            if (button) {
+                button.setAttribute('aria-pressed', repairTaxEnabled ? 'true' : 'false');
+                button.classList.toggle('btn-success', repairTaxEnabled);
+                button.classList.toggle('btn-outline-secondary', !repairTaxEnabled);
+                button.querySelector('i').textContent = repairTaxEnabled ? 'toggle_on' : 'toggle_off';
+                button.querySelector('span').textContent = repairTaxEnabled ? 'Tax Applied' : 'Tax Not Applied';
+            }
+            calculateTotal();
         }
 
         // ── Payment Methods ───────────────────────────────────────────────────────
@@ -897,11 +1259,22 @@
             var isRefund = document.getElementById('createTxnTypeRefund') && document.getElementById('createTxnTypeRefund').checked;
             if (!selectedPaymentMethod) { alert('Please select a payment method first'); return; }
             if (amount <= 0) { alert('Please enter a valid amount'); return; }
+            var grand = parseFloat(document.getElementById('grandTotal').textContent.replace('$', '')) || 0;
+            var currentNet = totalPaid - totalRefunded;
+            if (!isRefund && amount > Math.max(0, grand - currentNet) + 0.005) {
+                alert('Payment cannot be greater than the remaining balance.');
+                return;
+            }
             var methodName = selectedPaymentMethod.name;
             var methodIcon = selectedPaymentMethod.icon || 'payments';
             var txnType = isRefund ? 'Refund' : 'Payment';
             paymentHistoryItems.push({ id: Date.now(), type: txnType, method: methodName, icon: methodIcon, amount: amount, reference: ref || null, notes: notes || null, date: date || new Date().toISOString().split('T')[0] });
             if (isRefund) { totalRefunded += amount; } else { totalPaid += amount; }
+            var newNet = totalPaid - totalRefunded;
+            paymentStatus = newNet >= grand - 0.005 ? 'paid' : (newNet > 0 ? 'partial' : 'unpaid');
+            document.querySelectorAll('.status-option[onclick*="selectPaymentStatus"]').forEach(function(option) {
+                option.classList.toggle('active', option.getAttribute('onclick').indexOf("'" + paymentStatus + "'") !== -1);
+            });
             calculateTotal();
             updatePaymentHistoryUI();
             clearPaymentForm();
@@ -972,9 +1345,9 @@
             var service = parseFloat(document.getElementById('serviceCharge').value) || 0;
             var diag = parseFloat(document.getElementById('diagnosticFee').value) || 0;
             var disc = parseFloat(document.getElementById('discount').value) || 0;
-            var taxRate = parseFloat(document.getElementById('taxRateHidden').value) || 0;
+            var taxRate = parseFloat(document.getElementById('taxRate').value) || 0;
             var subtotal = partsTotal + service + diag;
-            var tax = subtotal * (taxRate / 100);
+            var tax = repairTaxEnabled ? subtotal * (taxRate / 100) : 0;
             var grand = subtotal + tax - disc;
             var net = totalPaid - totalRefunded;
             var balance = Math.max(0, grand - net);
@@ -983,7 +1356,7 @@
             document.getElementById('serviceTotal').textContent = '$' + service.toFixed(2);
             document.getElementById('diagnosticTotal').textContent = '$' + diag.toFixed(2);
             document.getElementById('discountTotal').textContent = '-$' + disc.toFixed(2);
-            document.getElementById('taxRateDisplay').textContent = taxRate.toFixed(2);
+            document.getElementById('taxRateDisplay').textContent = taxRate.toFixed(1);
             document.getElementById('taxTotal').textContent = '$' + tax.toFixed(2);
             document.getElementById('grandTotal').textContent = '$' + grand.toFixed(2);
             document.getElementById('totalPaidDisplay').textContent = '$' + totalPaid.toFixed(2);
@@ -1010,21 +1383,6 @@
             return true;
         }
 
-        // Tax mode toggle handler (Exempt / Apply)
-        function onTaxModeChange() {
-            var mode = document.querySelector('input[name="taxMode"]:checked').value;
-            var wrapper = document.getElementById('taxRateWrapper');
-            var hidden  = document.getElementById('taxRateHidden');
-            if (mode === 'apply') {
-                wrapper.style.display = 'flex';
-                hidden.value = document.getElementById('taxRate').value || '10.25';
-            } else {
-                wrapper.style.display = 'none';
-                hidden.value = '0';
-            }
-            calculateTotal();
-        }
-
         function generateRepairSummary() {
             var brands = getBrands();
             var cats = getDeviceCategories();
@@ -1048,12 +1406,14 @@
             var s = generateRepairSummary();
             // Collect all selected parts across all device sections
             var allParts = [];
+            var privatePartCost = 0;
             Object.values(deviceStates).forEach(function(state) {
                 (state.selectedParts || []).forEach(function(p) {
+                    privatePartCost += (parseFloat(p.partCost) || 0) * (parseInt(p.quantity) || 1);
                     if (!p.custom) {
                         var existing = allParts.findIndex(function(x) { return String(x.inventoryItemId) === String(p.id); });
                         if (existing !== -1) { allParts[existing].quantity += p.quantity; }
-                        else { allParts.push({ inventoryItemId: parseInt(p.id), quantity: p.quantity, partName: p.name, unitPrice: p.price }); }
+                        else { allParts.push({ inventoryItemId: parseInt(p.id), quantity: p.quantity, partName: p.name, unitPrice: p.price, allowBackorder: !!p.allowBackorder }); }
                     }
                 });
             });
@@ -1061,7 +1421,11 @@
             var firstDevice = Object.values(deviceStates)[0] || {};
             var descParts = [];
             Object.values(deviceStates).forEach(function(state) {
-                if (state.issue) descParts.push(state.issue);
+                if (state.issue) {
+                    descParts.push(state.custom
+                        ? [state.brandName, state.modelName].filter(Boolean).join(' ') + ' — ' + state.issue
+                        : state.issue);
+                }
             });
             var notes = s.notes || {};
             var description = descParts.join('; ') || (notes.problem || '') + (notes.diagnosis ? ' | ' + notes.diagnosis : '') + (notes.additional ? ' | ' + notes.additional : '');
@@ -1081,6 +1445,12 @@
                     }
                 });
             }
+            var netPaid = isDraft ? 0 : payments.reduce(function(total, payment) {
+                return total + (payment.type === 'Refund' ? -payment.amount : payment.amount);
+            }, 0);
+            var derivedPaymentStatus = netPaid >= s.payment.total - 0.005 && s.payment.total > 0
+                ? 'Paid'
+                : (netPaid > 0 ? 'Partial' : 'Unpaid');
             return {
                 customerId: parseInt(s.customer.id) || 0,
                 brandId: parseInt(firstDevice.brand) || 0,
@@ -1089,8 +1459,9 @@
                 description: description.trim(),
                 comments: notes.additional || '',
                 cost: s.payment.total,
-                amountPaid: isDraft ? 0 : s.payment.paid,
-                paymentStatus: isDraft ? 'Unpaid' : (paymentStatus === 'paid' ? 'Paid' : (paymentStatus === 'partial' ? 'Partial' : 'Unpaid')),
+                partCost: privatePartCost,
+                amountPaid: netPaid,
+                paymentStatus: isDraft ? 'Unpaid' : derivedPaymentStatus,
                 companyId: 0,
                 parts: allParts,
                 payments: payments
@@ -1107,18 +1478,89 @@
             return await resp.json();
         }
 
-        function saveRepair() {
+        async function printRepairDropOffSlip(repairId) {
+            var response = await fetch('/Repairs/PrintDropOffSlip', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                body: JSON.stringify({ repairId: Number(repairId) })
+            });
+            if (!response.ok) throw new Error('Thermal printer returned ' + response.status);
+            var result = await response.json();
+            if (!result.success) throw new Error(result.message || 'The drop-off slip could not be printed.');
+            return true;
+        }
+
+        async function printSavedRepair(button) {
+            if (!confirmedRepairResult || !confirmedRepairResult.repairId) {
+                showNotification('Save the repair first, then use Print.', 'error');
+                return;
+            }
+            var originalHtml = button.innerHTML;
+            button.disabled = true;
+            try {
+                showIntakeStep('confirm');
+                var firstDevice = Object.values(deviceStates)[0] || {};
+                var repairTypes = (firstDevice.selectedParts || []).map(function(part) { return part.name; }).filter(Boolean).join(', ')
+                    || firstDevice.issue || 'Repair';
+                var customerSummary = (document.getElementById('intakeSummaryCustomer').textContent || '').split(' — ')[0];
+                var repairCode = confirmedRepairResult.repairNumber || confirmedRepairResult.repairId || document.getElementById('repairId').textContent.replace('#', '');
+                button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Printing…';
+                var printResults = await Promise.allSettled([
+                    EmpireLabelPrinter.print({
+                    customerName: customerSummary,
+                    phone: document.getElementById('customerPhone').value || '',
+                    model: [firstDevice.brandName, firstDevice.modelName].filter(Boolean).join(' '),
+                    repairType: repairTypes,
+                    date: new Date().toLocaleDateString('en-US'),
+                    barcode: String(repairCode)
+                    }),
+                    printRepairDropOffSlip(confirmedRepairResult.repairId)
+                ]);
+                var labelPrinted = printResults[0].status === 'fulfilled' && printResults[0].value !== false;
+                var slipPrinted = printResults[1].status === 'fulfilled';
+                if (!labelPrinted || !slipPrinted) {
+                    var missing = [!labelPrinted ? 'DYMO label' : '', !slipPrinted ? 'drop-off slip' : ''].filter(Boolean).join(' and ');
+                    button.innerHTML = '<i class="material-icons">print</i> Retry Printing';
+                    button.disabled = false;
+                    showNotification('Repair saved, but the ' + missing + ' did not print. Use Retry Printing.', 'error');
+                    return;
+                }
+                button.innerHTML = '<i class="fas fa-check me-1"></i>Printed';
+                showNotification('DYMO label and drop-off slip printed successfully.', 'success');
+                setTimeout(function() { window.location.href = '/Repairs'; }, 1500);
+            } catch (error) {
+                button.disabled = false;
+                button.innerHTML = originalHtml;
+                showNotification(error.message || 'Unable to print the repair.', 'error');
+            }
+        }
+
+        function saveRepair(button) {
             if (!validateForm()) return;
+            var originalHtml = button ? button.innerHTML : '';
+            if (button) {
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving…';
+            }
             var payload = buildRepairPayload(false);
             showNotification('Saving repair…', 'info');
             postRepairToServer(payload).then(function(result) {
                 if (result.success) {
+                    confirmedRepairResult = result;
+                    document.querySelectorAll('#confirmSaveButton, #footerSaveButton').forEach(function(saveButton) {
+                        saveButton.disabled = true;
+                        saveButton.innerHTML = '<i class="fas fa-check me-1"></i>Saved';
+                    });
+                    document.querySelectorAll('#confirmPrintButton, #footerPrintButton').forEach(function(printButton) {
+                        printButton.disabled = false;
+                    });
                     showNotification('Repair #' + (result.repairNumber || result.repairId) + ' saved successfully!', 'success');
-                    setTimeout(function() { window.location.href = '/Repairs'; }, 1500);
                 } else {
+                    if (button) { button.disabled = false; button.innerHTML = originalHtml; }
                     showNotification('Save failed: ' + result.message, 'error');
                 }
             }).catch(function(err) {
+                if (button) { button.disabled = false; button.innerHTML = originalHtml; }
                 showNotification('Save failed: ' + err.message, 'error');
             });
         }
@@ -1173,10 +1615,16 @@
             document.getElementById('serviceCharge').value = '0';
             document.getElementById('diagnosticFee').value = '0';
             document.getElementById('discount').value = '0';
-            document.getElementById('taxRate').value = '10.25';
-            document.getElementById('taxRateHidden').value = '0';
-            document.getElementById('taxModeExempt').checked = true;
-            document.getElementById('taxRateWrapper').style.display = 'none';
+            document.getElementById('taxRate').value = '11';
+            repairTaxEnabled = false;
+            var taxButton = document.getElementById('repairTaxToggle');
+            if (taxButton) {
+                taxButton.setAttribute('aria-pressed', 'false');
+                taxButton.classList.remove('btn-success');
+                taxButton.classList.add('btn-outline-secondary');
+                taxButton.querySelector('i').textContent = 'toggle_off';
+                taxButton.querySelector('span').textContent = 'Tax Not Applied';
+            }
             paymentHistoryItems = []; totalPaid = 0; selectedPaymentMethod = null;
             clearPaymentForm();
             updatePaymentHistoryUI();
@@ -1189,6 +1637,10 @@
 
         // ── Bootstrap ─────────────────────────────────────────────────────────────
         document.addEventListener('DOMContentLoaded', function () {
+            ['customerPhone', 'customerEmail', 'customerAddress', 'problemDescription', 'serviceCharge', 'diagnosticFee', 'discount', 'taxRate'].forEach(function(id) {
+                var element = document.getElementById(id);
+                if (element) element.addEventListener('input', updateIntakeSummary);
+            });
             // Wait until repair-data-loader.js has finished all async fetches
             // (brands, categories, etc.) before initialising the page.
             var tryInit = function() {
@@ -1225,9 +1677,11 @@
             $('#customerName').on('select2:select', function(e) {
                 var c = e.params.data.customer;
                 if (c) { $('#customerPhone').val(c.phone || ''); $('#customerEmail').val(c.email || ''); $('#customerAddress').val(c.address || ''); }
+                updateIntakeSummary();
             });
             $('#customerName').on('select2:clear', function() {
                 $('#customerPhone, #customerEmail, #customerAddress').val('');
+                updateIntakeSummary();
             });
         });
     </script>

@@ -125,7 +125,8 @@ public abstract class BaseApiController : ControllerBase
     protected bool IsAdminOrManager()
     {
         var role = GetCurrentUserRole();
-        return role.Equals("Admin", StringComparison.OrdinalIgnoreCase) ||
+        return role.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase) ||
+               role.Equals("Admin", StringComparison.OrdinalIgnoreCase) ||
                role.Equals("Manager", StringComparison.OrdinalIgnoreCase);
     }
 

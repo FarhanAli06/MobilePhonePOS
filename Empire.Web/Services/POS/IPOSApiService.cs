@@ -21,6 +21,9 @@ namespace Empire.Web.Services.POS
         Task<POSSaleResponseDto?> UpdateSaleAsync(int saleId, POSUpdateSaleRequestDto request);
         Task<POSSaleDetailDto?> GetSaleAsync(int saleId);
         Task<POSSaleDetailDto?> GetLastSaleAsync(int shopId);
+        Task<List<SaleHistoryDto>?> GetSaleHistoryAsync(int saleId);
+        Task<List<SaleReturnHistoryDto>?> GetSaleReturnsAsync(int saleId);
+        Task<SaleReturnResultDto?> ProcessReturnAsync(int saleId, ProcessSaleReturnDto request);
         Task<List<POSSaleDto>?> GetSalesAsync(POSSalesSearchRequestDto request);
         Task<string?> GenerateInvoiceNumberAsync(int shopId);
 

@@ -142,6 +142,11 @@ public class RepairsController : BaseApiController
 
             return SuccessResponse(repair, "Repair updated successfully");
         }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Repair {RepairId} update was blocked", id);
+            return ErrorResponse(ex.Message, 409);
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating repair {RepairId}", id);
@@ -159,13 +164,25 @@ public class RepairsController : BaseApiController
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteRepair(int id)
     {
+        if (!IsAdminOrManager())
+            return ErrorResponse("Only administrators and managers can delete repairs", 403);
+
         try
         {
             var shopId = GetCurrentShopId();
-            var success = await _repairService.DeleteRepairAsync(id, shopId);
+            var success = await _repairService.DeleteRepairAsync(id, shopId, GetCurrentUserId());
 
             if (!success)
+            {
+                // The browser can still have a card rendered from before a successful
+                // delete. Treat a repeated delete as success when the repair is already
+                // in this shop's Trash so the stale card can be removed immediately.
+                var deletedRepairs = await _repairService.GetDeletedRepairsAsync(shopId);
+                if (deletedRepairs.Any(repair => repair.Id == id))
+                    return SuccessResponse("Repair is already in Trash");
+
                 return NotFoundResponse("Repair not found");
+            }
 
             _logger.LogInformation("Repair deleted: {RepairId}", id);
 
@@ -175,6 +192,64 @@ public class RepairsController : BaseApiController
         {
             _logger.LogError(ex, "Error deleting repair {RepairId}", id);
             return ErrorResponse("Error deleting repair", 500);
+        }
+    }
+
+    [HttpGet("trash")]
+    public async Task<IActionResult> GetRepairTrash()
+    {
+        if (!IsAdminOrManager())
+            return ErrorResponse("Only administrators and managers can view Repair Trash", 403);
+
+        try
+        {
+            var repairs = await _repairService.GetDeletedRepairsAsync(GetCurrentShopId());
+            return SuccessResponse(repairs);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error loading repair trash");
+            return ErrorResponse("Error loading repair trash", 500);
+        }
+    }
+
+    [HttpPost("{id}/restore")]
+    public async Task<IActionResult> RestoreRepair(int id)
+    {
+        if (!IsAdminOrManager())
+            return ErrorResponse("Only administrators and managers can restore repairs", 403);
+
+        try
+        {
+            var restored = await _repairService.RestoreRepairAsync(id, GetCurrentShopId(), GetCurrentUserId());
+            return restored ? SuccessResponse("Repair restored") : NotFoundResponse("Deleted repair not found");
+        }
+        catch (InvalidOperationException ex)
+        {
+            return ErrorResponse(ex.Message, 409);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error restoring repair {RepairId}", id);
+            return ErrorResponse("Error restoring repair", 500);
+        }
+    }
+
+    [HttpDelete("trash")]
+    public async Task<IActionResult> EmptyRepairTrash()
+    {
+        if (!IsAdminOrManager())
+            return ErrorResponse("Only administrators and managers can permanently delete repairs", 403);
+
+        try
+        {
+            var deleted = await _repairService.PermanentlyDeleteAllRepairsAsync(GetCurrentShopId());
+            return SuccessResponse($"Permanently deleted {deleted} repair(s)");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error emptying repair trash");
+            return ErrorResponse("Error emptying repair trash", 500);
         }
     }
 
@@ -322,6 +397,46 @@ public class RepairsController : BaseApiController
         {
             _logger.LogError(ex, "Error getting parts for repair {RepairId}", id);
             return ErrorResponse("Error retrieving repair parts", 500);
+        }
+    }
+
+    [HttpGet("waiting-parts/ready")]
+    [ProducesResponseType(typeof(IEnumerable<WaitingPartAlertDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetReadyWaitingParts()
+    {
+        try
+        {
+            var shopId = GetCurrentShopId();
+            if (shopId == 0) return UnauthorizedResponse("No shop selected");
+            var alerts = await _repairService.GetReadyWaitingPartsAsync(shopId);
+            return SuccessResponse(alerts);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving ready waiting parts");
+            return ErrorResponse("Error retrieving waiting-part alerts", 500);
+        }
+    }
+
+    [HttpPost("parts/{repairPartId}/allocate")]
+    public async Task<IActionResult> AllocateWaitingPart(int repairPartId)
+    {
+        try
+        {
+            var shopId = GetCurrentShopId();
+            if (shopId == 0) return UnauthorizedResponse("No shop selected");
+            var allocated = await _repairService.AllocateWaitingPartAsync(repairPartId, shopId, GetCurrentUserId());
+            if (!allocated) return NotFoundResponse("Waiting part was not found");
+            return SuccessResponse("Part allocated to repair successfully");
+        }
+        catch (InvalidOperationException ex)
+        {
+            return ErrorResponse(ex.Message, 409);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error allocating waiting repair part {RepairPartId}", repairPartId);
+            return ErrorResponse("Error allocating waiting part", 500);
         }
     }
 

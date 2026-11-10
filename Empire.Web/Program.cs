@@ -30,8 +30,22 @@ using Empire.Web.Services.Role;
 using Empire.Web.Services.LookupManagement;
 using Empire.Web.Services.Log;
 using Empire.Web.Services.Styling;
+using Microsoft.AspNetCore.DataProtection;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// DYMO's Windows print dependencies include the EventLog provider. The POS runs
+// without Windows Event Log write privileges, so prevent that provider alone
+// from turning otherwise harmless application warnings into request failures.
+builder.Logging.AddFilter<Microsoft.Extensions.Logging.EventLog.EventLogLoggerProvider>((_, _) => false);
+
+var runtimeKeyPath = Environment.GetEnvironmentVariable("EMPIRE_DATA_PROTECTION_PATH");
+if (!string.IsNullOrWhiteSpace(runtimeKeyPath))
+{
+    Directory.CreateDirectory(runtimeKeyPath);
+    builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo(runtimeKeyPath));
+}
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
@@ -70,12 +84,9 @@ builder.Services.AddTransient<Empire.Web.Handlers.AuthenticationDelegatingHandle
 // BaseAddress; AddScoped alone leaves BaseAddress null and causes:
 //   "An invalid request URI was provided. Either the request URI must be an
 //    absolute URI or BaseAddress must be set."
-var apiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"]
-    ?? throw new InvalidOperationException(
-        "ApiSettings:BaseUrl is not configured. " +
-        "Add it to appsettings.json: \"ApiSettings\": { \"BaseUrl\": \"http://your-api-host\" }");
+var apiBaseUrl = builder.Configuration["ApiSettings:BaseUrl"] ?? "http://localhost:5002/";
 // Ensure the base URL always ends with a trailing slash (required by HttpClient)
-if (!apiBaseUrl.EndsWith("/", StringComparison.Ordinal)) apiBaseUrl += "/";
+if (!apiBaseUrl.EndsWith("/")) apiBaseUrl += "/";
 
 void ConfigureApiHttpClient(HttpClient client)
 {
@@ -183,7 +194,9 @@ app.UseRouting();
 app.UseCors("AllowAll");
 
 // Session middleware - must be after UseRouting and before MapControllers
-app.UseSession();
+app.UseWhen(
+    context => !context.Request.Path.StartsWithSegments("/Dymo"),
+    branch => branch.UseSession());
 
 // Configure routing
 app.MapControllerRoute(

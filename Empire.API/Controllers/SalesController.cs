@@ -2,8 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Empire.Application.Interfaces;
 using Empire.Application.DTOs.Sale;
-using Empire.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
 
 namespace Empire.API.Controllers;
 
@@ -15,13 +13,11 @@ public class SalesController : BaseApiController
 {
     private readonly IPOSService _posService;
     private readonly ILogger<SalesController> _logger;
-    private readonly EmpireDbContext _context;
 
-    public SalesController(IPOSService posService, ILogger<SalesController> logger, EmpireDbContext context)
+    public SalesController(IPOSService posService, ILogger<SalesController> logger)
     {
         _posService = posService;
         _logger = logger;
-        _context = context;
     }
 
     /// <summary>
@@ -277,136 +273,6 @@ public class SalesController : BaseApiController
         {
             _logger.LogError(ex, "Error generating profit report");
             return ErrorResponse("Error generating profit report", 500);
-        }
-    }
-
-    // ── Payment management ────────────────────────────────────────────────────
-
-    /// <summary>Get full sale detail including items and payments</summary>
-    [HttpGet("{id:int}/detail")]
-    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetSaleDetail(int id)
-    {
-        try
-        {
-            // Load sale with Shop and Customer navigation properties
-            var saleEntity = await _context.Sales
-                .Include(s => s.Customer)
-                .Include(s => s.Shop)
-                .Include(s => s.SaleItems)
-                .Include(s => s.Payments)
-                .FirstOrDefaultAsync(s => s.Id == id && !s.IsDeleted);
-
-            if (saleEntity == null) return NotFoundResponse("Sale not found");
-
-            var totalPaid = saleEntity.Payments?.Where(p => !p.IsDeleted).Sum(p => p.Amount) ?? 0m;
-            var result = new
-            {
-                id            = saleEntity.Id,
-                invoiceNumber = saleEntity.SaleNumber,
-                saleDate      = saleEntity.SaleDate,
-                paymentStatus = saleEntity.PaymentStatus,
-                subtotal      = saleEntity.SubTotal,
-                tax           = saleEntity.TaxAmount,
-                discount      = saleEntity.DiscountAmount,
-                total         = saleEntity.TotalAmount,
-                totalPaid     = totalPaid,
-                balance       = Math.Max(0m, saleEntity.TotalAmount - totalPaid),
-                shop = saleEntity.Shop == null ? null : new
-                {
-                    name    = saleEntity.Shop.Name,
-                    address = saleEntity.Shop.Address ?? "",
-                    city    = saleEntity.Shop.City ?? "",
-                    state   = saleEntity.Shop.State ?? "",
-                    zip     = saleEntity.Shop.ZipCode ?? "",
-                    phone   = saleEntity.Shop.Phone ?? "",
-                    email   = saleEntity.Shop.Email ?? "",
-                    logo    = saleEntity.Shop.LogoPath ?? ""
-                },
-                customer = saleEntity.Customer == null ? new { name = "Walk-in", phone = "", email = "", address = "" }
-                    : new
-                    {
-                        name    = (saleEntity.Customer.FirstName + " " + (saleEntity.Customer.LastName ?? "")).Trim(),
-                        phone   = saleEntity.Customer.Phone ?? "",
-                        email   = saleEntity.Customer.Email ?? "",
-                        address = (saleEntity.Customer.Address ?? "") + (saleEntity.Customer.City != null ? ", " + saleEntity.Customer.City : "")
-                    },
-                items = saleEntity.SaleItems.Where(i => !i.IsDeleted).Select(i => new {
-                    id        = i.Id,
-                    name      = i.ItemName,
-                    description = i.Description ?? "",
-                    qty       = i.Quantity,
-                    unitPrice = i.UnitPrice,
-                    discount  = i.DiscountAmount,
-                    total     = i.TotalPrice
-                }),
-                payments = saleEntity.Payments?.Where(p => !p.IsDeleted).Select(p => new {
-                    id            = p.Id,
-                    method        = p.PaymentMethod,
-                    amount        = p.Amount,
-                    transactionId = p.TransactionId,
-                    date          = p.CreatedDate
-                })
-            };
-            return SuccessResponse(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting sale detail {Id}", id);
-            return ErrorResponse("Error getting sale detail", 500);
-        }
-    }
-
-    /// <summary>Add a payment to an existing sale</summary>
-    [HttpPost("{id:int}/payments")]
-    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
-    public async Task<IActionResult> AddSalePayment(int id, [FromBody] AddSalePaymentRequest request)
-    {
-        try
-        {
-            var userId = GetCurrentUserId();
-            var payment = await _posService.AddSalePaymentAsync(id, request.PaymentMethod, request.Amount, request.TransactionId, userId);
-            if (payment == null) return NotFoundResponse("Sale not found");
-            return SuccessResponse(new { id = payment.Id, method = payment.PaymentMethod, amount = payment.Amount });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error adding payment to sale {Id}", id);
-            return ErrorResponse("Error adding payment", 500);
-        }
-    }
-
-    /// <summary>Update an existing sale payment</summary>
-    [HttpPut("payments/{paymentId:int}")]
-    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
-    public async Task<IActionResult> UpdateSalePayment(int paymentId, [FromBody] AddSalePaymentRequest request)
-    {
-        try
-        {
-            var ok = await _posService.UpdateSalePaymentAsync(paymentId, request.PaymentMethod, request.Amount, request.TransactionId);
-            return ok ? SuccessResponse(new { updated = true }) : NotFoundResponse("Payment not found");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error updating payment {PaymentId}", paymentId);
-            return ErrorResponse("Error updating payment", 500);
-        }
-    }
-
-    /// <summary>Delete a sale payment</summary>
-    [HttpDelete("payments/{paymentId:int}")]
-    [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
-    public async Task<IActionResult> DeleteSalePayment(int paymentId)
-    {
-        try
-        {
-            var ok = await _posService.DeleteSalePaymentAsync(paymentId);
-            return ok ? SuccessResponse(new { deleted = true }) : NotFoundResponse("Payment not found");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error deleting payment {PaymentId}", paymentId);
-            return ErrorResponse("Error deleting payment", 500);
         }
     }
 

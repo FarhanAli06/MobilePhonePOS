@@ -71,6 +71,13 @@ public class DevicesController : BaseApiController
         }
     }
 
+    [HttpGet("{id:int}/history")]
+    public async Task<IActionResult> GetDeviceHistory(int id)
+    {
+        try { return SuccessResponse(await _deviceService.GetDeviceHistoryAsync(id)); }
+        catch (Exception ex) { _logger.LogError(ex, "Error retrieving device history {DeviceId}", id); return ErrorResponse(ex.Message, 500); }
+    }
+
     /// <summary>
     /// Get available devices for sale
     /// </summary>

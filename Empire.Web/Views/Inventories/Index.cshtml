@@ -1,5 +1,6 @@
 @{
     ViewData["Title"] = "Inventory Management";
+    var isInventoryAdmin = ViewBag.IsInventoryAdmin == true;
 }
 
 @section Styles {
@@ -8,12 +9,107 @@
     <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
     
     <style>
+        .inventory-page { --inv-gold:#f4bc12; --inv-line:#e4e7ec; --inv-subtle:#68707d; }
+        .inventory-page .inventory-top { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; margin-bottom:20px; }
+        .inventory-page .inventory-top-actions { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+        .inventory-page .inventory-toolbar { display:grid; grid-template-columns:minmax(260px,1.5fr) repeat(3,minmax(145px,.6fr)); gap:10px; margin-bottom:14px; }
+        .inventory-page .inventory-search { position:relative; }
+        .inventory-page .inventory-search i { position:absolute; left:13px; top:50%; transform:translateY(-50%); color:var(--inv-subtle); z-index:2; }
+        .inventory-page .inventory-search input { padding-left:38px; }
+        .inventory-page .inventory-summary { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:14px; }
+        .inventory-page .inventory-stat { background:#fff; border:1px solid var(--inv-line); border-radius:10px; padding:12px 14px; }
+        .inventory-page .inventory-stat-label { color:var(--inv-subtle); margin-bottom:3px; }
+        .inventory-page .inventory-stat-value { font-size:20px; font-weight:600; }
+        .inventory-page .inventory-table-wrap { background:#fff; border:1px solid var(--inv-line); border-radius:12px; overflow:hidden; }
+        .inventory-page .inventory-bulk { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; border-bottom:1px solid var(--inv-line); }
+        .inventory-page .inventory-bulk-left,.inventory-page .inventory-bulk-right { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+        .inventory-page .part-name { font-weight:600; white-space:nowrap; }
+        .inventory-page .device-path { color:var(--inv-subtle); font-size:12px; margin-top:2px; white-space:nowrap; }
+        .inventory-page .inline-qty { width:70px; text-align:center; }
+        .inventory-page .inline-money { width:88px; text-align:right; }
+        .inventory-page .stock-status { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
+        .inventory-page .stock-dot { width:8px; height:8px; border-radius:50%; background:#198754; }
+        .inventory-page .stock-dot.low { background:#dc3545; }
+        .inventory-page .stock-dot.warning { background:#f4bc12; }
+        .inventory-view-switch { display:inline-flex; background:#eef1f4; border-radius:10px; padding:4px; gap:3px; margin-bottom:14px; }
+        .inventory-view-switch button { border:0; background:transparent; color:#68707d; padding:8px 14px; border-radius:7px; font-weight:600; }
+        .inventory-view-switch button.active { background:#fff; color:#181a1f; box-shadow:0 1px 4px rgba(0,0,0,.12); }
+        .guided-browser { background:#fff; border:1px solid var(--inv-line); border-radius:12px; padding:18px; margin-bottom:14px; }
+        .guided-head { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:14px; }
+        .guided-head-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+        .guided-browse-switch { display:inline-flex; align-items:center; gap:3px; padding:3px; background:#f0f2f5; border-radius:8px; }
+        .guided-browse-switch button { border:0; background:transparent; color:var(--inv-subtle); border-radius:6px; padding:6px 9px; font-size:12px; font-weight:600; }
+        .guided-browse-switch button.active { background:#fff; color:#181a1f; box-shadow:0 1px 3px rgba(0,0,0,.12); }
+        .guided-breadcrumb { color:var(--inv-subtle); font-size:14px; }
+        .guided-breadcrumb strong { color:#181a1f; }
+        .guided-breadcrumb-logo .manufacturer-logo { width:auto; max-width:18px; max-height:18px; vertical-align:middle; }
+        .guided-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; }
+        .guided-choice,.guided-model-card { border:1px solid var(--inv-line); background:#fff; border-radius:11px; padding:16px; text-align:left; transition:.15s ease; }
+        .guided-choice { cursor:pointer; min-height:112px; display:flex; flex-direction:column; justify-content:space-between; }
+        .guided-choice:hover { border-color:var(--inv-gold); box-shadow:0 5px 16px rgba(0,0,0,.08); transform:translateY(-1px); }
+        .guided-choice.add-choice { border-style:dashed; border-color:#c6cbd2; color:#49515c; }
+        .guided-choice.add-choice .guided-choice-icon { color:#b78300; }
+        .guided-choice-icon { font-size:28px; color:#1d232b; margin-bottom:12px; min-height:34px; display:flex; align-items:center; }
+        .guided-choice-icon .manufacturer-logo { max-height:34px; max-width:105px; }
+        .guided-choice.brand-logo-only { align-items:center; justify-content:center; text-align:center; }
+        .guided-choice.brand-logo-only .guided-choice-icon { width:100%; min-height:58px; margin:0; justify-content:center; }
+        .guided-choice.brand-logo-only .manufacturer-logo { height:52px; max-height:52px; max-width:145px; }
+        .guided-choice-name { font-weight:700; }
+        .guided-choice-count { color:var(--inv-subtle); font-size:12px; margin-top:3px; }
+        .guided-model-card { min-height:190px; display:flex; flex-direction:column; }
+        .backglass-model-card { grid-column:span 2; min-height:285px; }
+        .backglass-color-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px 12px; margin:10px 0; }
+        .backglass-color-line { display:flex; justify-content:space-between; gap:8px; border-bottom:1px solid #edf0f3; padding:4px 0; font-size:13px; }
+        @@media (max-width:700px) { .backglass-model-card { grid-column:span 1; } }
+        .guided-model-name { font-weight:700; font-size:15px; margin-bottom:4px; }
+        .guided-stock { font-size:23px; font-weight:700; margin:8px 0; }
+        .guided-costs { color:var(--inv-subtle); font-size:12px; line-height:1.7; margin-bottom:12px; }
+        .guided-card-actions { display:flex; gap:7px; margin-top:auto; }
+        .guided-card-status { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+        .inventory-alert-toggle { border:1px solid var(--inv-line); background:#fff; color:#8a919c; border-radius:7px; padding:4px 7px; line-height:1; }
+        .inventory-alert-toggle.active { color:#b77d00; border-color:#f4bc12; background:#fff9df; }
+        .guided-empty { grid-column:1/-1; padding:35px; text-align:center; color:var(--inv-subtle); }
+        .inventory-workspace { grid-column:1/-1; border:1px solid var(--inv-line); border-radius:12px; overflow:hidden; background:#fff; }
+        .inventory-workspace-top { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:0 14px; border-bottom:1px solid var(--inv-line); }
+        .inventory-workspace-tabs { display:flex; gap:24px; overflow-x:auto; }
+        .inventory-workspace-tab { flex:0 0 auto; border:0; border-bottom:3px solid transparent; background:transparent; padding:15px 2px 12px; color:#596273; font-weight:600; white-space:nowrap; }
+        .inventory-workspace-tab.active { color:#0d6efd; border-bottom-color:#0d6efd; }
+        .inventory-workspace-tools { display:grid; grid-template-columns:minmax(220px,1fr) auto auto; gap:10px; padding:12px 14px; align-items:center; border-bottom:1px solid var(--inv-line); }
+        .inventory-workspace-search { position:relative; }
+        .inventory-workspace-search i { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:#87909d; }
+        .inventory-workspace-search input { padding-left:36px; }
+        .inventory-workspace-columns,.inventory-workspace-entry { display:grid; grid-template-columns:minmax(145px,1fr) 82px 92px 105px minmax(130px,170px) 78px; gap:10px; align-items:center; }
+        .inventory-workspace-columns { padding:9px 16px; color:#707987; font-size:12px; font-weight:700; background:#f7f9fb; border-bottom:1px solid var(--inv-line); }
+        .inventory-workspace-model { border-bottom:1px solid var(--inv-line); }
+        .inventory-workspace-model:last-child { border-bottom:0; }
+        .inventory-workspace-model-head { display:grid; grid-template-columns:32px 54px minmax(190px,1fr) auto; gap:10px; align-items:center; padding:12px 16px; background:#fff; cursor:pointer; }
+        .inventory-workspace-model-head:hover { background:#f8fbff; }
+        .inventory-workspace-chevron { border:0; background:transparent; color:#4d5968; }
+        .inventory-model-thumbnail { width:46px; height:54px; object-fit:contain; border-radius:8px; background:#f2f4f7; padding:3px; }
+        .inventory-workspace-model-name { font-weight:700; }
+        .inventory-workspace-model-meta { color:var(--inv-subtle); font-size:12px; margin-top:2px; }
+        .inventory-workspace-total { font-weight:700; white-space:nowrap; }
+        .inventory-workspace-entries { padding:0 16px 10px 112px; background:#fbfcfe; }
+        .inventory-workspace-entry { min-height:48px; padding:7px 0; border-top:1px solid #e9edf2; }
+        .inventory-workspace-option { font-weight:600; min-width:0; overflow-wrap:anywhere; }
+        .inventory-workspace-stock { display:flex; align-items:center; gap:6px; font-weight:600; }
+        .inventory-workspace-stock-dot { width:9px; height:9px; border-radius:50%; background:#198754; flex:0 0 9px; }
+        .inventory-workspace-stock-dot.warning { background:#f4b400; }
+        .inventory-workspace-stock-dot.low { background:#dc3545; }
+        .inventory-workspace-entry .form-control { min-width:0; }
+        .inventory-workspace-actions { display:flex; gap:5px; justify-content:flex-end; }
+        .inventory-workspace-footer { position:sticky; bottom:0; display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 16px; background:#fff; border-top:1px solid var(--inv-line); box-shadow:0 -4px 12px rgba(0,0,0,.05); }
+        .inventory-workspace-ready { color:#4f5968; font-size:13px; }
+        @@media (max-width:900px) { .inventory-workspace-columns { display:none; } .inventory-workspace-entry { grid-template-columns:1fr 70px 80px; } .inventory-workspace-entry > :nth-child(n+4) { grid-column:span 1; } .inventory-workspace-entries { padding-left:16px; } }
+        .inventory-page .card, .inventory-page .card:hover { transform:none; box-shadow:none; }
+        #inventoryTable { margin:0 !important; border:0; }
         /* Ensure table header text is visible */
         #inventoryTable thead th {
-            background-color: #212529 !important;
-            color: #ffffff !important;
-            font-weight: 600;
-            padding: 12px;
+            background-color:#fff !important;
+            color:var(--inv-subtle) !important;
+            font-weight:500;
+            padding:10px 8px;
+            border-bottom:1px solid var(--inv-line) !important;
         }
         
         /* Ensure DataTables controls are visible */
@@ -27,7 +123,8 @@
         /* Ensure table body text is visible */
         #inventoryTable tbody td {
             color: #212529;
-            padding: 10px;
+            padding:9px 8px;
+            vertical-align:middle;
         }
         
         /* Fix modal backdrop and overlay - CLEAN approach */
@@ -96,101 +193,109 @@
             font-weight: 600;
             color: #0a3622;
         }
+        .inventory-model-tabs-wrap { margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--inv-line); }
+        .inventory-model-tabs-label { color:var(--inv-subtle); font-size:12px; font-weight:700; margin-bottom:7px; text-transform:uppercase; letter-spacing:.04em; }
+        .inventory-model-tabs { display:flex; gap:7px; overflow-x:auto; padding:1px 1px 7px; scrollbar-width:thin; }
+        .inventory-model-tab { flex:0 0 auto; border:1px solid #cfd5dc; background:#fff; color:#343a40; border-radius:8px; padding:7px 11px; font-size:12px; font-weight:600; white-space:nowrap; }
+        .inventory-model-tab:hover { border-color:#0d6efd; color:#0d6efd; }
+        .inventory-model-tab.active { border-color:#0d6efd; background:#0d6efd; color:#fff; box-shadow:0 2px 6px rgba(13,110,253,.22); }
+        .supplier-import-table th { white-space:nowrap; }
+        .supplier-import-description { min-width:260px; max-width:420px; white-space:normal; }
+        .supplier-import-match { min-width:330px; }
+        .supplier-import-status { white-space:nowrap; font-size:12px; font-weight:700; }
+        @@media (max-width: 1100px) { .inventory-page .inventory-toolbar { grid-template-columns:1fr 1fr; } }
+        @@media (max-width: 700px) { .inventory-page .inventory-top { flex-direction:column; } .inventory-page .inventory-toolbar,.inventory-page .inventory-summary { grid-template-columns:1fr; } }
     </style>
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="inventory-page">
+<div class="inventory-top">
     <div>
-        <h2><i class="fas fa-boxes me-2"></i>Inventory Management</h2>
-        <p class="text-muted mb-0">Manage inventory items with proper categorization and stock tracking</p>
+        <h2 class="mb-1">Inventory</h2>
+        <p class="text-muted mb-0">Manage individual repair parts—no service or labor bundles.</p>
     </div>
-    <div class="d-flex gap-2">
-        <button type="button" class="btn btn-primary" onclick="showAddInventoryItemModal()">
-            <i class="fas fa-plus me-2"></i>Add Inventory Item
-        </button>
-        <button type="button" class="btn btn-info" onclick="showLowStockReport()">
-            <i class="fas fa-exclamation-triangle me-2"></i>Low Stock Report
-        </button>
-        <button type="button" class="btn btn-success" onclick="showStockMovements()">
-            <i class="fas fa-exchange-alt me-2"></i>Stock Movements
-        </button>
-        <button type="button" class="btn btn-warning" onclick="testAjaxCall()">
-            <i class="fas fa-bug me-2"></i>Test API Call
-        </button>
+    <div class="inventory-top-actions">
+        <button type="button" class="btn btn-outline-primary" onclick="openSupplierOrderImport()"><i class="fas fa-file-import me-2"></i>Import supplier order</button>
+        <button type="button" class="btn btn-primary" onclick="showAddInventoryItemModal()"><i class="fas fa-plus me-2"></i>Add inventory part</button>
     </div>
 </div>
 
-<!-- Filter Section -->
-<div class="card mb-4">
-    <div class="card-header">
-        <h5 class="mb-0">Filter Inventory Items</h5>
+<div class="inventory-view-switch" role="tablist" aria-label="Inventory view">
+    <button type="button" id="guidedViewButton" class="active" onclick="setInventoryMode('guided')"><i class="fas fa-sitemap me-1"></i>Guided view</button>
+    <button type="button" id="allViewButton" onclick="setInventoryMode('all')"><i class="fas fa-list me-1"></i>All inventory</button>
+    <button type="button" id="lowViewButton" onclick="setInventoryMode('low')"><i class="fas fa-exclamation-circle me-1"></i>Low stock</button>
+</div>
+
+<section id="guidedInventoryBrowser" class="guided-browser" aria-label="Guided inventory browser">
+    <div class="guided-head">
+        <div><div id="guidedBreadcrumb" class="guided-breadcrumb">Inventory</div><h5 id="guidedTitle" class="mb-0 mt-1">Choose a brand</h5></div>
+        <div class="guided-head-actions">
+            <div class="guided-browse-switch" aria-label="Browse inventory by">
+                <button type="button" id="browseBrandButton" class="active" onclick="setGuidedBrowseOrder('brand')">Brand first</button>
+                <button type="button" id="browsePartButton" onclick="setGuidedBrowseOrder('part')">Part first</button>
+            </div>
+            <button type="button" id="guidedBackButton" class="btn btn-sm btn-outline-secondary d-none" onclick="guidedBack()"><i class="fas fa-arrow-left me-1"></i>Back</button>
+        </div>
     </div>
-    <div class="card-body">
-        <form id="inventoryFilterForm" class="row g-3">
-            <div class="col-md-2">
-                <label class="form-label">Brand</label>
-                <select class="form-select" id="filterBrand">
-                    <option value="">All Brands</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label">Device Category</label>
-                <select class="form-select" id="filterDeviceCategory">
-                    <option value="">All Categories</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label">Device Model</label>
-                <select class="form-select" id="filterDeviceModel">
-                    <option value="">All Models</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label">Inventory Category</label>
-                <select class="form-select" id="filterInventoryCategory">
-                    <option value="">All Categories</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <label class="form-label">Stock Status</label>
-                <select class="form-select" id="filterStockStatus">
-                    <option value="">All Status</option>
-                    <option value="in_stock">In Stock</option>
-                    <option value="low_stock">Low Stock</option>
-                    <option value="out_of_stock">Out of Stock</option>
-                </select>
-            </div>
-            <div class="col-md-2 d-flex align-items-end">
-                <button type="button" class="btn btn-outline-primary me-2" onclick="applyFilters()">
-                    <i class="fas fa-filter me-1"></i>Filter
-                </button>
-                <button type="button" class="btn btn-outline-secondary" onclick="clearFilters()">
-                    <i class="fas fa-times me-1"></i>Clear
-                </button>
-            </div>
-        </form>
-    </div>
+    <div id="guidedInventoryGrid" class="guided-grid"><div class="guided-empty">Loading inventory…</div></div>
+</section>
+
+<div class="modal fade" id="backGlassModelModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title" id="backGlassModelTitle">Back Glass Colors</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+        <div class="modal-body">
+            <div class="inventory-model-tabs-wrap"><div class="inventory-model-tabs-label">Choose another model</div><div class="inventory-model-tabs" id="backGlassModelTabs"></div></div>
+            <p class="text-muted small" id="backGlassModelHelp">Enter quantities and purchase costs for several colors, then save once. Each color stays a separate inventory item and receives its own FIFO batch.</p>
+            <div id="backGlassColorRows"></div>
+            <div class="mt-3"><label for="backGlassVendor" class="form-label">Supplier (optional)</label><input id="backGlassVendor" class="form-control" placeholder="Supplier name"></div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary me-auto" onclick="navigateInventoryVariantModel(-1)"><i class="fas fa-chevron-left me-1"></i>Previous</button>
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-outline-primary inventory-variant-save" id="saveBackGlassColorsButton" onclick="saveBackGlassColors('stay')">Save</button>
+            <button type="button" class="btn btn-primary inventory-variant-save" id="saveBackGlassNextButton" onclick="saveBackGlassColors('next')">Save &amp; Next <i class="fas fa-chevron-right ms-1"></i></button>
+        </div>
+    </div></div>
+</div>
+
+<div id="inventoryTableControls" class="d-none">
+<div class="inventory-toolbar">
+    <div class="inventory-search"><i class="fas fa-search"></i><input class="form-control" id="inventorySearch" placeholder="Search model, part, SKU or vendor"></div>
+    <select class="form-select" id="filterBrand"><option value="">All brands</option></select>
+    <select class="form-select" id="filterDeviceCategory"><option value="">All families</option></select>
+    <select class="form-select" id="filterStockStatus"><option value="">All stock</option><option value="in_stock">In stock</option><option value="low_stock">Low stock</option><option value="out_of_stock">Out of stock</option></select>
+    <select class="d-none" id="filterDeviceModel"><option value=""></option></select>
+    <select class="d-none" id="filterInventoryCategory"><option value=""></option></select>
+</div>
+
+<div class="inventory-summary">
+    <div class="inventory-stat"><div class="inventory-stat-label">Inventory parts</div><div class="inventory-stat-value" id="inventoryPartCount">0</div></div>
+    <div class="inventory-stat"><div class="inventory-stat-label">Low-stock parts</div><div class="inventory-stat-value" id="inventoryLowCount">0</div></div>
+    <div class="inventory-stat"><div class="inventory-stat-label">Inventory value</div><div class="inventory-stat-value" id="inventoryValue">$0.00</div></div>
 </div>
 
 <!-- Inventory Items Table -->
-<div class="card">
-    <div class="card-header">
-        <h5 class="mb-0">Inventory Items</h5>
+<div class="inventory-table-wrap">
+    <div class="inventory-bulk">
+        <div class="inventory-bulk-left">
+            <div id="bulkActions" class="d-none gap-2 align-items-center"><strong><span id="selectedInventoryCount">0</span> selected</strong><button class="btn btn-sm btn-outline-primary" onclick="bulkSetReorderPoint()">Edit selected</button><button class="btn btn-sm btn-outline-secondary" onclick="clearInventorySelection()">Clear</button></div>
+            <span id="noBulkSelection" class="text-muted small">Select rows to edit multiple parts</span>
+        </div>
+        <div class="inventory-bulk-right"><button class="btn btn-sm btn-outline-secondary" onclick="showLowStockReport()">Low stock</button><button class="btn btn-sm btn-outline-secondary" onclick="showStockMovements()">Stock movements</button></div>
     </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table id="inventoryTable" class="table table-striped table-hover">
-                <thead class="table-dark" style="background-color: #212529; color: #ffffff;">
+    <div class="table-responsive">
+            <table id="inventoryTable" class="table table-sm">
+                <thead>
                     <tr>
-                        <th>Name</th>
+                        <th><input type="checkbox" id="selectAllInventory" aria-label="Select all inventory rows"></th>
+                        <th>Part and device</th>
                         <th>SKU</th>
-                        <th>Brand</th>
-                        <th>Category</th>
-                        <th>Model</th>
-                        <th>Current Stock</th>
-                        <th>Reorder Point</th>
-                        <th>Cost Price</th>
-                        <th>Retail Price</th>
+                        <th>Quantity</th>
+                        <th>Latest Cost</th>
+                        <th>Average Cost</th>
+                        <th>Selling Price</th>
+                        <th>Reorder At</th>
+                        <th>Vendor</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -199,8 +304,73 @@
                     <!-- Data will be loaded via AJAX -->
                 </tbody>
             </table>
-        </div>
     </div>
+</div>
+</div>
+</div>
+
+<div class="modal fade" id="supplierOrderImportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable"><div class="modal-content">
+        <div class="modal-header"><div><h5 class="modal-title"><i class="fas fa-file-import me-2"></i>Import supplier order</h5><div class="small text-muted">Paste an order or upload a PDF/screenshot. Review every match before inventory is received.</div></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+        <div class="modal-body">
+            <div class="row g-3 mb-3">
+                <div class="col-md-4"><label class="form-label">Supplier</label><select id="supplierImportVendor" class="form-select"><option>SEG Mobile</option><option>Mobile Sentrix</option><option>Fast Cellular</option></select></div>
+                <div class="col-md-4"><label class="form-label">Order / invoice number</label><input id="supplierImportReference" class="form-control" placeholder="Detected automatically when possible"></div>
+                <div class="col-md-4"><label class="form-label">Date received</label><input id="supplierImportDate" type="date" class="form-control"></div>
+                <div class="col-12">
+                    <label class="form-label">Upload invoice PDF or screenshot</label>
+                    <div class="input-group"><input id="supplierImportFile" type="file" class="form-control" accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp" onchange="extractSupplierDocument(this)"><button id="supplierImportExtractButton" type="button" class="btn btn-outline-primary" onclick="extractSupplierDocument(document.getElementById('supplierImportFile'))"><i class="fas fa-eye me-1"></i>Read file</button></div>
+                    <div class="form-text">PDFs and screenshots are read into the box below. Nothing is added until you review and confirm it.</div>
+                </div>
+                <div class="col-12"><label class="form-label">Supplier order text</label><textarea id="supplierImportText" class="form-control font-monospace" rows="11" placeholder="Paste the complete order exactly as the supplier shows it. Multi-line items, fulfillment lines, tracking numbers, SKU, price and quantity are supported."></textarea></div>
+            </div>
+            <div class="d-flex align-items-center gap-2 mb-3"><button type="button" class="btn btn-primary" onclick="parseSupplierOrder()"><i class="fas fa-magic me-1"></i>Read and match order</button><span class="small text-muted">No inventory is changed during this step.</span></div>
+            <div id="supplierImportMessage" class="alert alert-light border d-none"></div>
+            <div id="supplierImportReview" class="table-responsive d-none"><table class="table table-sm align-middle supplier-import-table"><thead><tr><th>Import</th><th>Supplier item</th><th>Qty</th><th>Unit cost</th><th>Inventory match</th><th>Status</th></tr></thead><tbody id="supplierImportRows"></tbody></table></div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button><button type="button" id="supplierImportConfirm" class="btn btn-success" disabled onclick="importSupplierOrder()"><i class="fas fa-boxes me-1"></i>Import selected items</button></div>
+    </div></div>
+</div>
+
+<!-- Focused supplier-import popup. This keeps the invoice review intact and
+     creates/receives one unmatched part without opening the full inventory editor. -->
+<div class="modal fade" id="supplierNewPartModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable"><div class="modal-content">
+        <div class="modal-header bg-primary text-white">
+            <div><h5 class="modal-title mb-1"><i class="fas fa-box-open me-2"></i>Create supplier part</h5><div class="small opacity-75">Review the detected information, correct anything necessary, then add it directly.</div></div>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+            <input type="hidden" id="supplierNewPartRow">
+            <div class="alert alert-light border mb-3">
+                <div class="small text-uppercase text-muted fw-semibold mb-1">Original supplier description</div>
+                <div id="supplierNewPartRaw" class="fw-semibold"></div>
+                <div id="supplierNewPartDetected" class="small text-primary mt-2"></div>
+            </div>
+            <div class="row g-3">
+                <div class="col-md-6"><label class="form-label">Brand *</label><select id="supplierNewPartBrand" class="form-select"></select></div>
+                <div class="col-md-6"><label class="form-label">Device category *</label><select id="supplierNewPartDeviceCategory" class="form-select"></select></div>
+                <div class="col-12"><label class="form-label">Existing model</label><select id="supplierNewPartExistingModel" class="form-select"><option value="">Create a new model</option></select><div class="form-text">Choose an existing model when it is already in the POS, or leave this on Create a new model.</div></div>
+                <div class="col-md-8 supplier-new-model-field"><label class="form-label">New model name *</label><input id="supplierNewPartModelName" class="form-control" placeholder="Example: Moto G Stylus 5G"></div>
+                <div class="col-md-4 supplier-new-model-field"><label class="form-label">Model number</label><input id="supplierNewPartModelNumber" class="form-control" placeholder="Example: XT2215"></div>
+                <div class="col-md-6"><label class="form-label">Part type *</label><select id="supplierNewPartType" class="form-select"></select></div>
+                <div class="col-md-6" id="supplierNewPartQualityWrap"><label class="form-label">Screen quality</label><select id="supplierNewPartQuality" class="form-select"><option value="">Not specified</option><option>Incell</option><option>Soft OLED</option><option>Hard OLED</option><option>Original/Refurbished</option><option>Aftermarket</option><option>Original</option><option>GEN OLED</option></select></div>
+                <div class="col-md-6"><label class="form-label">Inventory name *</label><input id="supplierNewPartName" class="form-control" placeholder="Example: Screen"></div>
+                <div class="col-md-6"><label class="form-label">Color</label><input id="supplierNewPartColor" class="form-control" placeholder="Example: Black"></div>
+                <div class="col-md-6"><label class="form-label">Supplier SKU</label><input id="supplierNewPartSku" class="form-control"></div>
+                <div class="col-md-3"><label class="form-label">Quantity *</label><input id="supplierNewPartQty" type="number" min="1" step="1" class="form-control"></div>
+                <div class="col-md-3"><label class="form-label">Unit cost *</label><div class="input-group"><span class="input-group-text">$</span><input id="supplierNewPartCost" type="number" min="0" step="0.01" class="form-control"></div></div>
+                <div class="col-md-4"><label class="form-label">Selling price</label><div class="input-group"><span class="input-group-text">$</span><input id="supplierNewPartRetail" type="number" min="0" step="0.01" class="form-control" placeholder="Optional"></div></div>
+                <div class="col-md-4"><label class="form-label">Low-stock alert</label><input id="supplierNewPartReorder" type="number" min="0" step="1" value="2" class="form-control"></div>
+                <div class="col-md-4"><label class="form-label">Parsed supplier name</label><input id="supplierNewPartCleaned" class="form-control" readonly></div>
+            </div>
+            <div id="supplierNewPartError" class="alert alert-danger d-none mt-3 mb-0"></div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Back to invoice</button>
+            <button type="button" id="supplierNewPartCreate" class="btn btn-success" onclick="createSupplierPartAndReceive()"><i class="fas fa-plus me-1"></i>Create Part &amp; Add to Invoice</button>
+        </div>
+    </div></div>
 </div>
 
 <!-- Add/Edit Inventory Item Modal -->
@@ -234,6 +404,11 @@
                         <div id="deviceSelectionError" class="text-danger small mt-1 d-none">
                             <i class="fas fa-exclamation-circle me-1"></i>Please select Brand, Category and Model.
                         </div>
+                        <div class="mt-3">
+                            <label for="itemCompatibleModels" class="form-label fw-semibold">Also compatible with</label>
+                            <select id="itemCompatibleModels" class="form-select" multiple></select>
+                            <div class="form-text">Optional. These models share this same physical stock quantity; using one deducts it for every compatible model.</div>
+                        </div>
                     </div>
 
                     <!-- ── Section 2: Item Details ───────────────────────────────── -->
@@ -265,6 +440,20 @@
                                     <option value="">-- Select Category --</option>
                                 </select>
                                 <div class="invalid-feedback">Please select an inventory category.</div>
+                            </div>
+                            <div class="col-md-6 d-none" id="screenVariantField">
+                                <label for="itemVariant" class="form-label fw-semibold">Screen Quality <span class="text-danger">*</span></label>
+                                <select class="form-select" id="itemVariant">
+                                    <option value="">-- Select Screen Quality --</option>
+                                </select>
+                                <div class="invalid-feedback">Please select the screen quality.</div>
+                            </div>
+                            <div class="col-md-6 d-none" id="backGlassColorField">
+                                <label for="itemColor" class="form-label fw-semibold">Back Glass Color <span class="text-danger">*</span></label>
+                                <select class="form-select" id="itemColor">
+                                    <option value="">-- Select Original Phone Color --</option>
+                                </select>
+                                <div class="invalid-feedback">Please select a color sold for this iPhone.</div>
                             </div>
                             <div class="col-md-12">
                                 <label for="itemDescription" class="form-label fw-semibold">Description</label>
@@ -471,11 +660,43 @@
     </div>
 </div>
 
+<div class="modal fade" id="receiveBatchModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg"><div class="modal-content">
+        <div class="modal-header"><h5 class="modal-title">Receive inventory batch</h5><button class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body">
+            <input type="hidden" id="receiveInventoryItemId">
+            <div class="inventory-model-tabs-wrap"><div class="inventory-model-tabs-label">Choose another model</div><div class="inventory-model-tabs" id="receiveInventoryModelTabs"></div></div>
+            <div class="alert alert-light border mb-3" id="receiveItemSummary"></div>
+            <div class="row g-3">
+                <div class="col-md-4"><label class="form-label">Quantity *</label><input id="receiveQuantity" type="number" min="1" class="form-control"></div>
+                <div class="col-md-4"><label class="form-label">Cost per part *</label><input id="receiveUnitCost" type="number" min="0" step="0.01" class="form-control"></div>
+                <div class="col-md-4"><label class="form-label">Date received</label><input id="receiveDate" type="date" class="form-control"></div>
+                <div class="col-md-6"><label class="form-label">Vendor</label><select id="receiveVendor" class="form-select"><option value="">Select supplier</option><option>SEG Mobile</option><option>Mobile Sentrix</option><option>Fast Cellular</option><option value="Other">Other</option></select><input id="receiveVendorOther" class="form-control mt-2 d-none" placeholder="Enter supplier name"></div>
+                <div class="col-md-6"><label class="form-label">Invoice / reference</label><input id="receiveReference" class="form-control"></div>
+                <div class="col-12"><label class="form-label">Notes</label><textarea id="receiveNotes" class="form-control" rows="2"></textarea></div>
+            </div>
+            <div class="mt-4"><h6>Cost history — oldest batch first</h6><div class="table-responsive"><table class="table table-sm"><thead><tr><th>Received</th><th>Vendor</th><th>Original qty</th><th>Remaining</th><th>Unit cost</th></tr></thead><tbody id="batchHistoryBody"></tbody></table></div></div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary me-auto" onclick="navigateReceiveInventoryModel(-1)"><i class="fas fa-chevron-left me-1"></i>Previous</button>
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-outline-primary receive-inventory-save" onclick="receiveInventoryBatch('stay')">Save</button>
+            <button type="button" class="btn btn-primary receive-inventory-save" onclick="receiveInventoryBatch('next')">Save &amp; Next <i class="fas fa-chevron-right ms-1"></i></button>
+        </div>
+    </div></div>
+</div>
+
 @section Scripts {
     <!-- Select2 JS for searchable dropdowns -->
     
 <script>
     let inventoryTable;
+    let inventoryAllItems = [];
+    let inventoryBrandNames = [];
+    let inventoryMode = 'guided';
+    let guidedBrowseOrder = 'brand';
+    const isInventoryAdmin = @(isInventoryAdmin.ToString().ToLowerInvariant());
+    const guidedSelection = { brand: null, family: null, part: null };
 
     $(document).ready(function() {
         // Initialize DataTable with AJAX data loading
@@ -486,6 +707,11 @@
                 dataSrc: function(json) {
                     console.log('AJAX Response:', json); // Debug log
                     if (json && json.success) {
+                        updateInventorySummary(json.data || []);
+                        if (!inventoryAllItems.length || !String(inventoryTable?.ajax?.url?.() || '').includes('?')) {
+                            inventoryAllItems = json.data || [];
+                            renderGuidedInventory();
+                        }
                         return json.data;
                     } else {
                         console.error('Error loading inventory data:', json ? json.message : 'No response');
@@ -500,51 +726,45 @@
             },
             columns: [
                 {
+                    data: null, orderable: false, searchable: false,
+                    render: function(data, type, row) {
+                        return '<input type="checkbox" class="inventory-row-select" value="' + row.id + '" aria-label="Select ' + $('<div>').text(row.name).html() + '">';
+                    }
+                },
+                {
                     data: 'name',
                     render: function(data, type, row) {
-                        let html = '<strong>' + data + '</strong>';
-                        if (row.description) {
-                            html += '<br><small class="text-muted">' + row.description + '</small>';
-                        }
-                        return html;
+                        const path = [row.brandName, row.deviceCategoryName, row.deviceModelName].filter(x => x && x !== 'Unknown').join(' › ');
+                        return '<div class="part-name">' + $('<div>').text(data || '').html() + '</div><div class="device-path">' + $('<div>').text(path).html() + '</div>';
                     }
                 },
                 { data: 'sku' },
-                { data: 'brandName' },
-                { data: 'inventoryCategoryName' },
-                { data: 'deviceModelName' },
                 {
                     data: 'currentStock',
                     render: function(data, type, row) {
-                        const isLow = row.isLowStockAggregated;
-                        const tip = (row.aggregatedStock !== undefined && row.aggregatedStock !== data)
-                            ? ' title="Group total: ' + row.aggregatedStock + '"'
-                            : '';
-                        return '<span class="' + (isLow ? 'text-danger fw-bold' : '') + '"' + tip + '>' + data + '</span>';
+                        return '<input class="form-control form-control-sm inline-qty" value="' + (data || 0) + '" readonly title="Use Receive shipment or Stock movement to change quantity">';
                     }
                 },
-                { data: 'reorderPoint' },
-                {
-                    data: 'costPrice',
-                    render: function(data) {
-                        return '$' + parseFloat(data).toFixed(2);
-                    }
-                },
+                { data: 'latestCost', render: function(data, type, row) { return '<button type="button" class="form-control form-control-sm inline-money text-end" onclick="showReceiveBatchModal(' + row.id + ', \'' + String(row.name).replace(/'/g, "\\'") + '\', ' + row.currentStock + ', ' + (data || 0) + ')" title="Receive a new cost batch">$' + parseFloat(data || 0).toFixed(2) + '</button>'; } },
+                { data: 'averageCost', render: function(data) { return '$' + parseFloat(data || 0).toFixed(2); } },
                 {
                     data: 'retailPrice',
-                    render: function(data) {
-                        return '$' + parseFloat(data).toFixed(2);
+                    render: function(data, type, row) {
+                        return '<input type="number" min="0" step="0.01" class="form-control form-control-sm inline-money" value="' + parseFloat(data || 0).toFixed(2) + '" onchange="quickUpdateInventoryField(' + row.id + ',\'retailPrice\',this.value,this)">';
                     }
                 },
+                { data: 'reorderPoint', render: function(data, type, row) { return '<input type="number" min="0" class="form-control form-control-sm inline-qty" value="' + (data || 0) + '" onchange="quickUpdateInventoryField(' + row.id + ',\'reorderPoint\',this.value,this)">'; } },
+                { data: 'latestVendor', render: function(data) { return $('<div>').text(data || '—').html(); } },
                 {
                     data: null,
                     render: function(data, type, row) {
+                        const alertButton = '<button type="button" class="inventory-alert-toggle ms-2 ' + (row.enableLowStockNotifications ? 'active' : '') + '" onclick="toggleInventoryAlert(' + row.id + ',this)" title="' + (row.enableLowStockNotifications ? 'Low-stock alert is on' : 'Low-stock alert is off') + '"><i class="fas ' + (row.enableLowStockNotifications ? 'fa-bell' : 'fa-bell-slash') + '"></i></button>';
                         if (row.currentStock <= 0) {
-                            return '<span class="badge bg-danger">Out of Stock</span>';
+                            return '<span class="stock-status"><span class="stock-dot low"></span>Out of stock</span>' + alertButton;
                         } else if (row.isLowStockAggregated) {
-                            return '<span class="badge bg-warning" title="Group total: ' + (row.aggregatedStock || row.currentStock) + '">Low Stock</span>';
+                            return '<span class="stock-status"><span class="stock-dot warning"></span>Low stock</span>' + alertButton;
                         } else {
-                            return '<span class="badge bg-success">In Stock</span>';
+                            return '<span class="stock-status"><span class="stock-dot"></span>In stock</span>' + alertButton;
                         }
                     }
                 },
@@ -560,27 +780,22 @@
                                 <button type="button" class="btn btn-outline-info" onclick="showStockMovementModal(${row.id})" title="Stock Movement">
                                     <i class="fas fa-exchange-alt"></i>
                                 </button>
-                                <button type="button" class="btn btn-outline-danger" onclick="deleteInventoryItem(${row.id})" title="Delete">
-                                    <i class="fas fa-trash"></i>
+                                <button type="button" class="btn btn-outline-success" onclick="showReceiveBatchModal(${row.id}, '${String(row.name).replace(/'/g, "\\'")}', ${row.currentStock}, ${row.latestCost || row.costPrice || 0})" title="Receive shipment / cost history">
+                                    <i class="fas fa-truck-loading"></i>
                                 </button>
+                                ${isInventoryAdmin ? `<button type="button" class="btn btn-outline-danger" onclick="deleteInventoryItem(${row.id})" title="Admin: delete inventory"><i class="fas fa-trash"></i></button>` : ''}
                             </div>
                         `;
                     }
                 }
             ],
-            responsive: true,
+            responsive: false,
             pageLength: 25,
-            order: [[0, 'asc']],
+            order: [[1, 'asc']],
             language: {
                 emptyTable: "No inventory items found"
             },
-            rowCallback: function(row, data) {
-                if (data.currentStock <= 0) {
-                    $(row).addClass('table-danger');
-                } else if (data.isLowStockAggregated) {
-                    $(row).addClass('table-warning');
-                }
-            }
+            rowCallback: function() {}
         });
 
         console.log('DataTable initialized with AJAX data loading');
@@ -593,7 +808,1169 @@
         loadItems();
         // Load filter bar dropdowns
         loadFilterDropdowns();
+        loadGuidedBrandNames();
+
+        $('#inventorySearch').on('keyup', function(e) { if (e.key === 'Enter' || this.value.length === 0) applyFilters(); });
+        $('#selectAllInventory').on('change', function() { $('.inventory-row-select').prop('checked', this.checked); updateBulkActions(); });
+        $('#inventoryTable').on('change', '.inventory-row-select', updateBulkActions);
+        $('#filterBrand,#filterDeviceCategory,#filterStockStatus').on('change', applyFilters);
+        $('#receiveVendor').on('change', function() {
+            const isOther = this.value === 'Other';
+            $('#receiveVendorOther').toggleClass('d-none', !isOther);
+            if (isOther) $('#receiveVendorOther').trigger('focus');
+        });
+
+        // Money fields show zero as a placeholder. Clicking a zero-value field
+        // leaves it blank so the next amount can be typed immediately.
+        $(document).on('focus', '.inventory-workspace-cost,.backglass-unit-cost,#receiveUnitCost,#itemCostPrice,#itemRetailPrice,#itemWholesalePrice', function() {
+            if (Number(this.value || 0) === 0) this.value = '';
+        });
     });
+
+    let supplierImportLines = [];
+    let supplierImportPendingCreateRow = null;
+    let supplierImportReturnToReview = false;
+    let supplierImportLookups = null;
+    let supplierNewPartReturnToReview = false;
+    let supplierNewPartTemplates = new Map();
+    function openSupplierOrderImport() {
+        supplierImportLines = [];
+        $('#supplierImportText,#supplierImportReference').val('');
+        $('#supplierImportFile').val('');
+        $('#supplierImportDate').val(new Date().toISOString().slice(0,10));
+        $('#supplierImportRows').empty();
+        $('#supplierImportReview,#supplierImportMessage').addClass('d-none');
+        $('#supplierImportConfirm').prop('disabled',true);
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('supplierOrderImportModal')).show();
+        setTimeout(() => document.getElementById('supplierImportText').focus(),250);
+    }
+    async function extractSupplierDocument(input) {
+        const file = input && input.files ? input.files[0] : null;
+        if (!file) { showToast('warning','Choose a PDF or screenshot first.'); return; }
+        if (file.size > 15 * 1024 * 1024) { showToast('warning','The invoice file must be smaller than 15 MB.'); return; }
+        const button = $('#supplierImportExtractButton').prop('disabled',true).html('<i class="fas fa-spinner fa-spin me-1"></i>Reading…');
+        const form = new FormData(); form.append('file',file);
+        try {
+            const response = await fetch('@Url.Action("ExtractSupplierDocument", "Inventories")',{method:'POST',body:form}).then(result => result.json());
+            if (!response.success) throw new Error(response.message || 'The document could not be read.');
+            $('#supplierImportText').val(response.text || '');
+            $('#supplierImportMessage').removeClass('d-none alert-warning alert-success').addClass('alert-info').text('Document text extracted. Check it below, then click Read and match order.');
+            if (!String(response.text || '').trim()) throw new Error('No readable text was found in this document. Try a clearer screenshot.');
+            parseSupplierOrder();
+        } catch(error) { showToast('error',error.message); }
+        finally { button.prop('disabled',false).html('<i class="fas fa-eye me-1"></i>Read file'); }
+    }
+    function supplierImportNormalize(value) { return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim(); }
+    function supplierImportCleanDescription(value) {
+        let cleaned = String(value || '').replace(/\[([^\]]+)\]\([^)]*\)/g,'$1').trim();
+        // Supplier product-line names are useful for quality detection, but they
+        // must not become the device/model or inventory name.
+        for (let pass = 0; pass < 4; pass++) {
+            const before = cleaned;
+            cleaned = cleaned
+                .replace(/^\s*\((?:mp\+?(?:\s+cof)?|xic|upcell|gen|premium(?:\s+pro)?|aftermarket(?:\s+pro)?)[^)]*\)\s*/i,'')
+                .replace(/^\s*(?:mp\+?(?:\s+cof)?|xic|upcell|premium(?:\s+pro)?|gen|aftermarket(?:\s+pro)?|suave|ltps|cof)\s*[-:|]?\s*/i,'');
+            if (cleaned === before) break;
+        }
+        return cleaned.replace(/\s+/g,' ').trim();
+    }
+    function supplierImportItemLabel(item) {
+        return [item.brandName, item.deviceModelName, item.name, item.variant, item.color, item.sku].filter(Boolean).join(' › ');
+    }
+    function supplierImportCanonical(value) {
+        return supplierImportNormalize(supplierImportCleanDescription(value)
+            .replace(/digitizer|lcd\s*(?:assembly)?|display\s*(?:assembly)?/ig,' screen ')
+            .replace(/charging\s+port\s+flex(?:\s+cable)?/ig,' charging port ')
+            .replace(/replacement\s+battery/ig,' battery ')
+            .replace(/playstation\s*5/ig,' sony ps5 ')
+            .replace(/ipad\s+(\d+)\s*\((\d{4})\)/ig,'ipad $1 $2'));
+    }
+    function supplierImportPart(value) {
+        if (/\bback\s*glass\b|\brear\s*glass\b/i.test(value)) return 'back glass';
+        if (/proximity|light\s*sensor/i.test(value)) return 'proximity sensor';
+        if (/camera|lens\s*glass/i.test(value)) return 'camera';
+        if (/hdmi/i.test(value)) return 'hdmi port';
+        if (/charging\s*port/i.test(value)) return 'charging port';
+        if (/battery/i.test(value)) return 'battery';
+        if (/digitizer|screen|lcd|display|\boled\b|\bincell\b|screen\s*assembly/i.test(value)) return 'screen';
+        return '';
+    }
+    function supplierImportQuality(value, brand) {
+        const text = String(value || ''); const samsung = /samsung/i.test(brand || text);
+        if (samsung && /refurbished|original|oem/i.test(text)) return 'original';
+        if (samsung && /aftermarket/i.test(text)) return 'aftermarket';
+        if (/suave|soft\s*oled/i.test(text)) return 'soft oled';
+        if (/hard\s*oled/i.test(text)) return 'hard oled';
+        if (/in[ -]?cell|\bltps\b|\bcof\b|\blcd\b/i.test(text)) return 'incell';
+        if (/refurbished|original|oem/i.test(text)) return 'original refurbished';
+        if (/\bgen\s*oled\b/i.test(text)) return 'gen oled';
+        return '';
+    }
+    function supplierCompatibleModelIds(notes) {
+        const match = String(notes || '').match(/COMPAT_MODELS:\s*([^;]+)/i);
+        return match ? [...match[1].matchAll(/\|(\d+)\|/g)].map(value => Number(value[1])) : [];
+    }
+    function supplierDetectedModels(description, sku) {
+        const expanded = String(description || '').replace(/\b(iphone|ipad)\s+(\d+[a-z]*(?:\s+(?:pro|max|plus|mini|air))*)\s*\/\s*(\d+[a-z]*(?:\s+(?:pro|max|plus|mini|air))*)/ig,
+            function(_,family,left,right){ return family + ' ' + left + ' ' + family + ' ' + right; });
+        const normalized = supplierImportNormalize(expanded + ' ' + (sku || ''));
+        const found = [...new Map(inventoryAllItems.map(item => {
+            const model = supplierImportNormalize(item.deviceModelName);
+            const index = model ? normalized.indexOf(model) : -1;
+            return [Number(item.deviceModelId), {id:Number(item.deviceModelId),name:item.deviceModelName,normalized:model,index:index}];
+        }).filter(entry => entry[1].id && entry[1].index >= 0)).values()];
+        return found.filter(candidate => !found.some(other => other.id !== candidate.id
+            && other.normalized.length > candidate.normalized.length
+            && other.index === candidate.index
+            && other.normalized.startsWith(candidate.normalized)))
+            .sort((a,b) => a.index-b.index || b.normalized.length-a.normalized.length);
+    }
+    function supplierImportScore(line, item) {
+        if (/\bSERVICE_ONLY\b/i.test(item.notes || '')) return -1000;
+        if (line.sku && item.sku && supplierImportNormalize(line.sku) === supplierImportNormalize(item.sku)) return 5000;
+        const source = supplierImportCanonical(line.description + ' ' + line.sku);
+        const target = supplierImportNormalize(supplierImportItemLabel(item));
+        let score = 0;
+        const part = supplierImportPart(line.description);
+        const itemPart = supplierImportPart([item.name,item.inventoryCategoryName,item.description].filter(Boolean).join(' '));
+        if (!part || !itemPart || part !== itemPart) return -1000;
+        const compatibleIds = [Number(item.deviceModelId), ...supplierCompatibleModelIds(item.notes)];
+        if (line.detectedModelIds?.length && !line.detectedModelIds.some(id => compatibleIds.includes(Number(id)))) return -1000;
+        score += 140;
+        if (line.detectedModelIds?.length && line.detectedModelIds.every(id => compatibleIds.includes(Number(id)))) score += 80;
+        const quality = supplierImportQuality(line.description, item.brandName);
+        const itemQuality = supplierImportQuality(item.variant || '', item.brandName);
+        if (quality && quality !== itemQuality) return -1000;
+        if (quality) score += 90;
+        const sourceTokens = [...new Set(source.split(' ').filter(token => token.length > 1))];
+        const targetTokens = target.split(' ');
+        sourceTokens.forEach(token => { if (targetTokens.includes(token)) score += /^a\d{4}$|^iphone$|^ipad$|^macbook$|^ps5$|^incell$|^oled$|^\d{2}$/.test(token) ? 16 : 4; });
+        return score;
+    }
+    function parseSupplierOrderLine(raw, index) {
+        let cells = raw.split(/\t|\s{3,}/).map(value => value.trim()).filter(Boolean);
+        const moneyMatches = [...raw.matchAll(/\$?(-?\d{1,6}(?:,\d{3})*(?:\.\d{2}))/g)];
+        const labeledQty = raw.match(/(?:qty|quantity)\s*[:x]?\s*(\d+)/i);
+        let quantity = labeledQty ? Number(labeledQty[1]) : 0;
+        let unitCost = moneyMatches.length ? Number(moneyMatches[moneyMatches.length > 1 ? moneyMatches.length - 2 : 0][1].replace(/,/g,'')) : null;
+        if (!quantity && cells.length > 1) {
+            const candidates = cells.map((value,cellIndex) => ({value,cellIndex})).filter(entry => /^\d+$/.test(entry.value) && Number(entry.value) > 0 && Number(entry.value) < 10000);
+            const moneyCell = cells.findIndex(value => /\$|\.\d{2}/.test(value));
+            const preferred = candidates.filter(entry => moneyCell < 0 || entry.cellIndex < moneyCell).pop() || candidates[0];
+            if (preferred) quantity = Number(preferred.value);
+        }
+        const skuMatch = raw.match(/\bsku\s*[:#]?\s*([A-Z0-9][A-Z0-9._-]{2,})\b/i)
+            || raw.match(/\b(?=[A-Z0-9._-]{5,}\b)(?=[A-Z0-9._-]*\d)(?=[A-Z0-9._-]*[A-Z])[A-Z0-9][A-Z0-9._-]+\b/i)
+            || raw.match(/\b(\d{8,})\b/);
+        let description = cells.filter(value => !/^\$?-?\d+(?:,\d{3})*(?:\.\d{2})?$/.test(value) && !/^(qty|quantity)$/i.test(value)).join(' ');
+        description = description.replace(/\b(?:qty|quantity)\s*[:x]?\s*\d+\b/ig,'').replace(/\s+/g,' ').trim();
+        return { index, raw, description:description || raw.trim(), sku:skuMatch ? skuMatch[1] : '', quantity, unitCost };
+    }
+    function parseSupplierOrderBlocks(text) {
+        const rows = [];
+        const lines = String(text || '').replace(/\u00a0/g,' ').split(/\r?\n/).map(value => value.trim()).filter(Boolean);
+        const ignored = /^(?:product\s+sku\s+price\s+quantity\s+total|fulfilled\b.*|track shipment\b.*|ups(?:®)?\s*#.*|tracking\b.*|subtotal\b.*|shipping\b.*|tax\b.*|discount\b.*|grand total\b.*|order date\b.*|invoice date\b.*)$/i;
+        let description = [];
+        lines.forEach((raw,index) => {
+            if (/^\|/.test(raw)) {
+                const cells = raw.split('|').slice(1,-1).map(cell => cell.trim().replace(/<br\s*\/?\s*>/ig,'').replace(/\[([^\]]+)\]\([^)]*\)/g,'$1'));
+                if (!cells.length || cells.every(cell => /^:?-{2,}:?$/.test(cell)) || /^product\b/i.test(cells[0])) return;
+                const skuIndex = cells.findIndex(cell => /^[A-Z][A-Z0-9._-]{5,}$/i.test(cell));
+                const moneyCells = cells.filter(cell => /^\$[0-9,]+(?:\.\d{2})$/.test(cell));
+                if (skuIndex > 0 && moneyCells.length >= 2) {
+                    const quantity = Number(cells.slice(skuIndex + 1).find(cell => /^\d+$/.test(cell)) || 0);
+                    rows.push({index,raw,description:cells[0],sku:cells[skuIndex],quantity,unitCost:Number(moneyCells[0].replace(/[$,]/g,'')),total:Number(moneyCells[moneyCells.length-1].replace(/[$,]/g,''))});
+                    description = []; return;
+                }
+            }
+            if (ignored.test(raw)) return;
+            const detail = raw.match(/^([A-Z][A-Z0-9._-]{5,})\s+\$?([0-9,]+(?:\.\d{2}))\s+(\d+)\s+\$?([0-9,]+(?:\.\d{2}))$/i);
+            if (detail) {
+                const unitCost = Number(detail[2].replace(/,/g,'')); const quantity = Number(detail[3]); const total = Number(detail[4].replace(/,/g,''));
+                rows.push({index,raw:description.concat(raw).join(' | '),description:description.join(' ').replace(/\s+/g,' ').trim() || detail[1],sku:detail[1],quantity,unitCost,total});
+                description = []; return;
+            }
+            const oneLine = parseSupplierOrderLine(raw,index);
+            if (oneLine.quantity > 0 && oneLine.unitCost !== null && oneLine.description.length > 2) { rows.push(oneLine); description=[]; return; }
+            if (!/^(?:order|invoice)\s*(?:number|no\.?|#)/i.test(raw)) description.push(raw);
+        });
+        return rows;
+    }
+    function parseSupplierOrder() {
+        const text = $('#supplierImportText').val().trim();
+        if (!text) { showToast('warning','Paste the supplier order first.'); return; }
+        if (!$('#supplierImportReference').val()) {
+            const order = text.match(/(?:order|invoice)\s*(?:number|no\.?|#)?\s*[:#]?\s*([A-Z0-9-]{3,})/i);
+            if (order) $('#supplierImportReference').val(order[1]);
+        }
+        supplierImportLines = parseSupplierOrderBlocks(text).filter(line => line.quantity > 0 && line.unitCost !== null && line.unitCost >= 0 && line.description.length > 2);
+        supplierImportLines.forEach(line => { line.cleanedDescription = supplierImportCleanDescription(line.description); });
+        if (!supplierImportLines.length) {
+            $('#supplierImportMessage').removeClass('d-none alert-success').addClass('alert-warning').text('No complete items were found. Keep the product description above its SKU, unit price, quantity and total row, or upload a clearer document.');
+            $('#supplierImportReview').addClass('d-none'); $('#supplierImportConfirm').prop('disabled',true); return;
+        }
+        $('#supplierImportMessage').removeClass('d-none alert-warning').addClass('alert-success').text('Found ' + supplierImportLines.length + ' item line(s). Confirm each match before importing.');
+        const rows = supplierImportLines.map((line,rowIndex) => {
+            line.detectedModels = supplierDetectedModels(line.description, line.sku);
+            line.detectedModelIds = line.detectedModels.map(model => model.id);
+            const ranked = inventoryAllItems.filter(item => !/\bSERVICE_ONLY\b/i.test(item.notes || '')).map(item => ({item,score:supplierImportScore(line,item)})).filter(entry => entry.score > 0).sort((a,b) => b.score-a.score).slice(0,12);
+            const best = ranked[0]; const second = ranked[1];
+            const exactSku = best && line.sku && best.item.sku && supplierImportNormalize(line.sku) === supplierImportNormalize(best.item.sku);
+            const coversAllModels = best && (!line.detectedModelIds.length || line.detectedModelIds.every(id => [Number(best.item.deviceModelId),...supplierCompatibleModelIds(best.item.notes)].includes(Number(id))));
+            const confident = !!(best && best.score >= 140 && (exactSku || (coversAllModels && (!second || best.score > second.score))));
+            const options = '<option value="">Choose inventory item…</option>' + ranked.map((entry,index) => '<option value="' + entry.item.id + '" ' + (index === 0 && confident ? 'selected' : '') + '>' + escapeInventoryHtml(supplierImportItemLabel(entry.item)) + '</option>').join('');
+            line.matchId = confident ? Number(best.item.id) : 0;
+            return '<tr data-row="' + rowIndex + '"><td><input type="checkbox" class="form-check-input supplier-import-include" ' + (confident ? 'checked' : '') + ' onchange="updateSupplierImportReady()"></td>'
+                + '<td class="supplier-import-description"><strong>' + escapeInventoryHtml(line.cleanedDescription || line.description) + '</strong>'
+                + ((line.cleanedDescription || '') !== line.description ? '<div class="small text-muted">Supplier text: ' + escapeInventoryHtml(line.description) + '</div>' : '')
+                + '<div class="small text-muted">SKU: ' + escapeInventoryHtml(line.sku || '—') + '</div></td>'
+                + '<td><input type="number" min="1" step="1" class="form-control form-control-sm supplier-import-qty" value="' + line.quantity + '" oninput="updateSupplierImportReady()"></td>'
+                + '<td><input type="number" min="0" step="0.01" class="form-control form-control-sm supplier-import-cost" value="' + line.unitCost.toFixed(2) + '" oninput="updateSupplierImportReady()"></td>'
+                + '<td><select class="form-select form-select-sm supplier-import-match" onchange="supplierImportMatchChanged(this)">' + options + '</select></td>'
+                + '<td class="supplier-import-status ' + (confident ? 'text-success' : 'text-warning') + '">' + (confident ? 'Matched' : '<span>Not matched</span><button type="button" class="btn btn-sm btn-outline-primary d-block mt-1" onclick="prepareSupplierNewItem(' + rowIndex + ')">Create new part</button>') + '</td></tr>';
+        }).join('');
+        $('#supplierImportRows').html(rows); $('#supplierImportReview').removeClass('d-none');
+        if (typeof $.fn.select2 !== 'undefined') {
+            $('.supplier-import-match').select2({
+                theme:'bootstrap-5', width:'100%', dropdownParent:$('#supplierOrderImportModal'), placeholder:'Search inventory…', allowClear:true,
+                minimumInputLength:1,
+                ajax:{
+                    url:'@Url.Action("GetInventoryItems", "Inventories")', dataType:'json', delay:200,
+                    data:params => ({search:params.term || ''}),
+                    processResults:response => ({results:(response && response.success ? response.data : []).filter(item => !/\bSERVICE_ONLY\b/i.test(item.notes || '')).map(item => ({id:item.id,text:supplierImportItemLabel(item)}))})
+                }
+            }).on('change', function(){ supplierImportMatchChanged(this); });
+        }
+        updateSupplierImportReady();
+    }
+    async function supplierImportEnsureLookups() {
+        if (supplierImportLookups) return supplierImportLookups;
+        const responses = await Promise.all([
+            fetch('/LookupManagement/GetBrands').then(response => response.json()),
+            fetch('/LookupManagement/GetDeviceCategories').then(response => response.json()),
+            fetch('/LookupManagement/GetDeviceModels').then(response => response.json())
+        ]);
+        supplierImportLookups = {
+            brands: responses[0].success ? (responses[0].data || []) : [],
+            categories: responses[1].success ? (responses[1].data || []) : [],
+            models: responses[2].success ? (responses[2].data || []) : []
+        };
+        return supplierImportLookups;
+    }
+    function supplierLookupValue(value, lower, upper) { return value?.[lower] ?? value?.[upper]; }
+    function supplierImportDetectedBrand(description, brands) {
+        const text = supplierImportNormalize(description);
+        const aliases = [
+            [/\biphone\b|\bipad\b|\bmacbook\b|\bapple watch\b/,'apple'],
+            [/\bsamsung\b|\bgalaxy\b/,'samsung'], [/\bmotorola\b|\bmoto\b/,'motorola'],
+            [/\bgoogle\b|\bpixel\b/,'google'], [/\bplaystation\b|\bps5\b/,'sony'], [/\bxbox\b/,'microsoft']
+        ];
+        const alias = aliases.find(entry => entry[0].test(text));
+        return brands.find(brand => {
+            const name = supplierImportNormalize(supplierLookupValue(brand,'name','Name'));
+            return name && (text.includes(name) || (alias && name.includes(alias[1])));
+        }) || null;
+    }
+    function supplierImportSuggestedModel(line, brandName) {
+        const text = supplierImportCleanDescription(line.description);
+        const modelNumberMatch = text.match(/\b(XT\d{4}[A-Z0-9-]*|SM-[A-Z0-9-]+|A\d{4})\b/i);
+        const modelNumber = modelNumberMatch ? modelNumberMatch[1].toUpperCase() : '';
+        const patterns = [
+            /\b(iPhone\s+(?:SE(?:\s+\d(?:st|nd|rd)?\s*Gen)?|\d{1,2}[A-Za-z]?(?:\s+(?:Pro\s+Max|Pro|Plus|Mini|Air|Max))?))/i,
+            /\b(iPad\s+(?:Pro|Air|Mini)?\s*\d{1,2}(?:\.\d)?(?:\s*\([^)]*\))?)/i,
+            /\b(Galaxy\s+(?:S|A|Note|Z|Tab\s+[AS])\s*\d{1,3}(?:\s+(?:Ultra|Plus|FE|5G|Fold|Flip))*)/i,
+            /\b(Pixel\s+\d{1,2}[A-Za-z]?(?:\s+(?:Pro\s+XL|Pro|XL|Fold))*)/i,
+            /\b(PlayStation\s*5(?:\s+(?:Slim|Pro))?|PS5(?:\s+(?:Slim|Pro))?)/i,
+            /\b(Xbox\s+(?:Series\s+[XS]|One\s+[XS]?))/i
+        ];
+        let match = patterns.map(pattern => text.match(pattern)).find(Boolean);
+        let name = match ? match[1].trim() : '';
+        if (!name && /motorola|\bmoto\b/i.test(brandName + ' ' + text)) {
+            let segment = text.split(/\bfor\b/i).pop() || text;
+            segment = segment.replace(/^.*?\b(?:motorola|moto)\b\s*/i,'');
+            if (modelNumber) segment = segment.split(new RegExp('\\b' + modelNumber.replace(/[-/\\^$*+?.()|[\]{}]/g,'\\$&') + '\\b','i'))[0];
+            name = segment.replace(/\b(?:replacement|premium|screen|display|lcd|oled|assembly|digitizer|battery|charging\s+port|flex|cable|black|white)\b/ig,' ').replace(/[-–—()]+/g,' ').replace(/\s+/g,' ').trim();
+        }
+        if (!name && modelNumber) name = modelNumber;
+        return { name, modelNumber };
+    }
+    function supplierImportDetectedColor(description) {
+        const match = String(description || '').match(/\s[-–—]\s*([A-Za-z][A-Za-z ]{1,32})\s*(?:\([^)]*\))?$/);
+        if (!match || /assembly|sensor|technology|installed|required/i.test(match[1])) return '';
+        return match[1].trim();
+    }
+    function supplierNewPartRefreshModels(preferredId) {
+        const brandId = Number($('#supplierNewPartBrand').val() || 0);
+        const categoryId = Number($('#supplierNewPartDeviceCategory').val() || 0);
+        const select = $('#supplierNewPartExistingModel').empty().append('<option value="">Create a new model</option>');
+        (supplierImportLookups?.models || []).filter(model => Number(supplierLookupValue(model,'brandId','BrandId')) === brandId
+            && Number(supplierLookupValue(model,'deviceCategoryId','DeviceCategoryId')) === categoryId)
+            .forEach(model => select.append(new Option(
+                [supplierLookupValue(model,'name','Name'),supplierLookupValue(model,'modelNumber','ModelNumber')].filter(Boolean).join(' — '),
+                supplierLookupValue(model,'id','Id'))));
+        if (preferredId && select.find('option[value="' + preferredId + '"]').length) select.val(String(preferredId));
+        supplierNewPartToggleModelFields();
+        updateSupplierNewPartPreview();
+    }
+    function supplierNewPartToggleModelFields() {
+        $('.supplier-new-model-field').toggleClass('d-none', Number($('#supplierNewPartExistingModel').val() || 0) > 0);
+    }
+    function supplierNewPartTypeChanged() {
+        const template = supplierNewPartTemplates.get($('#supplierNewPartType').val());
+        const partName = template?.partName || '';
+        $('#supplierNewPartName').val(partName);
+        $('#supplierNewPartQualityWrap').toggleClass('d-none', supplierImportPart(partName) !== 'screen');
+        updateSupplierNewPartPreview();
+    }
+    function updateSupplierNewPartPreview() {
+        const brand = $('#supplierNewPartBrand option:selected').text();
+        const existingModel = $('#supplierNewPartExistingModel option:selected').text();
+        const model = Number($('#supplierNewPartExistingModel').val() || 0) > 0
+            ? existingModel : [$('#supplierNewPartModelName').val(),$('#supplierNewPartModelNumber').val()].filter(Boolean).join(' ');
+        const part = $('#supplierNewPartName').val();
+        const quality = $('#supplierNewPartQualityWrap').hasClass('d-none') ? '' : $('#supplierNewPartQuality').val();
+        $('#supplierNewPartDetected').text('Will add: ' + [brand,model,part,quality].filter(Boolean).join(' › '));
+    }
+    async function prepareSupplierNewItem(rowIndex) {
+        const line = supplierImportLines[rowIndex];
+        if (!line) return;
+        try {
+            await supplierImportEnsureLookups();
+            const brands = supplierImportLookups.brands;
+            const categories = supplierImportLookups.categories;
+            const models = supplierImportLookups.models;
+            const detectedBrand = supplierImportDetectedBrand(line.description,brands);
+            const detectedModelId = Number(line.detectedModelIds?.[0] || 0);
+            const detectedExistingModel = models.find(model => Number(supplierLookupValue(model,'id','Id')) === detectedModelId);
+            const suggested = supplierImportSuggestedModel(line, supplierLookupValue(detectedBrand,'name','Name') || '');
+            const modelNumberMatch = suggested.modelNumber && models.find(model => supplierImportNormalize(supplierLookupValue(model,'modelNumber','ModelNumber')) === supplierImportNormalize(suggested.modelNumber));
+            const existingModel = detectedExistingModel || modelNumberMatch || null;
+            const brandId = Number(supplierLookupValue(existingModel,'brandId','BrandId') || supplierLookupValue(detectedBrand,'id','Id') || 0);
+            const brandName = supplierLookupValue(existingModel,'brandName','BrandName') || supplierLookupValue(detectedBrand,'name','Name') || '';
+            const categoryHint = /ipad|tablet/i.test(line.description) ? 'tablet' : /macbook|laptop/i.test(line.description) ? 'computer' : /playstation|ps5|xbox/i.test(line.description) ? 'console' : /watch/i.test(line.description) ? 'watch' : 'smartphone';
+            const detectedCategory = categories.find(category => supplierImportNormalize(supplierLookupValue(category,'name','Name')).includes(categoryHint));
+            const categoryId = Number(supplierLookupValue(existingModel,'deviceCategoryId','DeviceCategoryId') || supplierLookupValue(detectedCategory,'id','Id') || 0);
+
+            $('#supplierNewPartRow').val(rowIndex);
+            $('#supplierNewPartRaw').text(line.description);
+            $('#supplierNewPartCleaned').val(line.cleanedDescription || supplierImportCleanDescription(line.description));
+            $('#supplierNewPartSku').val(line.sku || '');
+            $('#supplierNewPartQty').val(line.quantity || 1);
+            $('#supplierNewPartCost').val(Number(line.unitCost || 0).toFixed(2));
+            $('#supplierNewPartRetail').val('');
+            $('#supplierNewPartReorder').val(2);
+            $('#supplierNewPartColor').val(supplierImportDetectedColor(line.description));
+            $('#supplierNewPartModelName').val(suggested.name || '');
+            $('#supplierNewPartModelNumber').val(suggested.modelNumber || '');
+            $('#supplierNewPartError').addClass('d-none').text('');
+
+            const brandSelect = $('#supplierNewPartBrand').empty().append('<option value="">Choose brand…</option>');
+            brands.forEach(brand => brandSelect.append(new Option(supplierLookupValue(brand,'name','Name'),supplierLookupValue(brand,'id','Id'))));
+            brandSelect.val(brandId ? String(brandId) : '');
+            const categorySelect = $('#supplierNewPartDeviceCategory').empty().append('<option value="">Choose category…</option>');
+            categories.forEach(category => categorySelect.append(new Option(supplierLookupValue(category,'name','Name'),supplierLookupValue(category,'id','Id'))));
+            categorySelect.val(categoryId ? String(categoryId) : '');
+
+            supplierNewPartTemplates = new Map();
+            const templateSelect = $('#supplierNewPartType').empty().append('<option value="">Choose part type…</option>');
+            inventoryAllItems.filter(item => !/\bSERVICE_ONLY\b/i.test(item.notes || '')).forEach(item => {
+                const partName = supplierImportPart([item.name,item.inventoryCategoryName,item.description].filter(Boolean).join(' ')) || item.name;
+                const key = [Number(item.categoryId || item.itemId || 0),Number(item.inventoryCategoryId || 0),supplierImportNormalize(partName)].join(':');
+                if (!supplierNewPartTemplates.has(key) && Number(item.categoryId || item.itemId || 0) > 0 && Number(item.inventoryCategoryId || 0) > 0) {
+                    supplierNewPartTemplates.set(key,{categoryId:Number(item.categoryId || item.itemId),inventoryCategoryId:Number(item.inventoryCategoryId),partName:item.name || partName});
+                }
+            });
+            [...supplierNewPartTemplates.entries()].sort((a,b) => a[1].partName.localeCompare(b[1].partName)).forEach(entry => templateSelect.append(new Option(entry[1].partName,entry[0])));
+            const detectedPart = supplierImportPart(line.description);
+            const preferredTemplate = [...supplierNewPartTemplates.entries()].find(entry => supplierImportPart(entry[1].partName) === detectedPart);
+            if (preferredTemplate) templateSelect.val(preferredTemplate[0]);
+            const quality = supplierImportQuality(line.description,brandName);
+            const qualityOption = $('#supplierNewPartQuality option').filter(function(){ return supplierImportQuality(this.value,brandName) === quality; }).first();
+            $('#supplierNewPartQuality').val(qualityOption.length ? qualityOption.val() : '');
+            supplierNewPartTypeChanged();
+            supplierNewPartRefreshModels(existingModel ? supplierLookupValue(existingModel,'id','Id') : 0);
+
+            $('#supplierNewPartBrand,#supplierNewPartDeviceCategory').off('.supplierNew').on('change.supplierNew',function(){ supplierNewPartRefreshModels(); });
+            $('#supplierNewPartExistingModel').off('.supplierNew').on('change.supplierNew',function(){ supplierNewPartToggleModelFields(); updateSupplierNewPartPreview(); });
+            $('#supplierNewPartType').off('.supplierNew').on('change.supplierNew',supplierNewPartTypeChanged);
+            $('#supplierNewPartModelName,#supplierNewPartModelNumber,#supplierNewPartName,#supplierNewPartQuality').off('.supplierNew').on('input.supplierNew change.supplierNew',updateSupplierNewPartPreview);
+
+            supplierNewPartReturnToReview = true;
+            bootstrap.Modal.getInstance(document.getElementById('supplierOrderImportModal'))?.hide();
+            setTimeout(function(){ bootstrap.Modal.getOrCreateInstance(document.getElementById('supplierNewPartModal')).show(); },180);
+        } catch(error) { showToast('error',error.message || 'The new-part popup could not be opened.'); }
+    }
+    async function createSupplierPartAndReceive() {
+        const rowIndex = Number($('#supplierNewPartRow').val());
+        const line = supplierImportLines[rowIndex];
+        const button = $('#supplierNewPartCreate');
+        const errorBox = $('#supplierNewPartError').addClass('d-none').text('');
+        const brandId = Number($('#supplierNewPartBrand').val() || 0);
+        const deviceCategoryId = Number($('#supplierNewPartDeviceCategory').val() || 0);
+        const template = supplierNewPartTemplates.get($('#supplierNewPartType').val());
+        const sku = $('#supplierNewPartSku').val().trim();
+        const quantity = Number($('#supplierNewPartQty').val() || 0);
+        const unitCost = Number($('#supplierNewPartCost').val());
+        const partName = $('#supplierNewPartName').val().trim();
+        if (!line || !brandId || !deviceCategoryId || !template || !partName || quantity < 1 || !Number.isFinite(unitCost) || unitCost < 0) {
+            errorBox.removeClass('d-none').text('Complete Brand, Device category, Part type, Inventory name, Quantity, and Unit cost.'); return;
+        }
+        button.prop('disabled',true).html('<i class="fas fa-spinner fa-spin me-1"></i>Creating and receiving…');
+        try {
+            let inventoryItemId = 0;
+            const exactSkuItem = sku ? inventoryAllItems.find(item => supplierImportNormalize(item.sku) === supplierImportNormalize(sku)) : null;
+            if (exactSkuItem) {
+                const expectedPart = supplierImportPart(line.description);
+                const existingPart = supplierImportPart([exactSkuItem.name,exactSkuItem.inventoryCategoryName,exactSkuItem.description].filter(Boolean).join(' '));
+                if (expectedPart && existingPart && expectedPart !== existingPart) {
+                    throw new Error('SKU ' + sku + ' already exists as ' + existingPart + ', but this invoice line is a ' + expectedPart + '. Nothing was added. Correct the existing SKU mapping first.');
+                }
+                inventoryItemId = Number(exactSkuItem.id);
+            } else {
+                let deviceModelId = Number($('#supplierNewPartExistingModel').val() || 0);
+                if (!deviceModelId) {
+                    const modelName = $('#supplierNewPartModelName').val().trim();
+                    const modelNumber = $('#supplierNewPartModelNumber').val().trim();
+                    if (!modelName) throw new Error('Enter the new model name.');
+                    const duplicateModel = (supplierImportLookups.models || []).find(model => Number(supplierLookupValue(model,'brandId','BrandId')) === brandId
+                        && Number(supplierLookupValue(model,'deviceCategoryId','DeviceCategoryId')) === deviceCategoryId
+                        && ((modelNumber && supplierImportNormalize(supplierLookupValue(model,'modelNumber','ModelNumber')) === supplierImportNormalize(modelNumber))
+                            || supplierImportNormalize(supplierLookupValue(model,'name','Name')) === supplierImportNormalize(modelName)));
+                    if (duplicateModel) deviceModelId = Number(supplierLookupValue(duplicateModel,'id','Id'));
+                    else {
+                        const modelResponse = await fetch('/LookupManagement/CreateDeviceModel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+                            Name:modelName,ModelNumber:modelNumber || null,Description:'Created from supplier invoice: ' + line.description,
+                            BrandId:brandId,DeviceCategoryId:deviceCategoryId,DisplayOrder:1,IsActive:true
+                        })}).then(response => response.json());
+                        if (!modelResponse.success || !modelResponse.id) throw new Error(modelResponse.message || 'The device model could not be created.');
+                        deviceModelId = Number(modelResponse.id);
+                        supplierImportLookups.models.push(modelResponse.data || {id:deviceModelId,name:modelName,modelNumber,brandId,deviceCategoryId});
+                    }
+                }
+                const quality = $('#supplierNewPartQualityWrap').hasClass('d-none') ? '' : $('#supplierNewPartQuality').val();
+                const color = $('#supplierNewPartColor').val().trim();
+                const duplicatePart = inventoryAllItems.find(item => Number(item.brandId) === brandId && Number(item.deviceModelId) === deviceModelId
+                    && supplierImportPart([item.name,item.inventoryCategoryName,item.description].filter(Boolean).join(' ')) === supplierImportPart(partName)
+                    && supplierImportNormalize(item.variant) === supplierImportNormalize(quality)
+                    && supplierImportNormalize(item.color) === supplierImportNormalize(color));
+                if (duplicatePart) inventoryItemId = Number(duplicatePart.id);
+                else {
+                    const createResponse = await fetch('@Url.Action("CreateInventoryItem", "Inventories")',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+                        CategoryId:template.categoryId,Name:partName,SKU:sku,Variant:quality || '',Color:color,
+                        Description:line.cleanedDescription || supplierImportCleanDescription(line.description),BrandId:brandId,
+                        DeviceCategoryId:deviceCategoryId,DeviceModelId:deviceModelId,InventoryCategoryId:template.inventoryCategoryId,
+                        CurrentStock:0,ReorderPoint:Number($('#supplierNewPartReorder').val() || 0),CostPrice:unitCost,
+                        RetailPrice:Number($('#supplierNewPartRetail').val() || 0),WholesalePrice:0,EnableLowStockNotifications:true,IsActive:true,
+                        Notes:'Supplier import source: ' + line.description
+                    })}).then(response => response.json());
+                    if (!createResponse.success || !createResponse.id) throw new Error(createResponse.message || 'The inventory part could not be created.');
+                    inventoryItemId = Number(createResponse.id);
+                }
+            }
+            const vendor = $('#supplierImportVendor').val();
+            const reference = $('#supplierImportReference').val().trim();
+            const receivedDate = $('#supplierImportDate').val();
+            if (reference) {
+                const history = await fetch('@Url.Action("BatchHistory", "Inventories")/' + inventoryItemId).then(response => response.json());
+                const duplicateBatch = (history.data || []).some(batch => String(batch.referenceNumber || '').toLowerCase() === reference.toLowerCase()
+                    && String(batch.vendor || '').toLowerCase() === String(vendor || '').toLowerCase());
+                if (duplicateBatch) throw new Error('Order ' + reference + ' was already received for this inventory item. Nothing was added twice.');
+            }
+            const receiveResponse = await fetch('@Url.Action("ReceiveBatch", "Inventories")/' + inventoryItemId,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+                Quantity:quantity,UnitCost:unitCost,Vendor:vendor,ReferenceNumber:reference,ReceivedDate:receivedDate || null,
+                Notes:'Supplier SKU: ' + (sku || 'unknown') + ' | Original description: ' + line.description
+            })}).then(response => response.json());
+            if (!receiveResponse.success) throw new Error(receiveResponse.message || 'The inventory batch could not be received.');
+
+            const importRow = document.querySelector('#supplierImportRows tr[data-row="' + rowIndex + '"]');
+            if (importRow) {
+                const select = importRow.querySelector('.supplier-import-match');
+                if (select) { select.append(new Option(partName + ' (added)',inventoryItemId,true,true)); select.disabled = true; }
+                const include = importRow.querySelector('.supplier-import-include');
+                if (include) { include.checked = false; include.disabled = true; }
+                const status = importRow.querySelector('.supplier-import-status');
+                if (status) { status.className = 'supplier-import-status text-success fw-semibold'; status.textContent = 'Added to inventory'; }
+            }
+            line.imported = true; line.matchId = inventoryItemId;
+            bootstrap.Modal.getInstance(document.getElementById('supplierNewPartModal'))?.hide();
+            showToast('success',partName + ' created and ' + quantity + ' received into inventory.');
+            inventoryAllItems = []; inventoryTable.ajax.reload(null,false); updateSupplierImportReady();
+        } catch(error) {
+            errorBox.removeClass('d-none').text(error.message || 'The supplier part could not be added.');
+        } finally {
+            button.prop('disabled',false).html('<i class="fas fa-plus me-1"></i>Create Part &amp; Add to Invoice');
+        }
+    }
+    $(document).on('hidden.bs.modal','#supplierNewPartModal',function(){
+        if (!supplierNewPartReturnToReview) return;
+        supplierNewPartReturnToReview = false;
+        setTimeout(function(){ bootstrap.Modal.getOrCreateInstance(document.getElementById('supplierOrderImportModal')).show(); },150);
+    });
+    function supplierImportMatchChanged(select) {
+        const row = select.closest('tr'); const status = row.querySelector('.supplier-import-status');
+        const matched = Number(select.value) > 0;
+        status.textContent = matched ? 'Matched' : 'Review'; status.className = 'supplier-import-status ' + (matched ? 'text-success' : 'text-warning');
+        if (matched) row.querySelector('.supplier-import-include').checked = true;
+        updateSupplierImportReady();
+    }
+    function updateSupplierImportReady() {
+        const selected = [...document.querySelectorAll('#supplierImportRows tr')].filter(row => row.querySelector('.supplier-import-include').checked);
+        const valid = selected.length && selected.every(row => Number(row.querySelector('.supplier-import-match').value) > 0
+            && Number(row.querySelector('.supplier-import-qty').value) > 0
+            && Number(row.querySelector('.supplier-import-cost').value) >= 0);
+        $('#supplierImportConfirm').prop('disabled',!valid).html('<i class="fas fa-boxes me-1"></i>Import ' + selected.length + ' selected item' + (selected.length === 1 ? '' : 's'));
+    }
+    async function importSupplierOrder() {
+        const rows = [...document.querySelectorAll('#supplierImportRows tr')].filter(row => row.querySelector('.supplier-import-include').checked);
+        if (!rows.length) return;
+        const vendor = $('#supplierImportVendor').val(); const reference = $('#supplierImportReference').val().trim(); const receivedDate = $('#supplierImportDate').val();
+        if (!confirm('Receive ' + rows.length + ' supplier line(s) into inventory?')) return;
+        const button = $('#supplierImportConfirm').prop('disabled',true).html('<i class="fas fa-spinner fa-spin me-1"></i>Importing…');
+        let imported = 0;
+        try {
+            if (reference) {
+                const uniqueIds = [...new Set(rows.map(row => Number(row.querySelector('.supplier-import-match').value)))];
+                for (const id of uniqueIds) {
+                    const history = await fetch('@Url.Action("BatchHistory", "Inventories")/' + id).then(response => response.json());
+                    if ((history.data || []).some(batch => String(batch.referenceNumber || '').toLowerCase() === reference.toLowerCase() && String(batch.vendor || '').toLowerCase() === String(vendor).toLowerCase())) throw new Error('Order ' + reference + ' was already imported for one of these inventory items.');
+                }
+            }
+            for (const row of rows) {
+                const response = await fetch('@Url.Action("ReceiveBatch", "Inventories")/' + Number(row.querySelector('.supplier-import-match').value), {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+                    Quantity:Number(row.querySelector('.supplier-import-qty').value), UnitCost:Number(row.querySelector('.supplier-import-cost').value), Vendor:vendor,
+                    ReferenceNumber:reference, ReceivedDate:receivedDate || null, Notes:'Imported supplier SKU: ' + (supplierImportLines[Number(row.dataset.row)]?.sku || 'unknown')
+                })}).then(result => result.json());
+                if (!response.success) throw new Error(response.message || 'An inventory line could not be received.');
+                imported++;
+            }
+            showToast('success','Imported ' + imported + ' supplier line(s) as FIFO inventory batches.');
+            bootstrap.Modal.getInstance(document.getElementById('supplierOrderImportModal')).hide();
+            inventoryAllItems = []; inventoryTable.ajax.reload();
+        } catch(error) { showToast('error',(imported ? imported + ' line(s) imported before the error. ' : '') + error.message); }
+        finally { button.prop('disabled',false); updateSupplierImportReady(); }
+    }
+
+    function updateInventorySummary(items) {
+        const rows = items || [];
+        $('#inventoryPartCount').text(rows.length);
+        $('#inventoryLowCount').text(rows.filter(x => x.currentStock <= x.reorderPoint).length);
+        const value = rows.reduce((sum, x) => sum + ((x.currentStock || 0) * (x.averageCost || x.costPrice || 0)), 0);
+        $('#inventoryValue').text('$' + value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    }
+
+    function loadGuidedBrandNames() {
+        $.get('/LookupManagement/GetBrands').done(function(res) {
+            const brands = res && res.success && Array.isArray(res.data) ? res.data : [];
+            inventoryBrandNames = uniqueInventoryValues(brands
+                .filter(x => x.isActive !== false && x.IsActive !== false)
+                .map(x => x.name || x.Name));
+            // Motorola is intentionally shown even when it has no models or parts yet.
+            if (!inventoryBrandNames.some(x => /^(motorola|moto)$/i.test(x))) inventoryBrandNames.push('Motorola');
+            inventoryBrandNames = uniqueInventoryValues(inventoryBrandNames);
+            if (inventoryMode === 'guided' && !guidedSelection.brand && guidedBrowseOrder === 'brand') renderGuidedInventory();
+        });
+    }
+
+    function escapeInventoryHtml(value) { return $('<div>').text(value == null ? '' : String(value)).html(); }
+    function inventoryFamily(item) {
+        const brand = String(item.brandName || '').toLowerCase();
+        const model = String(item.deviceModelName || item.name || '').toLowerCase();
+        const category = String(item.deviceCategoryName || '').trim();
+        if (brand.includes('apple')) {
+            if (model.includes('ipad') || category.toLowerCase().includes('ipad') || category.toLowerCase().includes('tablet')) return 'iPad';
+            if (model.includes('macbook') || model.includes('mac book') || category.toLowerCase().includes('computer')) return 'MacBook';
+            if (model.includes('watch') || category.toLowerCase().includes('watch')) return 'Apple Watch';
+            return 'iPhone';
+        }
+        if (brand.includes('samsung')) {
+            if (/tab\s*s/.test(model)) return 'Tab S Series';
+            if (/tab\s*a/.test(model)) return 'Tab A Series';
+            if (/note/.test(model)) return 'Note Series';
+            if (/galaxy\s*z|\bz\s*(flip|fold|[0-9])/.test(model)) return 'Z Series';
+            if (/galaxy\s*a|\ba[0-9]/.test(model)) return 'A Series';
+            if (/galaxy\s*s|\bs[0-9]/.test(model)) return 'S Series';
+        }
+        return category && category !== 'Unknown' ? category : 'Other devices';
+    }
+    function inventoryPartType(item) {
+        const types = [
+            ['Back Glass', /back\s*glass|rear\s*glass/], ['Charging Port', /charg(e|ing)\s*port|dock\s*connector/],
+            ['Home Button', /home\s*button/], ['Screen', /screen|display|lcd|oled|digitizer/],
+            ['Battery', /battery/], ['Camera', /camera/], ['Speaker', /speaker|earpiece/],
+            ['Microphone', /microphone|\bmic\b/], ['Housing', /housing|frame/]
+        ];
+        // The inventory name is the authoritative part type. Older seeded records
+        // share a legacy CategoryId, so reading category first incorrectly groups
+        // batteries, cameras, and ports under Screen.
+        const primaryName = String(item.name || item.itemName || '').trim();
+        const primaryMatch = types.find(x => x[1].test(primaryName.toLowerCase()));
+        if (primaryMatch) return primaryMatch[0];
+        if (primaryName) return primaryName;
+        const fallback = [item.itemName, item.categoryName, item.inventoryCategoryName].filter(Boolean).join(' ').toLowerCase();
+        const fallbackMatch = types.find(x => x[1].test(fallback));
+        return fallbackMatch ? fallbackMatch[0] : 'Other';
+    }
+    function guidedIcon(label, level) {
+        if (level === 'brand' && window.EmpireManufacturerLogos) return window.EmpireManufacturerLogos.markup(label);
+        const lower = String(label).toLowerCase();
+        const icon = lower.includes('screen') ? 'fa-mobile-screen-button' : lower.includes('battery') ? 'fa-battery-half' :
+            lower.includes('glass') ? 'fa-gem' : lower.includes('charg') ? 'fa-plug' : lower.includes('camera') ? 'fa-camera' :
+            lower.includes('speaker') ? 'fa-volume-high' : lower.includes('button') ? 'fa-circle-dot' :
+            level === 'family' ? 'fa-mobile-alt' : level === 'brand' ? 'fa-building' : 'fa-screwdriver-wrench';
+        return '<i class="fas ' + icon + '"></i>';
+    }
+    function guidedBreadcrumbValue(value, level) {
+        const hasBrandLogo = level === 'brand' && window.EmpireManufacturerLogos && window.EmpireManufacturerLogos.hasLogo(value);
+        return hasBrandLogo
+            ? '<strong class="guided-breadcrumb-logo" aria-label="' + escapeInventoryHtml(value) + '">' + guidedIcon(value, 'brand') + '</strong>'
+            : '<strong>' + escapeInventoryHtml(value) + '</strong>';
+    }
+    function uniqueInventoryValues(values) { return [...new Set(values.filter(Boolean))].sort((a,b) => a.localeCompare(b, undefined, { numeric:true })); }
+    function compatibleInventoryModelIds(notes) {
+        const match = String(notes || '').match(/COMPAT_MODELS:((?:\|\d+\|)+);/i);
+        return match ? [...new Set((match[1].match(/\d+/g) || []).map(Number).filter(Boolean))] : [];
+    }
+    function mergeCompatibilityNotes(notes, modelIds) {
+        const clean = String(notes || '').replace(/\s*COMPAT_MODELS:(?:\|\d+\|)+;/ig, '').trim();
+        const ids = [...new Set((modelIds || []).map(Number).filter(Boolean))];
+        const marker = ids.length ? 'COMPAT_MODELS:' + ids.map(id => '|' + id + '|').join('') + ';' : '';
+        return [clean, marker].filter(Boolean).join(' ');
+    }
+    function updateCompatibleModelOptions(selectedIds) {
+        const state = window.EmpireDeviceSelector ? EmpireDeviceSelector.getState('inventoryItem') : {};
+        const primaryId = Number(state.modelId || $('#itemDeviceModel').val() || 0);
+        const brandId = Number(state.brandId || $('#itemBrand').val() || 0);
+        const categoryId = Number(state.categoryId || state.deviceCategoryId || $('#itemDeviceCategory').val() || 0);
+        const selected = [...new Set((selectedIds || compatibleInventoryModelIds($('#itemNotes').val())).map(Number).filter(id => id && id !== primaryId))];
+        const models = new Map();
+        inventoryAllItems.forEach(item => {
+            const id = Number(item.deviceModelId || 0);
+            if (!id || id === primaryId) return;
+            if (brandId && Number(item.brandId || 0) !== brandId) return;
+            if (categoryId && Number(item.deviceCategoryId || 0) !== categoryId) return;
+            if (!models.has(id)) models.set(id, item.deviceModelName || item.name || ('Model ' + id));
+        });
+        const select = $('#itemCompatibleModels');
+        if (select.hasClass('select2-hidden-accessible')) select.select2('destroy');
+        select.empty();
+        [...models.entries()].sort((a,b) => String(a[1]).localeCompare(String(b[1]), undefined, {numeric:true})).forEach(([id,name]) => select.append(new Option(name,id,selected.includes(id),selected.includes(id))));
+        select.select2({ theme:'bootstrap-5', width:'100%', dropdownParent:$('#inventoryItemModal'), placeholder:'Select other models that use this exact part', allowClear:true });
+        select.val(selected.map(String)).trigger('change.select2');
+    }
+    function expandCompatibleInventoryRows(rows) {
+        const result = [...rows];
+        const existing = new Set(result.map(item => String(item.id) + ':' + String(item.deviceModelId)));
+        rows.forEach(item => compatibleInventoryModelIds(item.notes).forEach(modelId => {
+            const key = String(item.id) + ':' + String(modelId);
+            if (existing.has(key) || Number(item.deviceModelId) === Number(modelId)) return;
+            const model = inventoryAllItems.find(x => Number(x.deviceModelId) === Number(modelId));
+            if (!model) return;
+            result.push({...item, deviceModelId:modelId, deviceModelName:model.deviceModelName || model.name, deviceCategoryId:model.deviceCategoryId, deviceCategoryName:model.deviceCategoryName, _sharedInventory:true});
+            existing.add(key);
+        }));
+        return result;
+    }
+    function guidedOrderKey() { return 'empire.inventoryTileOrder.v1.' + [guidedBrowseOrder,guidedSelection.brand || '',guidedSelection.family || '',guidedSelection.part || ''].join('.'); }
+    function enableGuidedDrag(grid) {
+        const key = guidedOrderKey();
+        const cards = [...grid.querySelectorAll('.guided-choice:not(.add-choice),.guided-model-card')];
+        let saved = [];
+        try { saved = JSON.parse(localStorage.getItem(key) || '[]'); } catch (_) { saved = []; }
+        cards.sort((a,b) => {
+            const ai = saved.indexOf(a.dataset.value), bi = saved.indexOf(b.dataset.value);
+            return (ai < 0 ? 9999 : ai) - (bi < 0 ? 9999 : bi);
+        }).forEach(card => grid.append(card));
+        let dragging = null;
+        cards.forEach(card => {
+            card.draggable = true;
+            card.title = 'Drag to rearrange';
+            card.addEventListener('dragstart', event => { dragging = card; grid.dataset.dragged = '1'; event.dataTransfer.effectAllowed = 'move'; });
+            card.addEventListener('dragover', event => {
+                event.preventDefault();
+                if (!dragging || dragging === card) return;
+                const box = card.getBoundingClientRect();
+                grid.insertBefore(dragging, event.clientY > box.top + box.height / 2 || event.clientX > box.left + box.width / 2 ? card.nextSibling : card);
+            });
+            card.addEventListener('dragend', () => {
+                dragging = null;
+                localStorage.setItem(key, JSON.stringify([...grid.querySelectorAll('.guided-choice:not(.add-choice),.guided-model-card')].map(x => x.dataset.value)));
+                setTimeout(() => { grid.dataset.dragged = ''; }, 120);
+            });
+            card.addEventListener('click', event => { if (grid.dataset.dragged === '1') { event.preventDefault(); event.stopImmediatePropagation(); } }, true);
+        });
+    }
+    function newestModelFirst(a, b) {
+        const left = String(a.deviceModelName || a.name || '');
+        const right = String(b.deviceModelName || b.name || '');
+        const number = value => {
+            const matches = String(value).match(/\d+(?:\.\d+)?/g);
+            return matches && matches.length ? Math.max(...matches.map(Number)) : -1;
+        };
+        const numberDifference = number(right) - number(left);
+        if (numberDifference) return numberDifference;
+        const variantRank = value => /pro\s*max/i.test(value) ? 5 : /ultra/i.test(value) ? 4 : /pro/i.test(value) ? 3 : /plus/i.test(value) ? 2 : /mini/i.test(value) ? 0 : 1;
+        const variantDifference = variantRank(right) - variantRank(left);
+        return variantDifference || right.localeCompare(left, undefined, { numeric:true, sensitivity:'base' });
+    }
+    function guidedChoiceMarkup(value, count, level) {
+        const safe = escapeInventoryHtml(value); const attr = safe.replace(/"/g, '&quot;');
+        const logoOnly = level === 'brand' && window.EmpireManufacturerLogos && window.EmpireManufacturerLogos.hasLogo(value);
+        return '<button type="button" class="guided-choice' + (logoOnly ? ' brand-logo-only' : '') + '" data-value="' + attr + '" aria-label="' + attr + '" onclick="selectGuidedInventory(\'' + level + '\',this.dataset.value)">'
+            + '<div class="guided-choice-icon">' + guidedIcon(value, level) + '</div><div>' + (logoOnly ? '' : '<div class="guided-choice-name">' + safe + '</div>')
+            + (logoOnly ? '' : '<div class="guided-choice-count">' + count + (level === 'brand' ? ' inventory items' : level === 'family' ? ' parts' : ' models') + '</div>') + '</div></button>';
+    }
+    function guidedAddChoiceMarkup(kind) {
+        const labels = {
+            brand: ['Add new brand', 'Create another manufacturer'],
+            family: ['Add new device family', 'Create a phone, tablet or device type'],
+            part: ['Add new part', 'Create another inventory part type'],
+            model: ['Add new model', 'Create a device model']
+        };
+        const label = labels[kind] || labels.model;
+        return '<button type="button" class="guided-choice add-choice" onclick="openInventoryManager(\'' + kind + '\')">'
+            + '<div class="guided-choice-icon"><i class="fas fa-plus-circle"></i></div><div><div class="guided-choice-name">' + label[0] + '</div>'
+            + '<div class="guided-choice-count">' + label[1] + '</div></div></button>';
+    }
+    function openInventoryManager(kind) {
+        const tab = kind === 'brand' ? 'brands' : kind === 'family' ? 'device-categories' : kind === 'part' ? 'items' : 'device-models';
+        window.open('/LookupManagement/Index?tab=' + encodeURIComponent(tab) + '&create=1', '_blank', 'noopener');
+    }
+    const inventoryWorkspacePartOrder = ['Screen','Battery','Charging Port','Camera','Front Camera','Back Glass','Speaker','Home Button','Microphone','Housing'];
+    // Official Apple model photography stored locally so the inventory remains usable offline.
+    const officialIphoneImages = {
+        'iphone 18 pro max':'iphone-18-pro-max-colors.png',
+        'iphone 18 pro':'iphone-18-pro-colors.png',
+        'iphone 17e':'iphone-17e-colors.png',
+        'iphone 17 pro max':'iphone-17-pro-max-colors.png',
+        'iphone 17 pro':'iphone-17-pro-colors.png',
+        'iphone 17':'iphone-17-colors.png',
+        'iphone air':'iphone-air-colors.png',
+        'iphone 16e':'iphone-16e-colors.png',
+        'iphone 16 pro max':'iphone-16-pro-max-colors.png',
+        'iphone 16 pro':'iphone-16-pro-colors.png',
+        'iphone 16 plus':'iphone-16-plus-colors.png',
+        'iphone 16':'iphone-16-colors.png',
+        'iphone 15 pro max':'fall-2023-iphone-colors-iphone-15-pro-max.png',
+        'iphone 15 pro':'fall-2023-iphone-colors-iphone-15-pro.png',
+        'iphone 15 plus':'fall-2023-iphone-colors-iphone-15-plus.png',
+        'iphone 15':'fall-2023-iphone-colors-iphone-15.png',
+        'iphone 14 pro max':'iphone-14-pro-max-colors.png',
+        'iphone 14 pro':'iphone-14-pro-colors.png',
+        'iphone 14 plus':'iphone-14-plus-colors-spring-2023.png',
+        'iphone 14':'iphone-14-colors-spring-2023.png',
+        'iphone se 3rd generation':'iphone-se-3rd-gen-colors.png',
+        'iphone se 3rd gen':'iphone-se-3rd-gen-colors.png',
+        'iphone se 2022':'iphone-se-3rd-gen-colors.png',
+        'iphone 13 pro max':'2022-spring-iphone13-pro-max-colors.png',
+        'iphone 13 pro':'2022-spring-iphone13-pro-colors.png',
+        'iphone 13 mini':'2022-iphone13-mini-colors.png',
+        'iphone 13':'2022-spring-iphone13-colors.png',
+        'iphone 12 pro max':'iphone12-pro-max-colors.jpg',
+        'iphone 12 pro':'iphone12-pro-colors.jpg',
+        'iphone 12 mini':'2021-iphone12-mini-colors.png',
+        'iphone 12':'2021-iphone12-colors.png',
+        'iphone se 2nd generation':'iphone-se-2nd-gen-colors.jpg',
+        'iphone se 2nd gen':'iphone-se-2nd-gen-colors.jpg',
+        'iphone se 2020':'iphone-se-2nd-gen-colors.jpg',
+        'iphone 11 pro max':'identify-iphone-11pro-max.jpg',
+        'iphone 11 pro':'identify-iphone-11pro.jpg',
+        'iphone 11':'identify-iphone-11-colors.jpg',
+        'iphone xs max':'iphone-xs-max-colors.jpg',
+        'iphone xs':'iphone-xs-colors.jpg',
+        'iphone xr':'identify-iphone-xr-colors.jpg',
+        'iphone x':'iphone-x-colors.jpg',
+        'iphone 10':'iphone-x-colors.jpg',
+        'iphone 8 plus':'iphone-8plus-colors.jpg',
+        'iphone 8':'iphone-8-colors.jpg',
+        'iphone 7 plus':'iphone7plus-colors.jpg',
+        'iphone 7':'iphone7-colors.jpg',
+        'iphone se 1st generation':'iphone-se-colors.jpg',
+        'iphone se 1st gen':'iphone-se-colors.jpg',
+        'iphone se 2016':'iphone-se-colors.jpg',
+        'iphone 6s plus':'iphone-6splus-colors.jpg',
+        'iphone 6s':'iphone-6s-colors.jpg',
+        'iphone 6 plus':'iphone-iphone6plus-colors.jpg',
+        'iphone 6':'iphone-iphone6-colors.jpg'
+    };
+    let inventoryWorkspaceDirty = false;
+    let inventoryWorkspaceRenderKey = '';
+    function normalizedInventoryModelName(value) {
+        return String(value || '').toLowerCase().replace(/[()]/g, ' ').replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ').replace(/^apple\s+/, '');
+    }
+    function inventoryWorkspaceFallbackImage(item) {
+        const brand = String(item.brandName || '').toLowerCase();
+        const family = inventoryFamily(item).toLowerCase();
+        if (family.includes('macbook')) return '/images/inventory/macbook.png';
+        if (family.includes('ipad') || family.includes('tab')) return '/images/inventory/tablet.png';
+        if (family.includes('watch')) return '/images/inventory/watch.png';
+        if (brand.includes('samsung')) return '/images/inventory/samsung-phone.png';
+        if (brand.includes('apple')) return '/images/inventory/iphone.png';
+        return '/images/inventory/generic-phone.png';
+    }
+    function inventoryWorkspaceImage(item) {
+        const brand = String(item.brandName || '').toLowerCase();
+        const family = inventoryFamily(item).toLowerCase();
+        if (brand.includes('apple') && family.includes('iphone')) {
+            const file = officialIphoneImages[normalizedInventoryModelName(item.deviceModelName || item.name)];
+            if (file) return '/images/inventory/models/apple-iphone/' + file;
+        }
+        return inventoryWorkspaceFallbackImage(item);
+    }
+    function inventoryWorkspaceOptions(modelItems, part, familyRows) {
+        const partItems = modelItems.filter(item => inventoryPartType(item) === part);
+        const template = partItems[0] || familyRows.find(item => inventoryPartType(item) === part) || modelItems[0];
+        if (part === 'Screen') {
+            if (guidedSelection.family === 'MacBook') {
+                const genericScreen = partItems.find(item => !String(item.variant || '').trim()) || partItems[0] || null;
+                return [{ option:'Screen Replacement', item:genericScreen, template }];
+            }
+            const standard = screenVariantsForBrand(guidedSelection.brand);
+            const extras = partItems.map(item => item.variant || 'Unspecified').filter(option => !standard.some(value => value.toLowerCase() === option.toLowerCase()));
+            return [...new Set([...standard, ...extras])].map(option => ({ option, item:partItems.find(row => String(row.variant || 'Unspecified').toLowerCase() === option.toLowerCase()), template }));
+        }
+        if (part === 'Back Glass') {
+            const standard = iphoneBackGlassColors[normalizedIphoneModel(modelItems[0].deviceModelName || modelItems[0].name)] || [];
+            const extras = partItems.map(item => item.color || 'Unspecified').filter(option => !standard.some(value => value.toLowerCase() === option.toLowerCase()));
+            return [...new Set([...standard, ...extras])].map(option => ({ option, item:partItems.find(row => String(row.color || 'Unspecified').toLowerCase() === option.toLowerCase()), template }));
+        }
+        if (!partItems.length) return [{ option:part, item:null, template }];
+        return partItems.map(item => ({ option:[item.variant,item.color].filter(Boolean).join(' • ') || part, item, template }));
+    }
+    function inventoryWorkspaceEntryMarkup(modelItems, entry, part) {
+        const item = entry.item;
+        const template = entry.template;
+        const stock = item ? Number(item.currentStock || 0) : 0;
+        const reorder = item ? Number(item.reorderPoint || 0) : 0;
+        const dot = stock <= 0 ? 'low' : stock <= reorder ? 'warning' : '';
+        const cost = parseFloat(item ? (item.latestCost || item.costPrice || 0) : (template?.latestCost || template?.costPrice || 0)).toFixed(2);
+        const modelId = Number(modelItems[0].deviceModelId || 0);
+        const actions = item
+            ? '<button type="button" class="btn btn-sm btn-outline-secondary" onclick="event.stopPropagation();showReceiveBatchModal(' + item.id + ')" title="Cost history"><i class="fas fa-history"></i></button>'
+                + '<button type="button" class="btn btn-sm btn-outline-secondary" onclick="event.stopPropagation();editInventoryItem(' + item.id + ')" title="Edit"><i class="fas fa-edit"></i></button>'
+                + (isInventoryAdmin && stock === 0 ? '<button type="button" class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation();deleteInventoryItem(' + item.id + ')" title="Delete"><i class="fas fa-trash"></i></button>' : '')
+            : '<span class="small text-muted">New</span>';
+        return '<div class="inventory-workspace-entry" data-item-id="' + (item ? item.id : 0) + '" data-template-id="' + (template ? template.id : 0) + '" data-model-id="' + modelId + '" data-part="' + escapeInventoryHtml(part).replace(/"/g,'&quot;') + '" data-option="' + escapeInventoryHtml(entry.option).replace(/"/g,'&quot;') + '">'
+            + '<div class="inventory-workspace-option">' + escapeInventoryHtml(entry.option) + '</div>'
+            + '<div class="inventory-workspace-stock"><span class="inventory-workspace-stock-dot ' + dot + '"></span>' + stock + '</div>'
+            + '<input class="form-control form-control-sm inventory-workspace-qty" type="number" min="0" step="1" placeholder="0" oninput="inventoryWorkspaceInputChanged()">'
+            + '<input class="form-control form-control-sm inventory-workspace-cost" type="number" min="0" step="0.01" value="' + cost + '" oninput="inventoryWorkspaceInputChanged()">'
+            + '<input class="form-control form-control-sm inventory-workspace-supplier" list="inventoryWorkspaceSupplierList" value="' + escapeInventoryHtml(item?.latestVendor || '').replace(/"/g,'&quot;') + '" placeholder="Supplier" oninput="inventoryWorkspaceInputChanged()">'
+            + '<div class="inventory-workspace-actions">' + actions + '</div></div>';
+    }
+    function renderInventoryWorkspace(familyRows) {
+        familyRows = expandCompatibleInventoryRows(familyRows);
+        const parts = uniqueInventoryValues(familyRows.map(inventoryPartType)).sort((a,b) => {
+            const ai=inventoryWorkspacePartOrder.indexOf(a), bi=inventoryWorkspacePartOrder.indexOf(b);
+            return (ai < 0 ? 999 : ai) - (bi < 0 ? 999 : bi) || a.localeCompare(b);
+        });
+        if (!parts.length) return '<div class="guided-empty">No inventory parts are connected to this device family.</div>';
+        if (!guidedSelection.part || !parts.includes(guidedSelection.part)) guidedSelection.part = parts[0];
+        const activePart = guidedSelection.part;
+        const groups = new Map();
+        familyRows.forEach(item => {
+            const key = String(item.deviceModelId || item.deviceModelName || item.name);
+            if (!groups.has(key)) groups.set(key, []);
+            groups.get(key).push(item);
+        });
+        const models = [...groups.values()].sort((a,b) => newestModelFirst(a[0],b[0]));
+        const renderKey = [guidedSelection.brand,guidedSelection.family,activePart].join('|');
+        if (inventoryWorkspaceRenderKey !== renderKey) inventoryWorkspaceRenderKey = renderKey;
+        let html = '<div class="inventory-workspace"><div class="inventory-workspace-top"><div class="inventory-workspace-tabs">'
+            + parts.map(part => '<button type="button" class="inventory-workspace-tab ' + (part === activePart ? 'active' : '') + '" onclick="selectInventoryWorkspacePart(\'' + part.replace(/'/g,"\\'") + '\')">' + escapeInventoryHtml(part) + '</button>').join('')
+            + '</div><button type="button" class="btn btn-primary btn-sm" id="inventoryWorkspaceSaveTop" onclick="saveInventoryWorkspace()"><i class="fas fa-save me-1"></i>Save All</button></div>'
+            + '<div class="inventory-workspace-tools"><div class="inventory-workspace-search"><i class="fas fa-search"></i><input id="inventoryWorkspaceSearch" class="form-control" placeholder="Search model" oninput="filterInventoryWorkspace()"></div>'
+            + '<label class="form-check form-switch mb-0"><input id="inventoryWorkspaceLowOnly" class="form-check-input" type="checkbox" onchange="filterInventoryWorkspace()"><span class="form-check-label">Low Stock Only</span></label>'
+            + '<button type="button" class="btn btn-outline-secondary" onclick="openInventoryManager(\'model\')"><i class="fas fa-plus me-1"></i>Add Model</button></div>'
+            + '<datalist id="inventoryWorkspaceSupplierList"><option value="SEG Mobile"><option value="Mobile Sentrix"><option value="Fast Cellular"></datalist>'
+            + '<div class="inventory-workspace-columns"><span>Model / Quality</span><span>In Stock</span><span>Add Qty</span><span>Unit Cost</span><span>Supplier</span><span></span></div>';
+        models.forEach((items,index) => {
+            const modelName = items[0].deviceModelName || items[0].name;
+            const options = inventoryWorkspaceOptions(items, activePart, familyRows);
+            if (!options.length) return;
+            const activeItems = items.filter(item => inventoryPartType(item) === activePart);
+            const total = activeItems.reduce((sum,item) => sum + Number(item.currentStock || 0),0);
+            const isLow = activeItems.length ? activeItems.some(item => Number(item.currentStock || 0) <= Number(item.reorderPoint || 0)) : true;
+            const expanded = index < 2;
+            html += '<section class="inventory-workspace-model" data-model-name="' + escapeInventoryHtml(modelName).replace(/"/g,'&quot;') + '" data-low="' + (isLow ? '1' : '0') + '"><div class="inventory-workspace-model-head" onclick="toggleInventoryWorkspaceModel(this)">'
+                + '<button type="button" class="inventory-workspace-chevron"><i class="fas fa-chevron-' + (expanded ? 'down' : 'right') + '"></i></button>'
+                + '<img class="inventory-model-thumbnail" src="' + inventoryWorkspaceImage(items[0]) + '" alt="' + escapeInventoryHtml(modelName).replace(/"/g,'&quot;') + '" data-fallback="' + inventoryWorkspaceFallbackImage(items[0]) + '" onerror="if(this.src.indexOf(this.dataset.fallback)===-1){this.src=this.dataset.fallback}else{this.style.display=\'none\'}">'
+                + '<div><div class="inventory-workspace-model-name">' + escapeInventoryHtml(modelName) + '</div><div class="inventory-workspace-model-meta">' + escapeInventoryHtml(activePart) + ' inventory</div></div>'
+                + '<div class="inventory-workspace-total">' + total + ' total</div></div>'
+                + '<div class="inventory-workspace-entries ' + (expanded ? '' : 'd-none') + '">' + options.map(entry => inventoryWorkspaceEntryMarkup(items,entry,activePart)).join('') + '</div></section>';
+        });
+        html += '<div class="inventory-workspace-footer"><div class="inventory-workspace-ready"><strong id="inventoryWorkspaceReadyCount">0 entries ready</strong><div class="small text-muted">Only rows with an Add Qty will be saved.</div></div><button type="button" class="btn btn-primary" id="inventoryWorkspaceSaveBottom" onclick="saveInventoryWorkspace()">Review &amp; Save</button></div></div>';
+        return html;
+    }
+    function selectInventoryWorkspacePart(part) {
+        if (inventoryWorkspaceDirty && !confirm('There are unsaved quantities. Switch parts and discard them?')) return;
+        inventoryWorkspaceDirty = false;
+        guidedSelection.part = part;
+        renderGuidedInventory();
+    }
+    function toggleInventoryWorkspaceModel(header) {
+        const entries = header.nextElementSibling;
+        entries.classList.toggle('d-none');
+        const icon = header.querySelector('.inventory-workspace-chevron i');
+        icon.classList.toggle('fa-chevron-right', entries.classList.contains('d-none'));
+        icon.classList.toggle('fa-chevron-down', !entries.classList.contains('d-none'));
+    }
+    function inventoryWorkspaceInputChanged() {
+        inventoryWorkspaceDirty = true;
+        const count = [...document.querySelectorAll('.inventory-workspace-qty')].filter(input => Number(input.value) > 0).length;
+        const label = document.getElementById('inventoryWorkspaceReadyCount');
+        if (label) label.textContent = count + (count === 1 ? ' entry ready' : ' entries ready');
+    }
+    function filterInventoryWorkspace() {
+        const search = String(document.getElementById('inventoryWorkspaceSearch')?.value || '').toLowerCase();
+        const lowOnly = document.getElementById('inventoryWorkspaceLowOnly')?.checked;
+        document.querySelectorAll('.inventory-workspace-model').forEach(model => {
+            model.classList.toggle('d-none', !String(model.dataset.modelName || '').toLowerCase().includes(search) || (lowOnly && model.dataset.low !== '1'));
+        });
+    }
+    async function saveInventoryWorkspace() {
+        const entries = [...document.querySelectorAll('.inventory-workspace-entry')].map(row => ({
+            row, id:Number(row.dataset.itemId), templateId:Number(row.dataset.templateId), modelId:Number(row.dataset.modelId), part:row.dataset.part, option:row.dataset.option,
+            quantity:Number(row.querySelector('.inventory-workspace-qty').value), cost:Number(row.querySelector('.inventory-workspace-cost').value), supplier:row.querySelector('.inventory-workspace-supplier').value.trim()
+        })).filter(entry => entry.quantity > 0);
+        if (!entries.length) { showToast('warning','Enter a quantity for at least one model.'); return; }
+        if (entries.some(entry => !Number.isInteger(entry.quantity) || entry.quantity < 1 || !Number.isFinite(entry.cost) || entry.cost < 0)) { showToast('error','Enter valid whole quantities and unit costs.'); return; }
+        if (!confirm('Receive ' + entries.reduce((sum,entry) => sum + entry.quantity,0) + ' parts across ' + new Set(entries.map(entry => entry.modelId)).size + ' models?')) return;
+        $('#inventoryWorkspaceSaveTop,#inventoryWorkspaceSaveBottom').prop('disabled',true).html('<i class="fas fa-spinner fa-spin me-1"></i>Saving…');
+        let saved = 0;
+        try {
+            for (const entry of entries) {
+                let id = entry.id;
+                const template = inventoryAllItems.find(item => Number(item.id) === entry.templateId);
+                const model = inventoryAllItems.find(item => Number(item.deviceModelId) === entry.modelId);
+                if (!id) {
+                    if (!template || !model) throw new Error('A template is missing for ' + entry.part + '.');
+                    const code = entry.part.replace(/[^A-Za-z0-9]+/g,'-').toUpperCase();
+                    const optionCode = entry.option.replace(/[^A-Za-z0-9]+/g,'-').toUpperCase();
+                    const create = await fetch('@Url.Action("CreateInventoryItem", "Inventories")', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+                        CategoryId:template.categoryId || template.itemId, ItemId:template.itemId, Name:entry.part, SKU:code + '-' + model.brandId + '-' + entry.modelId + '-' + optionCode,
+                        Variant:entry.part === 'Screen' && guidedSelection.family !== 'MacBook' ? entry.option : '', Color:entry.part === 'Back Glass' ? entry.option : '', Description:'', BrandId:model.brandId,
+                        DeviceCategoryId:model.deviceCategoryId, DeviceModelId:entry.modelId, InventoryCategoryId:template.inventoryCategoryId, CurrentStock:0,
+                        ReorderPoint:template.reorderPoint || 0, CostPrice:entry.cost, RetailPrice:template.retailPrice || 0, WholesalePrice:template.wholesalePrice || 0,
+                        EnableLowStockNotifications:template.enableLowStockNotifications, IsActive:true
+                    })}).then(response => response.json());
+                    if (!create.success || !create.id) throw new Error(create.message || 'Could not create ' + entry.part + ' for this model.');
+                    id = create.id;
+                }
+                const receive = await fetch('@Url.Action("ReceiveBatch", "Inventories")/' + id, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({Quantity:entry.quantity,UnitCost:entry.cost,Vendor:entry.supplier,ReceivedDate:new Date().toISOString().slice(0,10)})}).then(response => response.json());
+                if (!receive.success) throw new Error(receive.message || 'Could not receive inventory.');
+                saved++;
+            }
+            inventoryWorkspaceDirty = false;
+            showToast('success','Saved ' + saved + ' inventory batches.');
+            inventoryTable.ajax.reload(function(){ renderGuidedInventory(); },false);
+        } catch(error) { showToast('error',(saved ? saved + ' saved; ' : '') + error.message); inventoryTable.ajax.reload(null,false); }
+        finally { $('#inventoryWorkspaceSaveTop').prop('disabled',false).html('<i class="fas fa-save me-1"></i>Save All'); $('#inventoryWorkspaceSaveBottom').prop('disabled',false).text('Review & Save'); }
+    }
+    function renderGuidedInventory() {
+        const grid = $('#guidedInventoryGrid');
+        if (!inventoryAllItems.length) { grid.html('<div class="guided-empty">No inventory records found.</div>'); return; }
+        let rows = inventoryAllItems;
+        let title = guidedBrowseOrder === 'brand' ? 'Choose a brand' : 'Choose a part type'; let breadcrumb = 'Inventory'; let html = '';
+        const firstLevel = guidedBrowseOrder === 'brand' ? 'brand' : 'part';
+        const secondLevel = guidedBrowseOrder === 'brand' ? 'family' : 'brand';
+        const firstValue = guidedSelection[firstLevel];
+        const secondValue = guidedSelection[secondLevel];
+        if (!firstValue) {
+            const getter = firstLevel === 'brand' ? x => x.brandName : inventoryPartType;
+            const values = firstLevel === 'brand' ? uniqueInventoryValues([...inventoryBrandNames, ...rows.map(getter)]) : uniqueInventoryValues(rows.map(getter));
+            values.forEach(value => html += guidedChoiceMarkup(value, rows.filter(x => getter(x) === value).length, firstLevel));
+            html += guidedAddChoiceMarkup(firstLevel === 'brand' ? 'brand' : 'part');
+        } else {
+            rows = rows.filter(x => firstLevel === 'brand' ? x.brandName === firstValue : inventoryPartType(x) === firstValue);
+            breadcrumb += ' › ' + guidedBreadcrumbValue(firstValue, firstLevel);
+            if (!secondValue) {
+                title = secondLevel === 'brand' ? 'Choose a brand' : 'Choose a device family';
+                const getter = secondLevel === 'brand' ? x => x.brandName : inventoryFamily;
+                uniqueInventoryValues(rows.map(getter)).forEach(value => html += guidedChoiceMarkup(value, rows.filter(x => getter(x) === value).length, secondLevel));
+                html += guidedAddChoiceMarkup(secondLevel === 'brand' ? 'brand' : 'family');
+            } else {
+                rows = rows.filter(x => secondLevel === 'brand' ? x.brandName === secondValue : inventoryFamily(x) === secondValue);
+                breadcrumb += ' › ' + guidedBreadcrumbValue(secondValue, secondLevel);
+                if (guidedBrowseOrder === 'part' && !guidedSelection.family) {
+                    title = 'Choose a device family';
+                    uniqueInventoryValues(rows.map(inventoryFamily)).forEach(value => html += guidedChoiceMarkup(value, rows.filter(x => inventoryFamily(x) === value).length, 'family'));
+                    html += guidedAddChoiceMarkup('family');
+                } else if (guidedBrowseOrder === 'brand') {
+                    title = guidedSelection.family + ' inventory workspace';
+                    html = renderInventoryWorkspace(rows);
+                } else {
+                    rows = rows.filter(x => (guidedBrowseOrder === 'part' ? inventoryFamily(x) === guidedSelection.family : inventoryPartType(x) === guidedSelection.part)).sort(newestModelFirst);
+                    const finalValue = guidedBrowseOrder === 'part' ? guidedSelection.family : guidedSelection.part;
+                    breadcrumb += ' › <strong>' + escapeInventoryHtml(finalValue) + '</strong>';
+                    const total = rows.reduce((sum,x) => sum + (x.currentStock || 0), 0);
+                    const low = rows.filter(x => x.currentStock <= x.reorderPoint).length;
+                    title = rows.length + ' models • ' + total + ' parts total • ' + low + ' low stock';
+                    if (guidedBrowseOrder === 'brand' && ((/^apple$/i.test(guidedSelection.brand || '') && guidedSelection.family === 'iPhone' && guidedSelection.part === 'Back Glass') || (guidedSelection.part === 'Screen' && (/^samsung$/i.test(guidedSelection.brand || '') || (/^apple$/i.test(guidedSelection.brand || '') && guidedSelection.family === 'iPhone'))))) {
+                        const isScreen = guidedSelection.part === 'Screen';
+                        const screenVariants = screenVariantsForBrand(guidedSelection.brand);
+                        const models = new Map();
+                        rows.forEach(item => {
+                            const key = String(item.deviceModelId || item.deviceModelName || item.name);
+                            if (!models.has(key)) models.set(key, []);
+                            models.get(key).push(item);
+                        });
+                        const supportedModels = [...models.values()].filter(items => isScreen || (iphoneBackGlassColors[normalizedIphoneModel(items[0].deviceModelName || items[0].name)] || []).length);
+                        title = supportedModels.length + ' models • ' + supportedModels.reduce((sum,items) => sum + items.reduce((count,item) => count + (item.currentStock || 0), 0), 0) + ' parts total';
+                        if (isScreen && isInventoryAdmin && /^apple$/i.test(guidedSelection.brand || '') && guidedSelection.family === 'iPhone') {
+                            html += '<div class="guided-empty" style="grid-column:1/-1;text-align:left;"><button type="button" id="connectIphoneScreensButton" class="btn btn-outline-primary btn-sm" onclick="connectIphoneScreenQualities()">Connect screen qualities to inventory</button><span class="small text-muted ms-2">Creates only missing zero-stock quality items; existing stock stays unchanged.</span></div>';
+                        }
+                        models.forEach(items => {
+                            const modelName = items[0].deviceModelName || items[0].name;
+                            const options = isScreen ? screenVariants : (iphoneBackGlassColors[normalizedIphoneModel(modelName)] || []);
+                            if (!options.length) return;
+                            const unknownStock = isScreen ? items.filter(item => (item.currentStock || 0) > 0 && !screenVariants.some(variant => variant.toLowerCase() === String(item.variant || '').toLowerCase())) : [];
+                            const unknownNames = [...new Set(unknownStock.map(item => item.variant || 'Unspecified'))];
+                            const total = items.reduce((sum,item) => sum + (item.currentStock || 0), 0);
+                            html += '<article class="guided-model-card backglass-model-card" data-value="' + escapeInventoryHtml(modelName) + '">'
+                                + '<div class="guided-model-name">' + escapeInventoryHtml(modelName) + '</div>'
+                                + '<div class="backglass-color-grid">' + options.map(option => {
+                                    const item = items.find(x => String(isScreen ? x.variant : x.color || '').toLowerCase() === option.toLowerCase());
+                                    return '<div class="backglass-color-line"><span>' + escapeInventoryHtml(option) + '</span><strong>' + (item ? item.currentStock || 0 : 0) + '</strong></div>';
+                                }).join('') + unknownNames.map(name => '<div class="backglass-color-line"><span>' + escapeInventoryHtml(name) + '</span><strong>' + unknownStock.filter(item => (item.variant || 'Unspecified') === name).reduce((sum,item) => sum + (item.currentStock || 0), 0) + '</strong></div>').join('') + '</div>'
+                                + '<div class="mt-auto"><strong>' + total + '</strong> total in stock <button type="button" class="btn btn-primary btn-sm float-end" onclick="openBackGlassModel(' + (items[0].deviceModelId || 0) + ',\'' + (isScreen ? 'Screen' : 'Back Glass') + '\')">Open / Edit</button></div></article>';
+                        });
+                    } else rows.forEach(item => {
+                        const status = item.currentStock <= 0 ? 'Out of stock' : item.currentStock <= item.reorderPoint ? 'Low stock' : 'In stock';
+                        const dot = item.currentStock <= 0 ? 'low' : item.currentStock <= item.reorderPoint ? 'warning' : '';
+                        const safeName = escapeInventoryHtml(item.name).replace(/'/g, '&#39;');
+                        const adminDelete = isInventoryAdmin ? '<button class="btn btn-sm btn-outline-danger" onclick="deleteInventoryItem(' + item.id + ')" title="Admin: delete inventory"><i class="fas fa-trash"></i></button>' : '';
+                        const optionDetail = [item.variant, item.color].filter(Boolean).join(' • ');
+                        html += '<article class="guided-model-card" data-value="' + item.id + '"><div class="guided-model-name">' + escapeInventoryHtml(item.deviceModelName || item.name) + '</div>'
+                            + (optionDetail ? '<div class="small text-primary fw-semibold">' + escapeInventoryHtml(optionDetail) + '</div>' : '')
+                            + '<div class="guided-card-status"><span class="stock-status"><span class="stock-dot ' + dot + '"></span>' + status + '</span><button type="button" class="inventory-alert-toggle ' + (item.enableLowStockNotifications ? 'active' : '') + '" onclick="toggleInventoryAlert(' + item.id + ',this)" title="' + (item.enableLowStockNotifications ? 'Low-stock alert is on' : 'Low-stock alert is off') + '"><i class="fas ' + (item.enableLowStockNotifications ? 'fa-bell' : 'fa-bell-slash') + '"></i></button></div>'
+                            + '<div class="guided-stock">' + (item.currentStock || 0) + ' <small class="text-muted fs-6">available</small></div>'
+                            + '<div class="guided-costs">Oldest cost: $' + parseFloat(item.fifoCost || 0).toFixed(2) + '<br>Latest cost: $' + parseFloat(item.latestCost || 0).toFixed(2) + '<br>Average cost: $' + parseFloat(item.averageCost || 0).toFixed(2) + '</div>'
+                            + '<div class="guided-card-actions"><button class="btn btn-sm btn-primary flex-grow-1" onclick="showReceiveBatchModal(' + item.id + ',\'' + safeName + '\',' + item.currentStock + ',' + (item.latestCost || 0) + ')"><i class="fas fa-box-open me-1"></i>Receive</button>'
+                            + '<button class="btn btn-sm btn-outline-secondary" onclick="editInventoryItem(' + item.id + ')"><i class="fas fa-edit"></i></button>' + adminDelete + '</div></article>';
+                    });
+                    html += guidedAddChoiceMarkup('model');
+                }
+            }
+        }
+        if (guidedSelection.brand && /^(motorola|moto)$/i.test(guidedSelection.brand) && !rows.length) {
+            title = 'No Motorola models added yet';
+            html = '<div class="guided-empty"><i class="fas fa-mobile-alt fa-2x mb-3 d-block"></i>Motorola is ready. Add your own device models when needed.</div>' + guidedAddChoiceMarkup('model');
+        }
+        $('#guidedTitle').text(title); $('#guidedBreadcrumb').html(breadcrumb); grid.html(html || '<div class="guided-empty">No matching inventory.</div>');
+        enableGuidedDrag(grid[0]);
+        $('#guidedBackButton').toggleClass('d-none', !guidedSelection.brand && !guidedSelection.part);
+    }
+    function selectGuidedInventory(level, value) {
+        if (level === 'brand') {
+            guidedSelection.brand = value;
+            guidedSelection.family = null;
+            if (guidedBrowseOrder === 'brand') guidedSelection.part = null;
+        }
+        if (level === 'family') {
+            guidedSelection.family = value;
+            if (guidedBrowseOrder === 'brand') guidedSelection.part = null;
+        }
+        if (level === 'part') {
+            guidedSelection.part = value;
+            if (guidedBrowseOrder === 'part') { guidedSelection.brand = null; guidedSelection.family = null; }
+        }
+        renderGuidedInventory();
+    }
+    function guidedBack() {
+        if (guidedBrowseOrder === 'brand') {
+            guidedSelection.part = null;
+            if (guidedSelection.family) guidedSelection.family = null;
+            else guidedSelection.brand = null;
+        } else {
+            if (guidedSelection.family) guidedSelection.family = null;
+            else if (guidedSelection.brand) guidedSelection.brand = null;
+            else guidedSelection.part = null;
+        }
+        renderGuidedInventory();
+    }
+    function setGuidedBrowseOrder(order) {
+        guidedBrowseOrder = order === 'part' ? 'part' : 'brand';
+        guidedSelection.brand = guidedSelection.family = guidedSelection.part = null;
+        $('#browseBrandButton,#browsePartButton').removeClass('active');
+        $('#' + (guidedBrowseOrder === 'brand' ? 'browseBrandButton' : 'browsePartButton')).addClass('active');
+        renderGuidedInventory();
+    }
+    function setInventoryMode(mode) {
+        inventoryMode = mode;
+        $('#guidedViewButton,#allViewButton,#lowViewButton').removeClass('active');
+        $('#' + mode + 'ViewButton').addClass('active');
+        $('#guidedInventoryBrowser').toggleClass('d-none', mode !== 'guided');
+        $('#inventoryTableControls').toggleClass('d-none', mode === 'guided');
+        if (mode === 'guided') { guidedSelection.brand = guidedSelection.family = guidedSelection.part = null; renderGuidedInventory(); }
+        else {
+            $('#filterStockStatus').val(mode === 'low' ? 'low_stock' : '').trigger('change.select2');
+            applyFilters(); setTimeout(() => inventoryTable.columns.adjust(), 0);
+        }
+    }
+
+    function selectedInventoryIds() { return $('.inventory-row-select:checked').map(function(){ return parseInt(this.value); }).get(); }
+    function updateBulkActions() {
+        const count = selectedInventoryIds().length;
+        $('#selectedInventoryCount').text(count);
+        $('#bulkActions').toggleClass('d-none', count === 0).toggleClass('d-flex', count > 0);
+        $('#noBulkSelection').toggleClass('d-none', count > 0);
+    }
+
+    function quickUpdateInventoryField(id, field, value, input) {
+        const row = inventoryTable.rows().data().toArray().find(x => x.id === id);
+        if (!row) return;
+        const parsed = Math.max(0, parseFloat(value) || 0);
+        const payload = { CategoryId: row.categoryId, ItemId: row.itemId, Name: row.name, SKU: row.sku, Variant: row.variant || '', Color: row.color || '', Description: row.description,
+            BrandId: row.brandId, DeviceCategoryId: row.deviceCategoryId, DeviceModelId: row.deviceModelId,
+            InventoryCategoryId: row.inventoryCategoryId, ReorderPoint: field === 'reorderPoint' ? Math.round(parsed) : row.reorderPoint,
+            CostPrice: row.latestCost || row.costPrice, RetailPrice: field === 'retailPrice' ? parsed : row.retailPrice,
+            WholesalePrice: row.wholesalePrice, EnableLowStockNotifications: row.enableLowStockNotifications,
+            IsActive: row.isActive, Notes: row.notes };
+        input.disabled = true;
+        $.ajax({ url: '@Url.Action("UpdateInventoryItem", "Inventories")/' + id, type: 'PUT', contentType: 'application/json', data: JSON.stringify(payload) })
+            .done(function(response) { if (!response.success) showToast('error', response.message || 'Could not update inventory.'); inventoryTable.ajax.reload(null, false); })
+            .fail(function() { showToast('error', 'Could not update inventory.'); inventoryTable.ajax.reload(null, false); })
+            .always(function() { input.disabled = false; });
+    }
+    function toggleInventoryAlert(id, button) {
+        const row = inventoryTable.rows().data().toArray().find(x => x.id === id) || inventoryAllItems.find(x => x.id === id);
+        if (!row) return;
+        const enabled = !row.enableLowStockNotifications;
+        const payload = { CategoryId: row.categoryId, ItemId: row.itemId, Name: row.name, SKU: row.sku, Variant: row.variant || '', Color: row.color || '', Description: row.description,
+            BrandId: row.brandId, DeviceCategoryId: row.deviceCategoryId, DeviceModelId: row.deviceModelId,
+            InventoryCategoryId: row.inventoryCategoryId, ReorderPoint: row.reorderPoint, CostPrice: row.latestCost || row.costPrice,
+            RetailPrice: row.retailPrice, WholesalePrice: row.wholesalePrice, EnableLowStockNotifications: enabled,
+            IsActive: row.isActive, Notes: row.notes };
+        button.disabled = true;
+        $.ajax({ url: '@Url.Action("UpdateInventoryItem", "Inventories")/' + id, type: 'PUT', contentType: 'application/json', data: JSON.stringify(payload) })
+            .done(function(response) {
+                if (!response.success) { showToast('error', response.message || 'Could not update the alert.'); return; }
+                row.enableLowStockNotifications = enabled;
+                const cached = inventoryAllItems.find(x => x.id === id);
+                if (cached) cached.enableLowStockNotifications = enabled;
+                inventoryTable.ajax.reload(null, false);
+                renderGuidedInventory();
+                showToast('success', 'Low-stock alert turned ' + (enabled ? 'on.' : 'off.'));
+            })
+            .fail(function() { showToast('error', 'Could not update the alert.'); })
+            .always(function() { button.disabled = false; });
+    }
+    function clearInventorySelection() { $('.inventory-row-select,#selectAllInventory').prop('checked', false); updateBulkActions(); }
+    function bulkSetReorderPoint() {
+        const ids = selectedInventoryIds();
+        if (!ids.length) return;
+        const value = prompt('Set reorder level for ' + ids.length + ' selected parts:');
+        if (value === null || value === '' || isNaN(value)) return;
+        const rows = inventoryTable.rows().data().toArray().filter(x => ids.includes(x.id));
+        Promise.all(rows.map(row => $.ajax({
+            url: '@Url.Action("UpdateInventoryItem", "Inventories")/' + row.id, type: 'PUT', contentType: 'application/json',
+            data: JSON.stringify({ CategoryId: row.categoryId, ItemId: row.itemId, Name: row.name, SKU: row.sku, Variant: row.variant || '', Color: row.color || '', Description: row.description,
+                BrandId: row.brandId, DeviceCategoryId: row.deviceCategoryId, DeviceModelId: row.deviceModelId,
+                InventoryCategoryId: row.inventoryCategoryId, ReorderPoint: parseInt(value), CostPrice: row.latestCost || row.costPrice,
+                RetailPrice: row.retailPrice, WholesalePrice: row.wholesalePrice, EnableLowStockNotifications: true, IsActive: row.isActive, Notes: row.notes })
+        }))).then(function(){ clearInventorySelection(); inventoryTable.ajax.reload(); showToast('success', 'Reorder level updated for selected parts.'); })
+           .catch(function(){ showToast('error', 'One or more selected parts could not be updated.'); });
+    }
 
     // Use the same safeInitializeSelect2 function as device page
     function safeInitializeSelect2(selector = '.form-select') {
@@ -739,6 +2116,257 @@
         });
     }
 
+    const iphoneBackGlassColors = {
+        'iphone 8': ['Silver','Space Gray','Gold','(PRODUCT)RED'],
+        'iphone 8 plus': ['Silver','Space Gray','Gold','(PRODUCT)RED'],
+        'iphone x': ['Silver','Space Gray'],
+        'iphone xr': ['Black','White','Blue','Yellow','Coral','(PRODUCT)RED'],
+        'iphone xs': ['Silver','Space Gray','Gold'],
+        'iphone xs max': ['Silver','Space Gray','Gold'],
+        'iphone 11': ['Black','Green','Yellow','Purple','White','(PRODUCT)RED'],
+        'iphone 11 pro': ['Gold','Space Gray','Silver','Midnight Green'],
+        'iphone 11 pro max': ['Gold','Space Gray','Silver','Midnight Green'],
+        'iphone se (2nd generation)': ['Black','White','(PRODUCT)RED'],
+        'iphone se 2': ['Black','White','(PRODUCT)RED'],
+        'iphone 12 mini': ['Black','White','Blue','Green','Purple','(PRODUCT)RED'],
+        'iphone 12': ['Black','White','Blue','Green','Purple','(PRODUCT)RED'],
+        'iphone 12 pro': ['Silver','Graphite','Gold','Pacific Blue'],
+        'iphone 12 pro max': ['Silver','Graphite','Gold','Pacific Blue'],
+        'iphone 13 mini': ['(PRODUCT)RED','Starlight','Midnight','Blue','Pink','Green'],
+        'iphone 13': ['(PRODUCT)RED','Starlight','Midnight','Blue','Pink','Green'],
+        'iphone 13 pro': ['Graphite','Gold','Silver','Sierra Blue','Alpine Green'],
+        'iphone 13 pro max': ['Graphite','Gold','Silver','Sierra Blue','Alpine Green'],
+        'iphone se (3rd generation)': ['Midnight','Starlight','(PRODUCT)RED'],
+        'iphone se 3': ['Midnight','Starlight','(PRODUCT)RED'],
+        'iphone 14': ['Midnight','Purple','Starlight','Blue','Yellow','(PRODUCT)RED'],
+        'iphone 14 plus': ['Midnight','Purple','Starlight','Blue','Yellow','(PRODUCT)RED'],
+        'iphone 14 pro': ['Space Black','Silver','Gold','Deep Purple'],
+        'iphone 14 pro max': ['Space Black','Silver','Gold','Deep Purple'],
+        'iphone 15': ['Black','Blue','Green','Yellow','Pink'],
+        'iphone 15 plus': ['Black','Blue','Green','Yellow','Pink'],
+        'iphone 15 pro': ['Black Titanium','White Titanium','Blue Titanium','Natural Titanium'],
+        'iphone 15 pro max': ['Black Titanium','White Titanium','Blue Titanium','Natural Titanium'],
+        'iphone 16': ['Black','White','Pink','Teal','Ultramarine'],
+        'iphone 16 plus': ['Black','White','Pink','Teal','Ultramarine'],
+        'iphone 16 pro': ['Black Titanium','White Titanium','Natural Titanium','Desert Titanium'],
+        'iphone 16 pro max': ['Black Titanium','White Titanium','Natural Titanium','Desert Titanium'],
+        'iphone 17': ['Black','White','Mist Blue','Sage','Lavender'],
+        'iphone 17 pro': ['Silver','Cosmic Orange','Deep Blue'],
+        'iphone 17 pro max': ['Silver','Cosmic Orange','Deep Blue'],
+        'iphone 18 pro': ['Black','Silver','Glacier','Burgundy'],
+        'iphone 18 pro max': ['Black','Silver','Glacier','Burgundy'],
+        'iphone air': ['Space Black','Cloud White','Light Gold','Sky Blue']
+    };
+
+    const screenInventoryVariants = ['Incell','Soft OLED','Hard OLED','OEM','Original/Refurbished'];
+    function screenVariantsForBrand(brand) { return /^samsung$/i.test(brand || '') ? ['Aftermarket','Original'] : screenInventoryVariants; }
+    async function connectIphoneScreenQualities() {
+        if (!isInventoryAdmin) return;
+        const groups = new Map();
+        inventoryAllItems.filter(item => /^apple$/i.test(item.brandName || '') && inventoryFamily(item) === 'iPhone' && inventoryPartType(item) === 'Screen' && Number(item.deviceModelId) > 0).forEach(item => {
+            if (!groups.has(Number(item.deviceModelId))) groups.set(Number(item.deviceModelId), []);
+            groups.get(Number(item.deviceModelId)).push(item);
+        });
+        const missing = [];
+        groups.forEach(items => screenInventoryVariants.forEach(quality => {
+            if (!items.some(item => String(item.variant || '').trim().toLowerCase() === quality.toLowerCase())) missing.push({template:items[0], quality});
+        }));
+        if (!missing.length) { showToast('success','All displayed iPhone screen qualities already have inventory items.'); return; }
+        const button = document.getElementById('connectIphoneScreensButton');
+        if (button) button.disabled = true;
+        let created = 0; const failures = [];
+        try {
+            for (const entry of missing) {
+                const template = entry.template;
+                const sku = 'SC-' + template.brandId + '-' + template.deviceModelId + '-' + entry.quality.toUpperCase().replace(/[^A-Z0-9]+/g,'-').replace(/^-|-$/g,'');
+                if (button) button.textContent = 'Connecting ' + (created + failures.length + 1) + ' / ' + missing.length + '…';
+                try {
+                    const response = await fetch('@Url.Action("CreateInventoryItem", "Inventories")', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+                        CategoryId:template.categoryId || template.itemId, ItemId:template.itemId, Name:template.name, SKU:sku, Variant:entry.quality, Color:'',
+                        BrandId:template.brandId, DeviceCategoryId:template.deviceCategoryId, DeviceModelId:template.deviceModelId,
+                        InventoryCategoryId:template.inventoryCategoryId, CurrentStock:0, ReorderPoint:0,
+                        CostPrice:0, RetailPrice:0, WholesalePrice:0, EnableLowStockNotifications:false, IsActive:true
+                    })}).then(r => r.json());
+                    if (!response.success || !response.id) throw new Error(response.message || 'Creation failed');
+                    created++;
+                } catch (error) { failures.push((template.deviceModelName || template.deviceModelId) + ' ' + entry.quality + ': ' + error.message); }
+            }
+            inventoryTable.ajax.reload();
+            showToast(failures.length ? 'warning' : 'success', 'Connected ' + created + ' screen qualities.' + (failures.length ? ' ' + failures.length + ' could not be created; retry after reviewing them.' : ''));
+            if (failures.length) console.warn('Screen quality inventory connection failures:', failures);
+        } finally { if (button) { button.disabled = false; button.textContent = 'Connect screen qualities to inventory'; } }
+    }
+    let openBackGlassModelId = 0;
+    let openInventoryVariantMode = 'Back Glass';
+    let openInventoryVariantBrand = 'Apple';
+    function inventoryModelSequence(referenceItem, matchVariantAndColor) {
+        if (!referenceItem) return [];
+        const brand = String(referenceItem.brandName || '').toLowerCase();
+        const family = inventoryFamily(referenceItem);
+        const part = inventoryPartType(referenceItem);
+        const variant = String(referenceItem.variant || '').toLowerCase();
+        const color = String(referenceItem.color || '').toLowerCase();
+        const byModel = new Map();
+        inventoryAllItems.filter(item => String(item.brandName || '').toLowerCase() === brand
+            && inventoryFamily(item) === family
+            && inventoryPartType(item) === part
+            && (!matchVariantAndColor || (String(item.variant || '').toLowerCase() === variant && String(item.color || '').toLowerCase() === color)))
+            .forEach(item => {
+                const modelId = Number(item.deviceModelId || 0);
+                if (modelId && !byModel.has(modelId)) byModel.set(modelId, item);
+            });
+        return [...byModel.values()].sort(newestModelFirst);
+    }
+    function renderInventoryModelTabs(containerId, sequence, activeModelId, onClickName) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = sequence.map(item => {
+            const modelId = Number(item.deviceModelId || 0);
+            const modelName = escapeInventoryHtml(item.deviceModelName || item.name || 'Model');
+            return '<button type="button" class="inventory-model-tab ' + (modelId === Number(activeModelId) ? 'active' : '') + '" onclick="' + onClickName + '(' + modelId + ')">' + modelName + '</button>';
+        }).join('');
+        requestAnimationFrame(() => container.querySelector('.inventory-model-tab.active')?.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'}));
+    }
+    function groupedInventoryModelSequence() {
+        const reference = inventoryAllItems.find(item => Number(item.deviceModelId) === openBackGlassModelId
+            && String(item.brandName || '').toLowerCase() === openInventoryVariantBrand.toLowerCase()
+            && inventoryPartType(item) === openInventoryVariantMode);
+        return inventoryModelSequence(reference, false);
+    }
+    function groupedInventoryHasEntries() {
+        return [...document.querySelectorAll('.backglass-add-qty')].some(input => Number(input.value) > 0);
+    }
+    function switchInventoryVariantModel(modelId) {
+        if (Number(modelId) === openBackGlassModelId) return;
+        if (groupedInventoryHasEntries() && !confirm('This model has unsaved quantities. Switch models and discard them?')) return;
+        openBackGlassModel(modelId, openInventoryVariantMode);
+    }
+    function navigateInventoryVariantModel(direction) {
+        const sequence = groupedInventoryModelSequence();
+        const index = sequence.findIndex(item => Number(item.deviceModelId) === openBackGlassModelId);
+        const target = sequence[index + Number(direction)];
+        if (!target) { showToast('warning', direction > 0 ? 'This is the last model.' : 'This is the first model.'); return; }
+        switchInventoryVariantModel(target.deviceModelId);
+    }
+    function openBackGlassModel(modelId, mode = 'Back Glass') {
+        const modalWasOpen = document.getElementById('backGlassModelModal').classList.contains('show');
+        openInventoryVariantMode = mode === 'Screen' ? 'Screen' : 'Back Glass';
+        openInventoryVariantBrand = guidedSelection.brand || 'Apple';
+        openBackGlassModelId = Number(modelId);
+        const items = inventoryAllItems.filter(item => Number(item.deviceModelId) === openBackGlassModelId && String(item.brandName || '').toLowerCase() === openInventoryVariantBrand.toLowerCase() && inventoryPartType(item) === openInventoryVariantMode);
+        if (!items.length) { showToast('error','No ' + openInventoryVariantMode.toLowerCase() + ' inventory record is available for this model.'); return; }
+        const modelName = items[0].deviceModelName || items[0].name;
+        const isScreen = openInventoryVariantMode === 'Screen';
+        const screenVariants = screenVariantsForBrand(openInventoryVariantBrand);
+        const options = isScreen ? [...new Set([...screenVariants, ...items.filter(item => !screenVariants.some(variant => variant.toLowerCase() === String(item.variant || '').toLowerCase())).map(item => item.variant || 'Unspecified')])] : (iphoneBackGlassColors[normalizedIphoneModel(modelName)] || []);
+        renderInventoryModelTabs('backGlassModelTabs', groupedInventoryModelSequence(), openBackGlassModelId, 'switchInventoryVariantModel');
+        $('#backGlassModelTitle').text(modelName + ' — ' + openInventoryVariantMode);
+        $('#backGlassModelHelp').text('Enter quantities and purchase costs for several ' + (isScreen ? 'screen qualities' : 'colors') + ', then save once. Each option stays a separate inventory item and receives its own FIFO batch.');
+        $('#saveBackGlassColorsButton').text('Save');
+        if (!modalWasOpen) $('#backGlassVendor').val('');
+        $('#backGlassColorRows').html('<div class="row fw-semibold border-bottom py-2"><div class="col-4">' + (isScreen ? 'Quality' : 'Color') + '</div><div class="col-2">In stock</div><div class="col-2">Add qty</div><div class="col-2">Unit cost</div><div class="col-2">Item</div></div>' + options.map(option => {
+            const matchingItems = items.filter(x => String((isScreen ? x.variant : x.color) || 'Unspecified').toLowerCase() === option.toLowerCase());
+            const item = matchingItems[0];
+            const safe = escapeInventoryHtml(option);
+            return '<div class="row align-items-center py-2 border-bottom backglass-edit-row" data-option="' + safe.replace(/"/g,'&quot;') + '" data-item-id="' + (item ? item.id : 0) + '">'
+                + '<div class="col-4">' + safe + '</div><div class="col-2">' + matchingItems.reduce((sum,match) => sum + (match.currentStock || 0), 0) + '</div>'
+                + '<div class="col-2"><input class="form-control form-control-sm backglass-add-qty" type="number" min="0" step="1" value="0" aria-label="Quantity for ' + safe + '"></div>'
+                + '<div class="col-2"><input class="form-control form-control-sm backglass-unit-cost" type="number" min="0" step="0.01" value="' + (item ? parseFloat(item.latestCost || item.costPrice || 0).toFixed(2) : '0.00') + '" aria-label="Cost for ' + safe + '"></div>'
+                + '<div class="col-2">' + (item ? '<button type="button" class="btn btn-sm btn-outline-secondary" onclick="bootstrap.Modal.getInstance(document.getElementById(\'backGlassModelModal\')).hide();editInventoryItem(' + item.id + ')">Edit</button>' + (isInventoryAdmin && matchingItems.every(match => (match.currentStock || 0) === 0) ? ' <button type="button" class="btn btn-sm btn-outline-danger" title="Delete this empty inventory item" onclick="deleteInventoryItem(' + item.id + ',true)">Delete</button>' : '') : '<small class="text-muted">New</small>') + '</div></div>';
+        }).join(''));
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('backGlassModelModal')).show();
+    }
+
+    async function saveBackGlassColors(moveAfter = 'stay') {
+        const isScreen = openInventoryVariantMode === 'Screen';
+        const template = inventoryAllItems.find(item => Number(item.deviceModelId) === openBackGlassModelId && String(item.brandName || '').toLowerCase() === openInventoryVariantBrand.toLowerCase() && inventoryPartType(item) === openInventoryVariantMode);
+        if (!template) return;
+        const rows = [...document.querySelectorAll('.backglass-edit-row')].map(row => ({
+            option:row.dataset.option, id:Number(row.dataset.itemId), quantity:Number(row.querySelector('.backglass-add-qty').value), cost:Number(row.querySelector('.backglass-unit-cost').value)
+        })).filter(row => row.quantity > 0);
+        if (!rows.length) { showToast('warning','Enter a quantity for at least one option.'); return; }
+        if (rows.some(row => !Number.isInteger(row.quantity) || row.quantity < 1 || !Number.isFinite(row.cost) || row.cost < 0)) { showToast('error','Enter valid whole quantities and costs.'); return; }
+        const buttons = [...document.querySelectorAll('.inventory-variant-save')];
+        buttons.forEach(button => button.disabled = true);
+        const nextSequence = groupedInventoryModelSequence();
+        const currentIndex = nextSequence.findIndex(item => Number(item.deviceModelId) === openBackGlassModelId);
+        const nextModelId = moveAfter === 'next' && nextSequence[currentIndex + 1] ? Number(nextSequence[currentIndex + 1].deviceModelId) : 0;
+        let saved = 0;
+        try {
+            for (const row of rows) {
+                let id = row.id;
+                if (!id) {
+                    const sku = (isScreen ? 'SC-' : 'BG-') + template.brandId + '-' + template.deviceModelId + '-' + row.option.toUpperCase().replace(/[^A-Z0-9]+/g,'-').replace(/^-|-$/g,'');
+                    const create = await fetch('@Url.Action("CreateInventoryItem", "Inventories")', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+                        CategoryId:template.categoryId || template.itemId, Name:template.name, SKU:sku, Variant:isScreen ? row.option : '', Color:isScreen ? '' : row.option,
+                        BrandId:template.brandId, DeviceCategoryId:template.deviceCategoryId, DeviceModelId:template.deviceModelId,
+                        InventoryCategoryId:template.inventoryCategoryId, CurrentStock:0, ReorderPoint:template.reorderPoint || 0,
+                        CostPrice:row.cost, RetailPrice:template.retailPrice || 0, WholesalePrice:template.wholesalePrice || 0,
+                        EnableLowStockNotifications:template.enableLowStockNotifications, IsActive:true
+                    })}).then(response => response.json());
+                    if (!create.success || !create.id) throw new Error(create.message || 'Could not add ' + row.option);
+                    id = create.id;
+                }
+                const receive = await fetch('@Url.Action("ReceiveBatch", "Inventories")/' + id, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+                    Quantity:row.quantity, UnitCost:row.cost, Vendor:document.getElementById('backGlassVendor').value.trim(), ReceivedDate:new Date().toISOString().slice(0,10)
+                })}).then(response => response.json());
+                if (!receive.success) throw new Error(receive.message || 'Could not receive ' + row.option);
+                saved++;
+            }
+            showToast('success','Received ' + saved + ' ' + (isScreen ? 'screen-quality' : 'back-glass color') + ' batches.');
+            inventoryTable.ajax.reload(function() {
+                openBackGlassModel(nextModelId || openBackGlassModelId, openInventoryVariantMode);
+                if (moveAfter === 'next' && !nextModelId) showToast('warning','Saved. This is the last model.');
+            }, false);
+        } catch (error) { showToast('error',(saved ? saved + ' saved; ' : '') + error.message); inventoryTable.ajax.reload(); }
+        finally { buttons.forEach(button => button.disabled = false); }
+    }
+
+    function normalizedIphoneModel(modelName) {
+        return (modelName || '').toLowerCase().replace(/^apple\s+/, '').replace(/\s+/g, ' ').trim();
+    }
+
+    function updateInventoryPartOptions() {
+        const partName = $('#itemId option:selected').text().trim().toLowerCase();
+        const state = window.EmpireDeviceSelector ? EmpireDeviceSelector.getState('inventoryItem') : {};
+        const isScreen = partName === 'screen';
+        const isBackGlass = partName === 'back glass';
+        $('#screenVariantField').toggleClass('d-none', !isScreen);
+        if (isScreen) {
+            const previousVariant = $('#itemVariant').val() || $('#itemVariant').data('existingVariant') || '';
+            $('#itemVariant').removeData('existingVariant');
+            const variants = screenVariantsForBrand(state.brandName);
+            $('#itemVariant').empty().append(new Option('-- Select Screen Quality --', ''));
+            variants.forEach(variant => $('#itemVariant').append(new Option(variant, variant)));
+            if (previousVariant && !variants.includes(previousVariant)) $('#itemVariant').append(new Option(previousVariant + ' (existing)', previousVariant));
+            if (previousVariant) $('#itemVariant').val(previousVariant);
+        }
+        if (!isScreen) $('#itemVariant').val('').removeClass('is-invalid');
+
+        const colors = state.brandName === 'Apple' ? (iphoneBackGlassColors[normalizedIphoneModel(state.modelName)] || []) : [];
+        if (isBackGlass && state.modelId && colors.length === 0) {
+            $('#itemId').val('').trigger('change.select2');
+            $('#backGlassColorField').addClass('d-none');
+            showToast('warning', 'Back Glass is only available for compatible iPhone models.');
+            return;
+        }
+        const canUseBackGlass = isBackGlass && colors.length > 0;
+        $('#backGlassColorField').toggleClass('d-none', !canUseBackGlass);
+        const previousColor = $('#itemColor').val();
+        $('#itemColor').empty().append('<option value="">-- Select Original Phone Color --</option>');
+        colors.forEach(color => $('#itemColor').append($('<option>', { value: color, text: color })));
+        if (colors.includes(previousColor)) $('#itemColor').val(previousColor);
+        if (!canUseBackGlass) $('#itemColor').val('').removeClass('is-invalid');
+    }
+
+    $(document).on('change', '#itemId', updateInventoryPartOptions);
+    document.addEventListener('eds:modelSelected', function(event) {
+        if (event.detail && event.detail.selectorId === 'inventoryItem') {
+            updateInventoryPartOptions();
+            updateCompatibleModelOptions();
+        }
+    });
+
     function showAddInventoryItemModal() {
         $('#inventoryItemModalLabel').text('Add Inventory Item');
         $('#btnSaveLabel').text('Save Item');
@@ -748,6 +2376,11 @@
         $('#itemIsActive').prop('checked', true);
         $('#skuPreviewBadge').addClass('d-none');
         $('#deviceSelectionError').addClass('d-none');
+        $('#itemVariant,#itemColor').val('');
+        if ($('#itemCompatibleModels').hasClass('select2-hidden-accessible')) $('#itemCompatibleModels').select2('destroy');
+        $('#itemCompatibleModels').empty();
+        $('#itemVariant').removeData('existingVariant');
+        $('#screenVariantField,#backGlassColorField').addClass('d-none');
 
         // Make CurrentStock editable for new items
         $('#itemCurrentStock').prop('readonly', false).val('0');
@@ -865,6 +2498,8 @@
                     // ── Item Details section
                     $('#itemSku').val(item.sku);
                     $('#itemDescription').val(item.description);
+                    $('#itemVariant').data('existingVariant', item.variant || '').val(item.variant || '');
+                    $('#itemColor').val(item.color || '');
 
                     // ── Stock section: readonly for edits (use Stock Movements instead)
                     $('#itemCurrentStock').val(item.currentStock).prop('readonly', true);
@@ -929,6 +2564,8 @@
                                 loadItemNames();
                             }
                         }
+                        updateInventoryPartOptions();
+                        updateCompatibleModelOptions(compatibleInventoryModelIds(item.notes));
                         console.log('Select2 reinitialized in edit modal');
                     });
                 } else {
@@ -950,6 +2587,8 @@
         const deviceCategoryId  = parseInt($('#itemDeviceCategory').val()) || 0;
         const deviceModelId     = parseInt($('#itemDeviceModel').val()) || 0;
         const inventoryCategoryId = parseInt($('#itemInventoryCategory').val()) || 0;
+        updateInventoryPartOptions();
+        const selectedPartName = $('#itemId option:selected').text().trim().toLowerCase();
 
         let invValid = true;
         if (!categoryId) {
@@ -964,6 +2603,12 @@
         if (!inventoryCategoryId) {
             $('#itemInventoryCategory').addClass('is-invalid'); invValid = false;
         } else { $('#itemInventoryCategory').removeClass('is-invalid').addClass('is-valid'); }
+        if (selectedPartName === 'screen' && !$('#itemVariant').val()) {
+            $('#itemVariant').addClass('is-invalid'); invValid = false;
+        } else { $('#itemVariant').removeClass('is-invalid'); }
+        if (selectedPartName === 'back glass' && !$('#itemColor').val()) {
+            $('#itemColor').addClass('is-invalid'); invValid = false;
+        } else { $('#itemColor').removeClass('is-invalid'); }
         if (!invValid) {
             // Scroll to the top of the modal body so the user sees the errors
             $('#inventoryItemModal .modal-body').scrollTop(0);
@@ -977,6 +2622,8 @@
             CategoryId: categoryId,
             Name: itemName,
             SKU: $('#itemSku').val().trim(),
+            Variant: selectedPartName === 'screen' ? $('#itemVariant').val() : '',
+            Color: selectedPartName === 'back glass' ? $('#itemColor').val() : '',
             Description: $('#itemDescription').val().trim(),
             BrandId: brandId,
             DeviceCategoryId: deviceCategoryId,
@@ -988,7 +2635,7 @@
             WholesalePrice: parseFloat($('#itemWholesalePrice').val()) || 0,
             EnableLowStockNotifications: $('#itemLowStockNotifications').is(':checked'),
             IsActive: $('#itemIsActive').is(':checked'),
-            Notes: $('#itemNotes').val().trim()
+            Notes: mergeCompatibilityNotes($('#itemNotes').val(), $('#itemCompatibleModels').val())
         };
         
         // Only include CurrentStock when creating new items
@@ -1015,6 +2662,16 @@
             success: function(response) {
                 console.log('Save response:', response);
                 if (response.success) {
+                    if (!isEdit && supplierImportPendingCreateRow !== null && response.id) {
+                        const importRow = document.querySelector('#supplierImportRows tr[data-row="' + supplierImportPendingCreateRow + '"]');
+                        const matchSelect = importRow?.querySelector('.supplier-import-match');
+                        if (matchSelect) {
+                            const line = supplierImportLines[supplierImportPendingCreateRow];
+                            matchSelect.append(new Option((line?.description || 'New inventory part') + ' (new)', response.id, true, true));
+                            $(matchSelect).val(String(response.id)).trigger('change');
+                        }
+                        supplierImportPendingCreateRow = null;
+                    }
                     // Bootstrap 5: hide via instance
                     var modalEl = document.getElementById('inventoryItemModal');
                     var bsModal = bootstrap.Modal.getInstance(modalEl);
@@ -1042,13 +2699,25 @@
         });
     }
 
-    function deleteInventoryItem(id) {
+    $(document).on('hidden.bs.modal', '#inventoryItemModal', function() {
+        if (!supplierImportReturnToReview) return;
+        supplierImportReturnToReview = false;
+        supplierImportPendingCreateRow = null;
+        setTimeout(function() { bootstrap.Modal.getOrCreateInstance(document.getElementById('supplierOrderImportModal')).show(); },150);
+    });
+
+    function deleteInventoryItem(id, closeGroupedEditor = false) {
+        if (!isInventoryAdmin) {
+            showToast('error', 'Only an administrator can delete inventory.');
+            return;
+        }
         if (confirm('Are you sure you want to delete this inventory item?')) {
             $.ajax({
                 url: '@Url.Action("DeleteInventoryItem", "Inventories")/' + id,
                 type: 'DELETE',
                 success: function(response) {
                     if (response.success) {
+                        if (closeGroupedEditor) bootstrap.Modal.getInstance(document.getElementById('backGlassModelModal'))?.hide();
                         inventoryTable.ajax.reload();
                         showToast('success', response.message || 'Inventory item deleted!');
                     } else {
@@ -1066,6 +2735,86 @@
         $('#movementInventoryItemId').val(inventoryItemId);
         $('#stockMovementForm')[0].reset();
         $('#stockMovementModal').modal('show');
+    }
+
+    let receiveInventorySequence = [];
+    let receiveInventoryDirty = false;
+    function showReceiveBatchModal(id) {
+        const item = inventoryAllItems.find(row => Number(row.id) === Number(id));
+        if (!item) { showToast('error','This inventory item could not be loaded.'); return; }
+        receiveInventorySequence = inventoryModelSequence(item, true);
+        openReceiveInventoryItem(id, true);
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('receiveBatchModal')).show();
+    }
+    function openReceiveInventoryItem(id, resetShipmentFields) {
+        const item = inventoryAllItems.find(row => Number(row.id) === Number(id));
+        if (!item) { showToast('error','This inventory item could not be loaded.'); return; }
+        $('#receiveInventoryItemId').val(item.id);
+        $('#receiveQuantity').val(1);
+        $('#receiveUnitCost').val(parseFloat(item.latestCost || item.costPrice || 0).toFixed(2));
+        if (resetShipmentFields) {
+            $('#receiveDate').val(new Date().toISOString().slice(0, 10));
+            $('#receiveVendor,#receiveReference,#receiveNotes').val('');
+            $('#receiveVendor').trigger('change');
+            $('#receiveVendorOther').val('').addClass('d-none');
+        }
+        const option = [item.variant, item.color].filter(Boolean).join(' • ');
+        $('#receiveItemSummary').html('<strong>' + escapeInventoryHtml(item.deviceModelName || 'Model') + ' — ' + escapeInventoryHtml(inventoryPartType(item)) + '</strong>'
+            + (option ? '<div class="small text-primary fw-semibold">' + escapeInventoryHtml(option) + '</div>' : '')
+            + '<span class="text-muted">Current stock: ' + (item.currentStock || 0) + ' · Saving creates a new FIFO batch for this model.</span>');
+        renderInventoryModelTabs('receiveInventoryModelTabs', receiveInventorySequence, item.deviceModelId, 'switchReceiveInventoryModel');
+        loadBatchHistory(item.id);
+        receiveInventoryDirty = false;
+        $('#receiveQuantity,#receiveUnitCost,#receiveDate,#receiveVendor,#receiveVendorOther,#receiveReference,#receiveNotes')
+            .off('.receiveDirty').on('input.receiveDirty change.receiveDirty', function() { receiveInventoryDirty = true; });
+    }
+    function switchReceiveInventoryModel(modelId) {
+        const current = inventoryAllItems.find(row => Number(row.id) === Number($('#receiveInventoryItemId').val()));
+        if (current && Number(current.deviceModelId) === Number(modelId)) return;
+        if (receiveInventoryDirty && !confirm('This model has unsaved inventory information. Switch models and discard it?')) return;
+        const target = receiveInventorySequence.find(item => Number(item.deviceModelId) === Number(modelId));
+        if (target) openReceiveInventoryItem(target.id, false);
+    }
+    function navigateReceiveInventoryModel(direction) {
+        const currentId = Number($('#receiveInventoryItemId').val());
+        const index = receiveInventorySequence.findIndex(item => Number(item.id) === currentId);
+        const target = receiveInventorySequence[index + Number(direction)];
+        if (!target) { showToast('warning', direction > 0 ? 'This is the last model.' : 'This is the first model.'); return; }
+        switchReceiveInventoryModel(target.deviceModelId);
+    }
+
+    function loadBatchHistory(id) {
+        $('#batchHistoryBody').html('<tr><td colspan="5" class="text-muted">Loading cost history…</td></tr>');
+        $.get('@Url.Action("BatchHistory", "Inventories")/' + id).done(function(response) {
+            const rows = response.success ? (response.data || []) : [];
+            $('#batchHistoryBody').html(rows.length ? rows.map(function(b) {
+                return '<tr><td>' + new Date(b.receivedDate).toLocaleDateString() + '</td><td>' + $('<div>').text(b.vendor || '—').html() + '</td><td>' + b.receivedQuantity + '</td><td><strong>' + b.remainingQuantity + '</strong></td><td>$' + parseFloat(b.unitCost).toFixed(2) + '</td></tr>';
+            }).join('') : '<tr><td colspan="5" class="text-muted">No batches yet. The first received shipment will appear here.</td></tr>');
+        });
+    }
+
+    function receiveInventoryBatch(moveAfter = 'stay') {
+        const id = parseInt($('#receiveInventoryItemId').val());
+        const selectedVendor = $('#receiveVendor').val();
+        const vendor = selectedVendor === 'Other' ? $('#receiveVendorOther').val().trim() : selectedVendor;
+        const data = { Quantity: parseInt($('#receiveQuantity').val()), UnitCost: parseFloat($('#receiveUnitCost').val()), Vendor: vendor, ReferenceNumber: $('#receiveReference').val(), ReceivedDate: $('#receiveDate').val(), Notes: $('#receiveNotes').val() };
+        if (!data.Quantity || data.Quantity < 1 || isNaN(data.UnitCost) || data.UnitCost < 0) { showToast('error', 'Enter a valid quantity and cost.'); return; }
+        const currentIndex = receiveInventorySequence.findIndex(item => Number(item.id) === id);
+        const nextItemId = moveAfter === 'next' && receiveInventorySequence[currentIndex + 1] ? Number(receiveInventorySequence[currentIndex + 1].id) : 0;
+        const buttons = $('.receive-inventory-save').prop('disabled', true);
+        $.ajax({ url: '@Url.Action("ReceiveBatch", "Inventories")/' + id, type: 'POST', contentType: 'application/json', data: JSON.stringify(data) })
+          .done(function(response) {
+              if (!response.success) { showToast('error', response.message); return; }
+              showToast('success', response.message);
+              receiveInventoryDirty = false;
+              inventoryTable.ajax.reload(function() {
+                  const refreshed = inventoryAllItems.find(item => Number(item.id) === id);
+                  receiveInventorySequence = inventoryModelSequence(refreshed, true);
+                  openReceiveInventoryItem(nextItemId || id, false);
+                  if (moveAfter === 'next' && !nextItemId) showToast('warning','Saved. This is the last model.');
+              }, false);
+          }).fail(function(){ showToast('error', 'The shipment could not be received.'); })
+          .always(function(){ buttons.prop('disabled', false); });
     }
 
     function saveStockMovement() {
@@ -1100,6 +2849,7 @@
 
     function applyFilters() {
         const filters = {
+            search: $('#inventorySearch').val(),
             brandId: $('#filterBrand').val(),
             deviceCategoryId: $('#filterDeviceCategory').val(),
             deviceModelId: $('#filterDeviceModel').val(),
@@ -1120,7 +2870,8 @@
     }
 
     function clearFilters() {
-        $('#inventoryFilterForm')[0].reset();
+        $('#inventorySearch').val('');
+        $('#filterBrand,#filterDeviceCategory,#filterDeviceModel,#filterInventoryCategory,#filterStockStatus').val('').trigger('change.select2');
         inventoryTable.ajax.url('/Inventories/GetInventoryItems').load();
     }
 
@@ -1143,9 +2894,7 @@
     }
 
     function showLowStockReport() {
-        // Filter to show only low stock items
-        $('#filterStockStatus').val('low_stock');
-        applyFilters();
+        setInventoryMode('low');
     }
 
     function showStockMovements() {
@@ -1161,4 +2910,3 @@
     }
 </script>
 }
-

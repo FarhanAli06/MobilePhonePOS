@@ -32,7 +32,8 @@ public class InventoryManagementApiService : IInventoryManagementApiService
         int? deviceCategoryId = null,
         int? deviceModelId = null,
         int? inventoryCategoryId = null,
-        string? stockStatus = null)
+        string? stockStatus = null,
+        string? search = null)
     {
         try
         {
@@ -54,6 +55,8 @@ public class InventoryManagementApiService : IInventoryManagementApiService
                 else
                     queryParams.Add($"stockStatus={stockStatus}");
             }
+            if (!string.IsNullOrWhiteSpace(search))
+                queryParams.Add($"search={Uri.EscapeDataString(search)}");
 
             var endpoint = $"{BaseEndpoint}?{string.Join("&", queryParams)}";
             var response = await _httpClient.GetAsync<List<InventoryItemDto>>(endpoint);
@@ -92,6 +95,8 @@ public class InventoryManagementApiService : IInventoryManagementApiService
                 CategoryId = item.CategoryId,
                 Name = item.Name,
                 SKU = item.SKU,
+                Variant = item.Variant,
+                Color = item.Color,
                 Description = item.Description,
                 BrandId = item.BrandId,
                 DeviceCategoryId = item.DeviceCategoryId,
@@ -132,6 +137,8 @@ public class InventoryManagementApiService : IInventoryManagementApiService
                 CategoryId = item.CategoryId,
                 Name = item.Name,
                 SKU = item.SKU,
+                Variant = item.Variant,
+                Color = item.Color,
                 Description = item.Description,
                 BrandId = item.BrandId,
                 DeviceCategoryId = item.DeviceCategoryId,
@@ -233,4 +240,10 @@ public class InventoryManagementApiService : IInventoryManagementApiService
     {
         return _mappingHelper.MapInventoryItemsToAnonymous(items);
     }
+
+    public Task<InventoryBatchDto?> ReceiveBatchAsync(int id, ReceiveInventoryBatchRequest request) =>
+        _httpClient.PostAsync<ReceiveInventoryBatchRequest, InventoryBatchDto>($"{BaseEndpoint}/{id}/receive", request);
+
+    public async Task<List<InventoryBatchDto>> GetBatchesAsync(int id) =>
+        await _httpClient.GetAsync<List<InventoryBatchDto>>($"{BaseEndpoint}/{id}/batches") ?? new List<InventoryBatchDto>();
 }

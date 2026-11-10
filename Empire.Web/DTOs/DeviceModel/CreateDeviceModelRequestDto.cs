@@ -3,6 +3,8 @@
     public class CreateDeviceModelRequestDto
     {
         public string Name { get; set; } = string.Empty;
+        public string? ModelNumber { get; set; }
+        public int? Year { get; set; }
         public string? Description { get; set; }
         public int BrandId { get; set; }
         public int DeviceCategoryId { get; set; }

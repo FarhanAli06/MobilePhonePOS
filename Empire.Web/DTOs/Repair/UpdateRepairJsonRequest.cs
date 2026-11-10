@@ -17,6 +17,7 @@ public class UpdateRepairJsonRequest
     public string? Status { get; set; }
     public string PaymentStatus { get; set; } = "Unpaid";
     public List<RepairPartRequest> Parts { get; set; } = new();
+    public bool NoInventoryPartUsed { get; set; }
     public List<PaymentLineRequest> Payments { get; set; } = new();
 }
 

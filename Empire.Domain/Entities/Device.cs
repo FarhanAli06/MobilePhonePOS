@@ -23,6 +23,12 @@ public class Device : BaseEntity
     
     [MaxLength(20)]
     public string? GB { get; set; }
+
+    [MaxLength(50)]
+    public string Color { get; set; } = string.Empty;
+
+    [MaxLength(100)]
+    public string Carrier { get; set; } = string.Empty;
     
     public int? BatteryHealthPercentage { get; set; }
     
@@ -45,6 +51,9 @@ public class Device : BaseEntity
     public bool IsAvailableForSale { get; set; } = true;
     
     public bool IsSold { get; set; } = false;
+
+    [MaxLength(40)]
+    public string LifecycleStatus { get; set; } = "Available";
     
     public DateTime? SoldDate { get; set; }
        public int? SoldToCustomerId { get; set; }
