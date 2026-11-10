@@ -197,11 +197,25 @@ public class InventoryApiService : IInventoryApiService
         }
     }
 
-    public async Task<IEnumerable<InventoryItemDto>> GetInventoryAsync(int shopId)
+    public async Task<IEnumerable<InventoryItemDto>> GetInventoryAsync(
+        int shopId,
+        int? brandId = null,
+        int? deviceCategoryId = null,
+        int? deviceModelId = null,
+        int? inventoryCategoryId = null,
+        string? search = null,
+        bool? lowStockOnly = null)
     {
         try
         {
-            var result = await _httpClient.GetAsync<List<InventoryItemDto>>($"{BaseEndpoint}?shopId={shopId}");
+            var query = new List<string> { $"shopId={shopId}" };
+            if (brandId.HasValue) query.Add($"brandId={brandId.Value}");
+            if (deviceCategoryId.HasValue) query.Add($"deviceCategoryId={deviceCategoryId.Value}");
+            if (deviceModelId.HasValue) query.Add($"deviceModelId={deviceModelId.Value}");
+            if (inventoryCategoryId.HasValue) query.Add($"inventoryCategoryId={inventoryCategoryId.Value}");
+            if (!string.IsNullOrWhiteSpace(search)) query.Add($"search={Uri.EscapeDataString(search)}");
+            if (lowStockOnly.HasValue) query.Add($"lowStockOnly={lowStockOnly.Value.ToString().ToLowerInvariant()}");
+            var result = await _httpClient.GetAsync<List<InventoryItemDto>>($"{BaseEndpoint}?{string.Join("&", query)}");
             return result ?? Enumerable.Empty<InventoryItemDto>();
         }
         catch (Exception ex)

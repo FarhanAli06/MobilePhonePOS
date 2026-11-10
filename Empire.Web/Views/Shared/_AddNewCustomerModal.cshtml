@@ -9,24 +9,24 @@
             <form id="createCustomerForm">
                 <div class="modal-body">
                     <div class="form-group">
-                        <label for="customerFirstName">First Name <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="customerFirstName" name="FirstName" required>
+                        <label for="newCustomerFirstName">First Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="newCustomerFirstName" name="FirstName" required>
                     </div>
                     <div class="form-group">
-                        <label for="customerLastName">Last Name</label>
-                        <input type="text" class="form-control" id="customerLastName" name="LastName">
+                        <label for="newCustomerLastName">Last Name</label>
+                        <input type="text" class="form-control" id="newCustomerLastName" name="LastName">
                     </div>
                     <div class="form-group">
-                        <label for="customerPhone">Phone</label>
-                        <input type="tel" class="form-control" id="customerPhone" name="Phone">
+                        <label for="newCustomerPhone">Phone</label>
+                        <input type="tel" class="form-control" id="newCustomerPhone" name="Phone">
                     </div>
                     <div class="form-group">
-                        <label for="customerEmail">Email</label>
-                        <input type="email" class="form-control" id="customerEmail" name="Email">
+                        <label for="newCustomerEmail">Email</label>
+                        <input type="email" class="form-control" id="newCustomerEmail" name="Email">
                     </div>
                     <div class="form-group">
-                        <label for="customerAddress">Address</label>
-                        <input type="text" class="form-control" id="customerAddress" name="Address">
+                        <label for="newCustomerAddress">Address</label>
+                        <input type="text" class="form-control" id="newCustomerAddress" name="Address">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -43,7 +43,7 @@
     
     $(document).ready(function () {
         // Initialize international phone input
-        const phoneInputField = document.querySelector('#customerPhone');
+        const phoneInputField = document.querySelector('#newCustomerPhone');
         phoneInput = window.intlTelInput(phoneInputField, {
             initialCountry: 'us',
             preferredCountries: ['us', 'ca', 'gb', 'au'],
@@ -111,8 +111,13 @@
                         $('#createCustomerForm')[0].reset();
                         
                         // Refresh customer dropdown if it exists on the page
-                        var custText = response.data.firstName + ' ' + response.data.lastName + (response.data.phone ? ' \u2014 ' + response.data.phone : '');
-                        var custId   = response.data.id;
+                        var customer = response.customer || response.data;
+                        if (!customer) {
+                            alert('Customer was saved, but the saved record was not returned. Refresh the customer list.');
+                            return;
+                        }
+                        var custText = [customer.firstName, customer.lastName].filter(Boolean).join(' ') + (customer.phone ? ' \u2014 ' + customer.phone : '');
+                        var custId   = customer.id;
 
                         // POS page: #customerSelect
                         if ($('#customerSelect').length) {
@@ -124,12 +129,14 @@
                         // Repair Create page: #customerName (Select2 with ajax)
                         if ($('#customerName').length) {
                             var repairOption = new Option(custText, custId, true, true);
-                            repairOption.dataset = { customer: JSON.stringify(response.data) };
-                            $('#customerName').append(repairOption).trigger('change');
+                            repairOption.dataset.customer = JSON.stringify(customer);
+                            $('#customerName').append(repairOption).val(String(custId)).trigger('change');
+                            $('#customerName').trigger({ type: 'select2:select', params: { data: { id: custId, text: custText, customer: customer } } });
                             // Auto-fill phone/email/address fields
-                            if (response.data.phone)    { $('#customerPhone').val(response.data.phone); }
-                            if (response.data.email)    { $('#customerEmail').val(response.data.email); }
-                            if (response.data.address)  { $('#customerAddress').val(response.data.address); }
+                            $('#customerPhone').val(customer.phone || '');
+                            $('#customerEmail').val(customer.email || '');
+                            $('#customerAddress').val(customer.address || '');
+                            if (typeof updateIntakeSummary === 'function') { updateIntakeSummary(); }
                         }
                     } else {
                         alert('Error: ' + (response.message || 'Failed to add customer'));

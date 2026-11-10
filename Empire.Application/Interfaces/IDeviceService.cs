@@ -20,5 +20,6 @@ public interface IDeviceService
     Task<DeviceSelectionDto> UpdateDeviceAsync(int id, UpdateDeviceRequest request, int userId);
     Task<bool> DeleteDeviceAsync(int id, int userId);
     Task<bool> MarkDeviceAsSoldAsync(int deviceId, int customerId, decimal? salePrice, int userId);
+    Task<IEnumerable<DeviceHistoryDto>> GetDeviceHistoryAsync(int deviceId);
 }
 

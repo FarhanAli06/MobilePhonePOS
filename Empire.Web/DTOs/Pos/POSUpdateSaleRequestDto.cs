@@ -12,5 +12,6 @@ namespace Empire.Web.DTOs.Pos
         public decimal? DiscountAmount { get; set; }
         public decimal? TotalAmount { get; set; }
         public string PaymentStatus { get; set; } = string.Empty;
+        public string? ChangeReason { get; set; }
     }
 }

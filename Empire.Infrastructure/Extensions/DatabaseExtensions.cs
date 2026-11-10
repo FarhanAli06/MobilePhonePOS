@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Empire.Infrastructure.Data;
 
@@ -24,7 +25,8 @@ namespace Empire.Infrastructure.Extensions
                     configuration.GetConnectionString("DefaultConnection") ??
                     "Server=(localdb)\\MSSQLLocalDB;Database=EmpireSolutionDb;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=True",
                     b => b.MigrationsAssembly(migrationsAssembly).EnableRetryOnFailure()
-                ));
+                ).ConfigureWarnings(warnings =>
+                    warnings.Ignore(RelationalEventId.PendingModelChangesWarning)));
 
             // Register database initializer
             services.AddScoped<IDatabaseInitializer, DatabaseInitializer>();

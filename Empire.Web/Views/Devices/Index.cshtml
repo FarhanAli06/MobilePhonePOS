@@ -4,6 +4,43 @@
 }
 
 <style>
+    .device-view-toggle { display:inline-flex; padding:4px; gap:4px; border:1px solid #dfe5ee; border-radius:12px; background:#f7f9fc; }
+    .device-view-toggle .btn { border:0; border-radius:8px; color:#667085; min-width:40px; }
+    .device-view-toggle .btn.active { color:#fff; background:#2563eb; box-shadow:0 4px 10px rgba(37,99,235,.22); }
+    #devicesGridView { display:none; grid-template-columns:repeat(auto-fill,minmax(285px,1fr)); gap:16px; }
+    #devicesGridView .grid-column-all { grid-column:1/-1; }
+    .device-grid-card { border:1px solid #e2e8f0; border-radius:16px; background:#fff; padding:17px; box-shadow:0 4px 15px rgba(15,23,42,.045); }
+    .device-grid-card .device-grid-icon { width:44px; height:44px; display:grid; place-items:center; border-radius:13px; color:#2563eb; background:#eff6ff; font-size:20px; }
+    .device-grid-card .device-grid-specs { display:grid; grid-template-columns:1fr 1fr; gap:9px; margin:14px 0; }
+    .device-grid-card .device-grid-specs > div { border-radius:10px; background:#f8fafc; padding:8px 10px; }
+    .device-grid-card .device-grid-specs small { display:block; color:#64748b; }
+    .device-grid-actions { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
+    .device-grid-actions .btn { white-space:nowrap; }
+    .device-history-entry { border-left:3px solid #2563eb; padding:4px 0 4px 14px; margin-bottom:16px; }
+    .device-history-change { display:grid; grid-template-columns:minmax(90px,.8fr) 1fr 22px 1fr; gap:8px; align-items:center; margin-top:8px; padding:9px 10px; border-radius:10px; background:#f8fafc; font-size:.9rem; }
+    .device-history-change .old-value { color:#b42318; text-decoration:line-through; }
+    .device-history-change .new-value { color:#067647; font-weight:700; }
+    .create-device-section { border:1px solid #e2e8f0; border-radius:14px; background:#f8fafc; padding:18px; margin-bottom:16px; }
+    .create-device-section-title { display:flex; align-items:center; gap:10px; margin-bottom:14px; color:#1e293b; font-weight:800; }
+    .create-device-section-title span { width:28px; height:28px; display:grid; place-items:center; color:#2563eb; background:#dbeafe; border-radius:8px; }
+    #createDeviceModal .form-label { min-height:20px; margin-bottom:6px; color:#334155; font-size:.84rem; font-weight:700; }
+    #createDeviceModal .form-control, #createDeviceModal .form-select, #createDeviceModal .select2-selection { min-height:44px; border-color:#d7dee8; border-radius:10px; }
+    #createDeviceModal .select2-selection__rendered { line-height:42px; }
+    #createDeviceModal .select2-selection__arrow { height:42px; }
+    #createDeviceLookupModal { z-index:1070; }
+    .device-lookup-backdrop { z-index:1060 !important; }
+    #createDeviceLookupModal .modal-content { border:0; border-radius:16px; overflow:hidden; box-shadow:0 24px 60px rgba(15,23,42,.3); }
+    #createDeviceLookupModal .modal-header { padding:17px 20px; background:linear-gradient(135deg,#172033,#2563eb); color:#fff; }
+    #createDeviceLookupModal .form-control { min-height:44px; border-radius:10px; }
+    .device-label-preview-wrap { padding:18px; border-radius:14px; background:#e9edf3; overflow:auto; }
+    .device-label-preview { position:relative; width:min(100%,675px); aspect-ratio:2.25/1.25; margin:auto; overflow:hidden; background:#fff; color:#000; font-family:Arial,sans-serif; box-shadow:0 8px 24px rgba(15,23,42,.18); }
+    .device-label-preview-logo { position:absolute; top:.8%; left:40.4%; width:19.1%; height:16%; object-fit:contain; }
+    .device-label-preview-model { position:absolute; left:2.7%; top:16%; width:94.6%; height:19.2%; display:flex; align-items:center; justify-content:center; overflow:hidden; white-space:nowrap; font-weight:700; line-height:1; }
+    .device-label-preview-price { position:absolute; left:2.7%; top:36%; width:42.7%; height:20.8%; display:flex; align-items:center; overflow:hidden; white-space:nowrap; font-weight:700; line-height:1; }
+    .device-label-preview-details { position:absolute; left:46.7%; top:34.4%; width:50.7%; height:34.4%; display:flex; align-items:center; overflow:hidden; white-space:pre-line; font-size:8pt; font-weight:700; line-height:1.12; }
+    .device-label-preview-barcode { position:absolute; left:5.8%; top:72.8%; width:88.4%; height:17.6%; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; overflow:hidden; font-size:6pt; }
+    .device-label-preview-bars { width:88%; flex:1; min-height:20px; background:repeating-linear-gradient(90deg,#000 0,#000 2px,#fff 2px,#fff 4px,#000 4px,#000 5px,#fff 5px,#fff 8px); }
+    @@media(max-width:767px) { .device-history-change { grid-template-columns:1fr; } }
     @@media print {
         .no-print {
             display: none !important;
@@ -25,8 +62,12 @@
 </style>
 
 <div class="d-flex justify-content-between align-items-center mb-4 no-print">
-    <h2><i class="fas fa-mobile-alt me-2"></i>Device Management</h2>
-    <div>
+    <h2><i class="fas fa-mobile-alt me-2"></i>Devices for Sale</h2>
+    <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+        <div class="device-view-toggle" role="group" aria-label="Device view">
+            <button type="button" class="btn active" id="deviceTableViewBtn" title="List view" aria-pressed="true"><i class="fas fa-list"></i></button>
+            <button type="button" class="btn" id="deviceGridViewBtn" title="Grid view" aria-pressed="false"><i class="fas fa-th-large"></i></button>
+        </div>
         <button type="button" class="btn btn-primary" id="addDeviceBtn">
             <i class="fas fa-plus me-2"></i>Add New Device
         </button>
@@ -42,7 +83,7 @@
 <!-- Filter Section -->
 <div class="card mb-4 no-print">
     <div class="card-body">
-        <h5 class="card-title">Filter Devices</h5>
+        <h5 class="card-title">Find a Device</h5>
         <form id="deviceFilterForm" class="row g-3">
             <div class="col-md-2">
                 <label class="form-label">Device Type</label>
@@ -56,7 +97,13 @@
             </div>
             <div class="col-md-2">
                 <label class="form-label">Brand</label>
-                <input type="text" class="form-control" id="filterBrand" placeholder="Enter brand">
+                <select class="form-select no-select2" id="filterBrand">
+                    <option value="">All Brands</option>
+                    @foreach (var brand in Model.Select(d => d.Brand).Where(b => !string.IsNullOrWhiteSpace(b)).Distinct(StringComparer.OrdinalIgnoreCase).OrderBy(b => b))
+                    {
+                        <option value="@brand">@brand</option>
+                    }
+                </select>
             </div>
             <div class="col-md-2">
                 <label class="form-label">Model</label>
@@ -97,7 +144,7 @@
             </div>
             <div class="col-md-2">
                 <label class="form-label">Search</label>
-                <input type="text" class="form-control" id="filterSearch" placeholder="Search IMEI, notes, etc.">
+                <input type="text" class="form-control" id="filterSearch" placeholder="Brand, model, IMEI, color or carrier">
             </div>
             <div class="col-md-2">
                 <label class="form-label">&nbsp;</label>
@@ -115,7 +162,7 @@
 </div>
 
 <!-- Devices Table -->
-<div class="card">
+<div class="card" id="devicesTableView">
     <div class="card-body">
         <table id="devicesTable" class="table table-striped table-hover">
             <thead>
@@ -222,12 +269,18 @@
 	                                <button type="button" class="btn btn-sm btn-outline-warning" onclick="editDevice(@device.Id)" title="Edit">
 	                                    <i class="fas fa-edit"></i>
 	                                </button>
+                                    <button type="button" class="btn btn-sm btn-outline-info" onclick="showDeviceHistory(@device.Id, '@($"{device.Brand} {device.Model}".Replace("'", "\\'"))')" title="History">
+                                        <i class="fas fa-history"></i>
+                                    </button>
                                 <button type="button" class="btn btn-sm btn-outline-secondary print-device-btn"
                                         data-device-id="@device.Id"
                                         data-brand="@device.Brand"
                                         data-model="@device.Model"
+                                        data-storage="@device.GB"
                                         data-imei="@device.IMEISerialNumber"
                                         data-network-status="@device.NetworkStatus"
+                                        data-carrier="@device.Carrier"
+                                        data-buying-price="@device.BuyingPrice?.ToString("F2")"
                                         data-battery="@device.BatteryHealthPercentage"
                                         data-scratches="@device.ScratchesCondition"
                                         data-selling-price="@device.SellingPrice?.ToString("F2")"
@@ -261,89 +314,54 @@
     </div>
 </div>
 
-<!-- Hidden Print Template for Dymo LabelWriter 550 -->
+<div id="devicesGridView" aria-live="polite"></div>
+
+<!-- Hidden Print Template for DYMO 2.25 x 1.25 inch inventory label -->
 <div id="printTemplate" style="display: none;">
     <div class="dymo-label">
-        <!-- Header Section -->
         <div class="label-header">
-            <div class="contact-info">
-                <span class="company-name home" style="font-weight:bold">EMPIRE PHONE REPAIR - </span>
-                <span class="phone">📞 <span id="printShopPhone" style="font-weight:bold"></span></span>
-            </div>
+            <span class="brand-lockup">
+                <img class="label-logo" src="/images/empire-logo.png" alt="Empire Solutions" />
+                <span class="company-name">EMPIRE SOLUTIONS</span>
+            </span>
+            <span class="phone" id="printShopPhone"></span>
         </div>
-
-        <!-- Device Information -->
-        <div class="info-section">
-            <div class="info-row">
-                <span class="label" style="font-weight:bold">DEVICE:</span>
-                <span class="value" id="printDeviceInfo" style="font-weight:bold"></span>
-            </div>
-            <div class="info-row">
-                <span class="label" style="font-weight:bold">IMEI:</span>
-                <span class="value" id="printIMEI" style="font-weight:bold"></span>
-            </div>
-            <div class="info-row">
-                <span class="label" style="font-weight:bold">NETWORK:</span>
-                <span class="value" id="printNetworkStatus" style="font-weight:bold"></span>
-            </div>
+        <div class="device-line" id="printDeviceInfo"></div>
+        <div class="imei-line">
+            <span>IMEI</span>
+            <strong id="printIMEI"></strong>
         </div>
-
-        <!-- Condition Section -->
-        <div class="condition-section">
-            <div class="info-row">
-                <span class="label" style="font-weight:bold">CONDITION:</span>
-                <span class="value" id="printCondition" style="font-weight:bold"></span>
-            </div>
+        <div class="label-bottom">
+            <span id="printNetworkStatus"></span>
+            <strong id="printSellPrice"></strong>
         </div>
-
-        <!-- Pricing & Date Section -->
-        <div class="pricing-section">
-            <div class="info-row">
-                <span class="label" style="font-weight:bold">PRICE:</span>
-                <span class="value" id="printSellPrice" style="font-weight:bold"></span>
-            </div>
-            <div class="info-row">
-                <span class="label" style="font-weight:bold">CREATED:</span>
-                <span class="value" id="printCreatedDate" style="font-weight:bold"></span>
-            </div>
-        </div>
-
-        <!-- Notes Section -->
-        <div class="notes-section">
-            <div class="info-row">
-                <span class="label" style="font-weight:bold">NOTES:</span>
-                <span class="value" id="printNotes" style="font-weight:bold"></span>
-            </div>
-        </div>
-
-        <!-- Footer -->
-        <div class="label-footer">
-            <div class="dates">
-                <!-- Empty footer for spacing -->
-            </div>
-        </div>
+        <div class="condition-line" id="printCondition"></div>
+        <span id="printCreatedDate" hidden></span>
+        <span id="printNotes" hidden></span>
     </div>
 </div>
 
 <!-- Create Device Modal -->
 <div class="modal fade" id="createDeviceModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Add New Device</h5>
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:18px;overflow:hidden">
+            <div class="modal-header text-white" style="background:linear-gradient(135deg,#111827,#2563eb);padding:18px 24px">
+                <div><h5 class="modal-title mb-1"><i class="fas fa-mobile-alt me-2"></i>Add New Device</h5><small class="opacity-75">Device identity, specifications and pricing</small></div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <form id="createDeviceForm">
                     <!-- ── Generic Brand → Category → Model selector ── -->
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Brand / Category / Model *</label>
+                    <div class="create-device-section">
+                        <div class="create-device-section-title"><span>1</span><div>Choose the device<small class="d-block text-muted fw-normal">Brand, family and exact model</small></div></div>
                         <div id="createDeviceSelectorContainer"></div>
                         <input type="hidden" id="brandId"         name="BrandId" />
                         <input type="hidden" id="deviceCategoryId" name="DeviceCategoryId" />
                         <input type="hidden" id="deviceModelId"    name="DeviceModelId" />
                     </div>
-                    <div class="row">
+                    <div class="create-device-section">
+                        <div class="create-device-section-title"><span>2</span><div>Device details<small class="d-block text-muted fw-normal">Identity, condition, pricing and ownership</small></div></div>
+                        <div class="row g-3 mx-0">
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label">IMEI/Serial Number</label>
@@ -352,10 +370,12 @@
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label">GB</label>
-                                <input type="text" class="form-control" id="gb" placeholder="e.g., 64GB, 128GB, 256GB">
+                                <label class="form-label fw-semibold">Storage</label>
+                                <select class="form-select" id="gb"><option value="">Select or type storage</option><option value="16">16 GB</option><option value="32">32 GB</option><option value="64">64 GB</option><option value="128">128 GB</option><option value="256">256 GB</option><option value="512">512 GB</option><option value="1 TB">1 TB</option><option value="2 TB">2 TB</option></select>
                             </div>
                         </div>
+                        <div class="col-md-6"><div class="mb-3"><label class="form-label fw-semibold">Color</label><input type="text" class="form-control" id="color" placeholder="Black, Blue, Natural Titanium"></div></div>
+                        <div class="col-md-6"><div class="mb-3"><label class="form-label fw-semibold">Carrier</label><select class="form-select" id="carrier"><option value="">Select or type carrier</option><option>Unlocked</option><option>AT&amp;T</option><option>T-Mobile</option><option>Verizon</option><option>Boost Mobile</option><option>Metro by T-Mobile</option><option>Cricket</option><option>US Cellular</option></select></div></div>
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label">Battery Health (%)</label>
@@ -402,10 +422,21 @@
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
-                                <label class="form-label">Company</label>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <label class="form-label" for="companyId">Owning company (optional)</label>
+                                    <button type="button" class="btn btn-link btn-sm p-0" onclick="toggleNewDeviceCompany(true)">+ Add Company</button>
+                                </div>
                                 <select class="form-select" id="companyId">
                                     <option value="">Select Company (Optional)</option>
                                 </select>
+                                <div id="deviceCompanyNotice" class="form-text">Leave blank if this device belongs to your current store.</div>
+                                <div id="newDeviceCompany" class="mt-2 d-none">
+                                    <input id="newDeviceCompanyName" class="form-control form-control-sm" maxlength="100" placeholder="Company name" aria-label="New company name">
+                                    <div class="d-flex gap-2 mt-2">
+                                        <button type="button" class="btn btn-primary btn-sm" id="saveDeviceCompanyButton" onclick="createDeviceCompany()">Save Company</button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="toggleNewDeviceCompany(false)">Cancel</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="col-12">
@@ -422,6 +453,7 @@
                                 </label>
                             </div>
                         </div>
+                        </div>
                     </div>
                 </form>
             </div>
@@ -430,6 +462,88 @@
                 <button type="button" class="btn btn-primary" onclick="createDevice()">
                     <i class="fas fa-plus me-2"></i>Add Device
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Saved Brand / Device Type / Model popup used inside Add New Device -->
+<div class="modal fade" id="createDeviceLookupModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <h5 class="modal-title mb-1" id="deviceLookupModalTitle">Add New Brand</h5>
+                    <small class="opacity-75">Saved for future devices</small>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="deviceLookupForm">
+                    <input type="hidden" id="deviceLookupKind" />
+                    <div class="alert alert-light border small" id="deviceLookupContext"></div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" id="deviceLookupNameLabel" for="deviceLookupName">Brand name</label>
+                        <input type="text" class="form-control" id="deviceLookupName" maxlength="100" autocomplete="off" required />
+                        <div class="invalid-feedback">Enter a name.</div>
+                    </div>
+                    <div class="row g-3 d-none" id="deviceLookupModelFields">
+                        <div class="col-sm-7">
+                            <label class="form-label fw-semibold" for="deviceLookupModelNumber">Model number <span class="text-muted fw-normal">(optional)</span></label>
+                            <input type="text" class="form-control" id="deviceLookupModelNumber" maxlength="100" placeholder="Example: A2849" />
+                        </div>
+                        <div class="col-sm-5">
+                            <label class="form-label fw-semibold" for="deviceLookupYear">Release year <span class="text-muted fw-normal">(optional)</span></label>
+                            <input type="number" class="form-control" id="deviceLookupYear" min="1980" max="2100" placeholder="2026" />
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <label class="form-label fw-semibold" for="deviceLookupDescription">Description <span class="text-muted fw-normal">(optional)</span></label>
+                        <textarea class="form-control" id="deviceLookupDescription" rows="2" maxlength="250"></textarea>
+                    </div>
+                    <div class="alert alert-danger d-none mt-3 mb-0" id="deviceLookupError"></div>
+                </form>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveDeviceLookupButton" onclick="saveDeviceLookup()">
+                    <i class="fas fa-save me-2"></i>Save
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Device History Modal -->
+<div class="modal fade" id="deviceHistoryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:16px;overflow:hidden">
+            <div class="modal-header text-white" style="background:linear-gradient(135deg,#111827,#2563eb)">
+                <div><h5 class="modal-title mb-1"><i class="fas fa-history me-2"></i>Device History</h5><small class="opacity-75" id="deviceHistorySubtitle">Complete device activity</small></div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="deviceHistoryModalBody"><div class="text-center py-4 text-muted">Select a device to view its history.</div></div>
+        </div>
+    </div>
+</div>
+
+<!-- Read-only Device Details Modal -->
+<div class="modal fade" id="deviceDetailsModal" tabindex="-1" aria-labelledby="deviceDetailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:16px;overflow:hidden">
+            <div class="modal-header text-white" style="background:linear-gradient(135deg,#111827,#2563eb)">
+                <div>
+                    <h5 class="modal-title mb-1" id="deviceDetailsModalLabel"><i class="fas fa-mobile-alt me-2"></i>Device Details</h5>
+                    <small class="opacity-75" id="deviceDetailsSubtitle">Complete device information</small>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="deviceDetailsModalBody">
+                <div class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading device…</div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="deviceDetailsEditButton"><i class="fas fa-edit me-1"></i>Edit</button>
             </div>
         </div>
     </div>
@@ -473,6 +587,18 @@
                         <input type="number" class="form-control" id="soldSalePrice" step="0.01" min="0" placeholder="Enter sale price">
                         <small class="text-muted">Leave blank to use the device's selling price</small>
                     </div>
+                    <div class="mb-3">
+                        <label class="form-label">Payment Method *</label>
+                        <select class="form-select" id="soldPaymentMethod" required>
+                            <option value="Cash">Cash</option>
+                            <option value="Card">Card</option>
+                            <option value="Zelle">Zelle</option>
+                            <option value="Venmo">Venmo</option>
+                            <option value="Check">Check</option>
+                            <option value="Other">Other</option>
+                        </select>
+                        <small class="text-muted">This sale will appear in Sales and reports.</small>
+                    </div>
                 </form>
             </div>
             <div class="modal-footer">
@@ -481,6 +607,28 @@
                     <i class="fas fa-dollar-sign me-2"></i>Mark as Sold
                 </button>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Exact-proportion device sticker preview -->
+<div class="modal fade" id="deviceLabelPreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius:16px;overflow:hidden">
+            <div class="modal-header text-white" style="background:linear-gradient(135deg,#111827,#2563eb)">
+                <div><h5 class="modal-title mb-1"><i class="fas fa-tag me-2"></i>Device Sticker Preview</h5><small class="opacity-75">2.25 × 1.25 inches · DYMO 30334</small></div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="device-label-preview-wrap"><div class="device-label-preview" aria-label="Device label preview">
+                    <img class="device-label-preview-logo" src="/images/empire-original-logo.png" alt="Empire logo">
+                    <div class="device-label-preview-model" id="deviceLabelPreviewModel"></div><div class="device-label-preview-price" id="deviceLabelPreviewPrice"></div>
+                    <div class="device-label-preview-details" id="deviceLabelPreviewDetails"></div>
+                    <div class="device-label-preview-barcode"><div class="device-label-preview-bars"></div><span id="deviceLabelPreviewBarcode"></span></div>
+                </div></div>
+                <div class="d-flex align-items-center justify-content-between gap-3 mt-3 flex-wrap"><div><strong id="deviceLabelPreviewFont"></strong><div class="small text-muted">The printer receives this same font size and orientation.</div></div><div class="small text-warning d-none" id="deviceLabelPreviewWarning"><i class="fas fa-exclamation-triangle me-1"></i>The title is unusually long and was reduced to fit.</div></div>
+            </div>
+            <div class="modal-footer bg-light"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button><button type="button" class="btn btn-primary" id="confirmDeviceLabelPrint"><i class="fas fa-print me-1"></i>Print Sticker</button></div>
         </div>
     </div>
 </div>
@@ -503,59 +651,58 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
     <style>
-        /* Dymo LabelWriter 550 Specific Styles */
-        /* Label dimensions: 2.4" x 4" (61mm x 102mm) */
+        /* DYMO compact inventory label: 2.25" x 1.25" (57.15mm x 31.75mm) */
 
         #printTemplate {
             font-weight: bold;
         }
 
         .dymo-label {
-            width: 2.4in;
-            height: 4in;
-            padding-left: 4in;
+            width: 2.25in;
+            height: 1.25in;
+            padding: 0.06in 0.08in;
             font-family: 'Arial', sans-serif;
-            font-size: 18pt;
-            line-height: 1.2;
+            font-size: 7pt;
+            line-height: 1.05;
             background: white;
             border: 1px solid #ccc;
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
+            color: #000;
         }
 
         /* Header Section */
         .label-header {
-            border-bottom: 2px solid #000;
-            padding-bottom: 0.08in;
-            margin-bottom: 0.1in;
+            border-bottom: 1px solid #000;
+            padding-bottom: 0.025in;
+            margin-bottom: 0.035in;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 0.04in;
         }
+
+        .brand-lockup { display: flex; align-items: center; gap: 0.035in; min-width: 0; }
+        .label-logo { width: 0.26in; height: 0.26in; object-fit: contain; flex: 0 0 auto; }
 
         .company-name {
             font-weight: 900;
-            font-size: 14pt;
-            text-align: center;
-            margin-bottom: 0.04in;
+            font-size: 8pt;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #2c3e50;
+            white-space: nowrap;
         }
 
-        .contact-info {
-            display: flex;
-            justify-content: space-between;
-            font-size: 9pt;
-        }
-
-            .contact-info .phone {
-                font-weight: 700;
-                color: #2c3e50;
-            }
-
-            .contact-info .repair-no {
-                font-weight: 700;
-                color: #e74c3c;
-            }
+        .phone { font-size: 6pt; white-space: nowrap; }
+        .device-line { font-weight: 900; font-size: 9pt; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 0.035in; }
+        .imei-line { display: flex; align-items: baseline; gap: 0.05in; white-space: nowrap; margin-bottom: 0.035in; }
+        .imei-line span { font-size: 6pt; font-weight: 700; }
+        .imei-line strong { font-size: 9pt; letter-spacing: 0.2pt; overflow: hidden; }
+        .label-bottom { display: flex; justify-content: space-between; align-items: baseline; border-top: 1px solid #000; padding-top: 0.03in; gap: 0.05in; }
+        .label-bottom span { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .label-bottom strong { font-size: 9pt; white-space: nowrap; }
+        .condition-line { font-size: 6pt; margin-top: 0.025in; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         /* Information Sections */
         .info-section, .condition-section, .pricing-section, .status-section {
@@ -626,6 +773,18 @@
 
         /* Print Specific Styles */
         @@media print {
+            @@page {
+                size: 2.25in 1.25in;
+                margin: 0;
+            }
+
+            html, body {
+                width: 2.25in !important;
+                height: 1.25in !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
             body {
                 background: white !important;
             }
@@ -641,16 +800,14 @@
 
             .dymo-label {
                 position: absolute;
-                padding-left: 30pt !important;
+                left: 0;
                 top: 0;
-                width: 2.4in;
-                height: 4in;
+                width: 2.25in;
+                height: 1.25in;
                 margin: 0;
-                padding: 0.12in;
+                padding: 0.06in 0.08in;
                 box-shadow: none;
                 border: none;
-                font-size: 18pt;
-                font-weight: bold;
             }
             /* Hide unnecessary elements in print */
             .no-print {
@@ -672,6 +829,7 @@
         var shopPhone = '@ViewBag.ShopPhone';
 
         let devicesTable;
+        const initialDevices = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model));
 
         $(document).ready(function() {
             // Initialize Select2 for company dropdown
@@ -730,6 +888,11 @@
 
             // Initialize device print buttons
             initializeDevicePrintButtons();
+            updateDevicesGrid(initialDevices);
+
+            $('#deviceTableViewBtn').on('click', function() { setDeviceView('table'); });
+            $('#deviceGridViewBtn').on('click', function() { setDeviceView('grid'); });
+            setDeviceView(localStorage.getItem('empire-device-view') === 'grid' ? 'grid' : 'table');
             
             // Set default filter to exclude sold devices
             $('#filterStatus').val('available');
@@ -741,6 +904,9 @@
             $('#soldDevicesBtn').on('click', showSoldDevices);
             $('#applyFiltersBtn').on('click', applyFilters);
             $('#clearFiltersBtn').on('click', clearFilters);
+            var deviceSearchTimer;
+            $('#filterSearch,#filterModel').on('input', function() { clearTimeout(deviceSearchTimer); deviceSearchTimer = setTimeout(applyFilters, 250); });
+            $('#filterBrand').on('change', applyFilters);
         });
 
         function printDevices() {
@@ -750,19 +916,125 @@
         function showCreateDeviceModal() {
             // Reset form
             $('#createDeviceForm')[0].reset();
+            toggleNewDeviceCompany(false);
             // Build the generic device selector inside the modal
             EmpireDeviceSelector.create('createDeviceSelectorContainer', {
                 selectorId:     'createDevice',
                 showParts:      false,
+                allowCreate:    true,
+                freshData:      true,
+                groupModels:    false,
                 hiddenBrand:    'brandId',
                 hiddenCategory: 'deviceCategoryId',
-                hiddenModel:    'deviceModelId'
+                hiddenModel:    'deviceModelId',
+                onCreateRequest: openDeviceLookupCreator
             });
             // Load companies
             loadDeviceModalCompanies();
+            $('#gb, #carrier').select2({ theme:'bootstrap-5', dropdownParent:$('#createDeviceModal'), width:'100%', tags:true });
             // Show modal
             $('#createDeviceModal').modal('show');
         }
+
+        function openDeviceLookupCreator(detail) {
+            const kind = detail.kind;
+            if (kind === 'category' && !detail.brandId) {
+                alert('Select a brand before adding a device type.');
+                return;
+            }
+            if (kind === 'model' && (!detail.brandId || !detail.categoryId)) {
+                alert('Select a brand and device type before adding a model.');
+                return;
+            }
+
+            const settings = {
+                brand: { title: 'Add New Brand', label: 'Brand name', placeholder: 'Example: OnePlus' },
+                category: { title: 'Add New Device Type', label: 'Device type name', placeholder: 'Example: Smartphone or Game Console' },
+                model: { title: 'Add New Model', label: 'Model name', placeholder: 'Example: OnePlus 15' }
+            }[kind];
+
+            $('#deviceLookupForm')[0].reset();
+            $('#deviceLookupKind').val(kind);
+            $('#deviceLookupModalTitle').text(settings.title);
+            $('#deviceLookupNameLabel').text(settings.label);
+            $('#deviceLookupName').attr('placeholder', settings.placeholder).removeClass('is-invalid');
+            $('#deviceLookupModelFields').toggleClass('d-none', kind !== 'model');
+            $('#deviceLookupError').addClass('d-none').text('');
+
+            let context = 'This will be saved and available the next time you add a device.';
+            if (kind === 'category') context = 'Brand: ' + detail.brandName;
+            if (kind === 'model') context = 'Brand: ' + detail.brandName + '  •  Device type: ' + detail.categoryName;
+            $('#deviceLookupContext').text(context);
+
+            $('#createDeviceLookupModal').modal('show');
+            setTimeout(function() {
+                $('.modal-backdrop').last().addClass('device-lookup-backdrop');
+                $('#deviceLookupName').trigger('focus');
+            }, 80);
+        }
+
+        function saveDeviceLookup() {
+            const kind = $('#deviceLookupKind').val();
+            const name = $('#deviceLookupName').val().trim();
+            const selectorState = EmpireDeviceSelector.getState('createDevice');
+            const errorBox = $('#deviceLookupError').addClass('d-none').text('');
+            if (!name) {
+                $('#deviceLookupName').addClass('is-invalid').trigger('focus');
+                return;
+            }
+            $('#deviceLookupName').removeClass('is-invalid');
+
+            let url;
+            let payload = {
+                Name: name,
+                Description: $('#deviceLookupDescription').val().trim(),
+                DisplayOrder: 1,
+                IsActive: true
+            };
+
+            if (kind === 'brand') {
+                url = '@Url.Action("CreateBrand", "LookupManagement")';
+            } else if (kind === 'category') {
+                if (!selectorState.brandId) { errorBox.removeClass('d-none').text('Select a brand first.'); return; }
+                url = '@Url.Action("CreateDeviceCategory", "LookupManagement")';
+            } else if (kind === 'model') {
+                if (!selectorState.brandId || !selectorState.categoryId) { errorBox.removeClass('d-none').text('Select a brand and device type first.'); return; }
+                url = '@Url.Action("CreateDeviceModel", "LookupManagement")';
+                payload.BrandId = parseInt(selectorState.brandId);
+                payload.DeviceCategoryId = parseInt(selectorState.categoryId);
+                payload.ModelNumber = $('#deviceLookupModelNumber').val().trim() || null;
+                payload.Year = $('#deviceLookupYear').val() ? parseInt($('#deviceLookupYear').val()) : null;
+            } else {
+                return;
+            }
+
+            const saveButton = $('#saveDeviceLookupButton').prop('disabled', true);
+            $.ajax({
+                url: url,
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function(response) {
+                    if (!response || !response.success) {
+                        errorBox.removeClass('d-none').text((response && response.message) || 'Could not save this item.');
+                        return;
+                    }
+                    const saved = response.data || { id: response.id, name: name };
+                    $('#createDeviceLookupModal').modal('hide');
+                    EmpireDeviceSelector.refreshAfterCreate('createDevice', kind, saved);
+                },
+                error: function(xhr) {
+                    const message = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Could not save this item. Please try again.';
+                    errorBox.removeClass('d-none').text(message);
+                },
+                complete: function() { saveButton.prop('disabled', false); }
+            });
+        }
+
+        $('#createDeviceLookupModal').on('hidden.bs.modal', function() {
+            $('.device-lookup-backdrop').removeClass('device-lookup-backdrop');
+            if ($('#createDeviceModal').hasClass('show')) $('body').addClass('modal-open');
+        });
 
         function loadDeviceCompanies() {
             $.ajax({
@@ -785,24 +1057,55 @@
             });
         }
 
-        function loadDeviceModalCompanies() {
+        function loadDeviceModalCompanies(selectName) {
             $.ajax({
                 url: '@Url.Action("GetSelectionList", "Company")',
                 type: 'GET',
                 success: function(companies) {
                     const companySelect = $('#companyId');
                     companySelect.empty();
-                    companySelect.append('<option value="">Select Company (Optional)</option>');
+                    companySelect.append(new Option('Select Company (Optional)', ''));
 
                     if (companies && companies.length > 0) {
                         companies.forEach(function(company) {
-                            companySelect.append('<option value="' + company.id + '">' + company.name + '</option>');
+                            companySelect.append(new Option(company.name, company.id));
                         });
+                    }
+                    $('#deviceCompanyNotice').text(companies && companies.length ? 'Leave blank if this device belongs to your current store.' : 'No companies have been added yet. This field is optional.');
+                    if (selectName) {
+                        const match = (companies || []).find(function(company) { return company.name.toLowerCase() === selectName.toLowerCase(); });
+                        if (match) companySelect.val(String(match.id)).trigger('change');
                     }
                 },
                 error: function() {
-                    console.error('Error loading companies for modal');
+                    $('#deviceCompanyNotice').text('Companies could not be loaded. You can leave this optional field blank.');
                 }
+            });
+        }
+
+        function toggleNewDeviceCompany(show) {
+            $('#newDeviceCompany').toggleClass('d-none', !show);
+            if (show) $('#newDeviceCompanyName').trigger('focus');
+            else $('#newDeviceCompanyName').val('');
+        }
+
+        function createDeviceCompany() {
+            const name = $('#newDeviceCompanyName').val().trim();
+            if (!name) { $('#deviceCompanyNotice').text('Enter a company name first.'); return; }
+            const button = $('#saveDeviceCompanyButton').prop('disabled', true);
+            $.ajax({
+                url: '@Url.Action("Create", "Company")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify({ Name: name, Rank: 0, IsDefault: false }),
+                success: function(response) {
+                    if (!response.success) { $('#deviceCompanyNotice').text(response.message || 'Could not save company.'); return; }
+                    toggleNewDeviceCompany(false);
+                    loadDeviceModalCompanies(name);
+                    loadDeviceCompanies();
+                },
+                error: function() { $('#deviceCompanyNotice').text('Could not save company. Please try again.'); },
+                complete: function() { button.prop('disabled', false); }
             });
         }
 
@@ -826,6 +1129,8 @@
                 CompanyId: companyId ? parseInt(companyId) : null,
                 IMEISerialNumber: $('#imeiSerialNumber').val() || '',
                 GB: $('#gb').val() || null,
+                Color: $('#color').val().trim(),
+                Carrier: $('#carrier').val() || '',
                 BatteryHealthPercentage: $('#batteryHealth').val() ? parseInt($('#batteryHealth').val()) : null,
                 NetworkStatus: $('#networkStatus').val() || 'Unlocked',
                 ScratchesCondition: $('#scratches').val() || 'Excellent',
@@ -880,10 +1185,55 @@
         }
         window.editDevice = editDevice;
 
+        function escapeDeviceDetail(value) {
+            return $('<div>').text(value == null || value === '' ? '—' : String(value)).html();
+        }
+
+        function deviceDetailValue(device, camelName, pascalName) {
+            return device[camelName] !== undefined ? device[camelName] : device[pascalName];
+        }
+
         function viewDevice(id) {
-            // For now, just show an alert with device ID
-            // This can be expanded to show a detailed view modal
-            alert('View device details for ID: ' + id);
+            $('#deviceDetailsSubtitle').text('Complete device information');
+            $('#deviceDetailsModalBody').html('<div class="text-center py-5 text-muted"><span class="spinner-border spinner-border-sm me-2"></span>Loading device…</div>');
+            $('#deviceDetailsEditButton').off('click').on('click', function() {
+                $('#deviceDetailsModal').modal('hide');
+                editDevice(id);
+            });
+            $('#deviceDetailsModal').modal('show');
+
+            $.get('@Url.Action("GetDetails", "Devices")', { id: id })
+                .done(function(response) {
+                    if (!response || response.success === false || !response.device) {
+                        $('#deviceDetailsModalBody').html('<div class="alert alert-danger mb-0">' + escapeDeviceDetail(response && response.message ? response.message : 'Device details could not be loaded.') + '</div>');
+                        return;
+                    }
+
+                    var d = response.device;
+                    var brand = deviceDetailValue(d, 'brand', 'Brand') || deviceDetailValue(d, 'brandName', 'BrandName');
+                    var model = deviceDetailValue(d, 'model', 'Model') || deviceDetailValue(d, 'modelName', 'ModelName') || deviceDetailValue(d, 'displayName', 'DisplayName');
+                    var status = deviceDetailValue(d, 'isSold', 'IsSold') ? 'Sold' : (deviceDetailValue(d, 'isAvailableForSale', 'IsAvailableForSale') ? 'Available for Sale' : 'Not for Sale');
+                    $('#deviceDetailsSubtitle').text([brand, model].filter(Boolean).join(' ') || 'Device #' + id);
+
+                    var fields = [
+                        ['Brand', brand], ['Model', model],
+                        ['Model Number', deviceDetailValue(d, 'modelNumber', 'ModelNumber')], ['Category', deviceDetailValue(d, 'category', 'Category') || deviceDetailValue(d, 'categoryName', 'CategoryName')],
+                        ['Storage', deviceDetailValue(d, 'gb', 'GB')], ['Color', deviceDetailValue(d, 'color', 'Color')],
+                        ['Carrier', deviceDetailValue(d, 'carrier', 'Carrier')], ['Lock Status', deviceDetailValue(d, 'networkStatus', 'NetworkStatus')],
+                        ['IMEI / Serial', deviceDetailValue(d, 'imeiSerialNumber', 'IMEISerialNumber') || deviceDetailValue(d, 'imei', 'IMEI')], ['Battery Health', (deviceDetailValue(d, 'batteryHealthPercentage', 'BatteryHealthPercentage') ?? '—') + (deviceDetailValue(d, 'batteryHealthPercentage', 'BatteryHealthPercentage') == null ? '' : '%')],
+                        ['Condition', deviceDetailValue(d, 'scratchesCondition', 'ScratchesCondition') || deviceDetailValue(d, 'condition', 'Condition')], ['Status', status],
+                        ['Cost Price', '$' + Number(deviceDetailValue(d, 'buyingPrice', 'BuyingPrice') || deviceDetailValue(d, 'purchasePrice', 'PurchasePrice') || 0).toFixed(2)], ['Selling Price', '$' + Number(deviceDetailValue(d, 'sellingPrice', 'SellingPrice') || 0).toFixed(2)],
+                        ['Source', deviceDetailValue(d, 'source', 'Source')], ['Notes', deviceDetailValue(d, 'notes', 'Notes')]
+                    ];
+
+                    $('#deviceDetailsModalBody').html('<div class="row g-3">' + fields.map(function(field) {
+                        return '<div class="col-md-6"><div class="h-100 border rounded-3 p-3 bg-light"><div class="small text-muted text-uppercase fw-semibold mb-1">' + escapeDeviceDetail(field[0]) + '</div><div class="fw-semibold text-dark text-break">' + escapeDeviceDetail(field[1]) + '</div></div></div>';
+                    }).join('') + '</div>');
+                })
+                .fail(function(xhr) {
+                    var message = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Device details could not be loaded. Please try again.';
+                    $('#deviceDetailsModalBody').html('<div class="alert alert-danger mb-0">' + escapeDeviceDetail(message) + '</div>');
+                });
         }
         window.viewDevice = viewDevice;
 
@@ -963,6 +1313,7 @@
             const deviceId = $('#soldDeviceId').val();
             const customerId = $('#soldCustomerId').val();
             const salePrice = $('#soldSalePrice').val();
+            const paymentMethod = $('#soldPaymentMethod').val() || 'Cash';
 
             if (!customerId) {
                 alert('Please select a customer');
@@ -975,7 +1326,8 @@
                 contentType: 'application/json',
                 data: JSON.stringify({
                     CustomerId: parseInt(customerId),
-                    SalePrice: salePrice ? parseFloat(salePrice) : null
+                    SalePrice: salePrice ? parseFloat(salePrice) : null,
+                    PaymentMethod: paymentMethod
                 }),
                 success: function(response) {
                     if (response.success) {
@@ -1109,6 +1461,119 @@
             
             // Reinitialize print buttons after table update
             initializeDevicePrintButtons();
+            updateDevicesGrid(devices);
+        }
+
+        function setDeviceView(view) {
+            const isGrid = view === 'grid';
+            $('#devicesTableView').toggle(!isGrid);
+            $('#devicesGridView').css('display', isGrid ? 'grid' : 'none');
+            $('#deviceTableViewBtn').toggleClass('active', !isGrid).attr('aria-pressed', String(!isGrid));
+            $('#deviceGridViewBtn').toggleClass('active', isGrid).attr('aria-pressed', String(isGrid));
+            localStorage.setItem('empire-device-view', view);
+            if (!isGrid && devicesTable) {
+                // The responsive extension is optional. Calling recalc() when the
+                // extension is not loaded throws here and prevents every Devices
+                // page click handler below document.ready from being registered.
+                devicesTable.columns.adjust();
+                if (devicesTable.responsive && typeof devicesTable.responsive.recalc === 'function') {
+                    devicesTable.responsive.recalc();
+                }
+            }
+        }
+
+        function escapeDeviceHtml(value) {
+            return $('<div>').text(value == null ? '' : String(value)).html();
+        }
+
+        function readDeviceValue(device, camel, pascal, fallback) {
+            const value = device[camel] !== undefined ? device[camel] : device[pascal];
+            return value === undefined || value === null ? fallback : value;
+        }
+
+        function updateDevicesGrid(devices) {
+            const host = $('#devicesGridView').empty();
+            if (!devices || !devices.length) {
+                host.append('<div class="alert alert-light border grid-column-all">No devices match these filters.</div>');
+                return;
+            }
+
+            devices.forEach(function(device) {
+                const id = readDeviceValue(device, 'id', 'Id', 0);
+                const brand = readDeviceValue(device, 'brand', 'Brand', '');
+                const model = readDeviceValue(device, 'model', 'Model', 'Device');
+                const imei = readDeviceValue(device, 'imeiSerialNumber', 'IMEISerialNumber', 'N/A');
+                const storage = readDeviceValue(device, 'gb', 'GB', 'N/A');
+                const carrier = readDeviceValue(device, 'carrier', 'Carrier', 'Not set') || 'Not set';
+                const lockStatus = readDeviceValue(device, 'networkStatus', 'NetworkStatus', 'Not set') || 'Not set';
+                const price = Number(readDeviceValue(device, 'sellingPrice', 'SellingPrice', 0) || 0);
+                const battery = readDeviceValue(device, 'batteryHealthPercentage', 'BatteryHealthPercentage', 'N/A');
+                const isSold = Boolean(readDeviceValue(device, 'isSold', 'IsSold', false));
+                const isAvailable = Boolean(readDeviceValue(device, 'isAvailableForSale', 'IsAvailableForSale', false));
+                const statusText = isSold ? 'Sold' : (isAvailable ? 'Available' : 'Not for sale');
+                const statusClass = isSold ? 'bg-success' : (isAvailable ? 'bg-primary' : 'bg-warning text-dark');
+                const notes = readDeviceValue(device, 'notes', 'Notes', '');
+                const title = (brand + ' ' + model).trim();
+
+                host.append(`<article class="device-grid-card" data-device-id="${id}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="device-grid-icon"><i class="fas fa-mobile-alt"></i></div>
+                        <span class="badge ${statusClass}">${statusText}</span>
+                    </div>
+                    <h5 class="mt-3 mb-1">${escapeDeviceHtml(title)}</h5>
+                    <div class="text-muted small">${escapeDeviceHtml(imei)}</div>
+                    <div class="device-grid-specs">
+                        <div><small>Storage</small><strong>${escapeDeviceHtml(storage)}</strong></div>
+                        <div><small>Selling price</small><strong>$${price.toFixed(2)}</strong></div>
+                        <div><small>Carrier</small><strong>${escapeDeviceHtml(carrier)}</strong></div>
+                        <div><small>Lock status</small><strong>${escapeDeviceHtml(lockStatus)}</strong></div>
+                    </div>
+                    <div class="device-grid-actions">
+                        <button type="button" class="btn btn-sm btn-outline-warning" onclick="editDevice(${id})"><i class="fas fa-edit me-1"></i>Edit</button>
+                        <button type="button" class="btn btn-sm btn-outline-info" onclick="showDeviceHistory(${id}, decodeURIComponent('${encodeURIComponent(title)}'))"><i class="fas fa-history me-1"></i>History</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary print-device-btn"
+                            data-device-id="${id}" data-model="${escapeDeviceHtml(model)}" data-storage="${escapeDeviceHtml(storage)}"
+                            data-imei="${escapeDeviceHtml(imei)}" data-network-status="${escapeDeviceHtml(lockStatus)}"
+                            data-carrier="${escapeDeviceHtml(carrier)}" data-selling-price="${price.toFixed(2)}"
+                            data-battery="${escapeDeviceHtml(battery)}" data-notes="${escapeDeviceHtml(notes)}"><i class="fas fa-print me-1"></i>Print</button>
+                    </div>
+                </article>`);
+            });
+            initializeDevicePrintButtons();
+        }
+
+        function showDeviceHistory(deviceId, deviceName) {
+            $('#deviceHistorySubtitle').text(deviceName || 'Complete device activity');
+            $('#deviceHistoryModalBody').html('<div class="text-center py-5"><div class="spinner-border text-primary"></div><div class="mt-2 text-muted">Loading history...</div></div>');
+            $('#deviceHistoryModal').modal('show');
+            $.get('@Url.Action("GetHistory", "Devices")', { id: deviceId }).done(function(response) {
+                const entries = response && response.success ? response.data : [];
+                if (!entries || !entries.length) {
+                    $('#deviceHistoryModalBody').html('<div class="text-center py-5 text-muted"><i class="fas fa-history fa-2x mb-3"></i><div>No history has been recorded for this device.</div></div>');
+                    return;
+                }
+                $('#deviceHistoryModalBody').html(entries.map(renderDeviceHistoryEntry).join(''));
+            }).fail(function() {
+                $('#deviceHistoryModalBody').html('<div class="alert alert-danger mb-0">Device history could not be loaded.</div>');
+            });
+        }
+
+        function renderDeviceHistoryEntry(entry) {
+            let oldValues = {}, newValues = {};
+            try { oldValues = entry.oldValues ? JSON.parse(entry.oldValues) : {}; } catch (_) {}
+            try { newValues = entry.newValues ? JSON.parse(entry.newValues) : {}; } catch (_) {}
+            const labels = { IMEISerialNumber:'IMEI / serial', GB:'Storage', Color:'Color', Carrier:'Carrier', BuyingPrice:'Cost price', SellingPrice:'Selling price', IsAvailableForSale:'Available for sale', IsSold:'Sold', LifecycleStatus:'Status', SoldToCustomerId:'Customer' };
+            const changes = Object.keys(newValues).filter(key => JSON.stringify(oldValues[key]) !== JSON.stringify(newValues[key])).map(function(key) {
+                return `<div class="device-history-change"><strong>${labels[key] || key}</strong><span class="old-value">${formatHistoryValue(key, oldValues[key])}</span><i class="fas fa-arrow-right text-muted"></i><span class="new-value">${formatHistoryValue(key, newValues[key])}</span></div>`;
+            }).join('');
+            return `<div class="device-history-entry"><div class="d-flex justify-content-between gap-3"><strong>${escapeDeviceHtml(entry.action || 'Changed')}</strong><small class="text-muted">${new Date(entry.performedAt).toLocaleString()}</small></div><div class="text-muted mt-1">${escapeDeviceHtml(entry.description || '')}</div>${changes}<small class="text-muted">By ${escapeDeviceHtml(entry.performedBy || 'System')}</small></div>`;
+        }
+
+        function formatHistoryValue(key, value) {
+            if (value === null || value === undefined || value === '') return 'Not set';
+            if (key === 'BuyingPrice' || key === 'SellingPrice') return '$' + Number(value).toFixed(2);
+            if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+            return escapeDeviceHtml(value);
         }
 
 	        function generateActionButtons(device) {
@@ -1126,12 +1591,16 @@
 	
 	            buttons += '<button type="button" class="btn btn-sm btn-outline-primary" onclick="viewDevice(' + (device.id || device.Id) + ')" title="View Details"><i class="fas fa-eye"></i></button>';
 	            buttons += '<button type="button" class="btn btn-sm btn-outline-warning" onclick="editDevice(' + (device.id || device.Id) + ')" title="Edit"><i class="fas fa-edit"></i></button>';
+                buttons += '<button type="button" class="btn btn-sm btn-outline-info" onclick="showDeviceHistory(' + (device.id || device.Id) + ', ' + JSON.stringify(((device.brand || device.Brand || '') + ' ' + (device.model || device.Model || '')).trim()) + ')" title="History"><i class="fas fa-history"></i></button>';
             buttons += '<button type="button" class="btn btn-sm btn-outline-secondary print-device-btn" ' +
                 'data-device-id="' + (device.id || device.Id) + '" ' +
                 'data-brand="' + (device.brand || device.Brand) + '" ' +
                 'data-model="' + (device.model || device.Model) + '" ' +
+                'data-storage="' + (device.gb || device.GB || '') + '" ' +
                 'data-imei="' + (device.imeiSerialNumber || device.IMEISerialNumber || '') + '" ' +
                 'data-network-status="' + (device.networkStatus || device.NetworkStatus) + '" ' +
+                'data-carrier="' + (device.carrier || device.Carrier || '') + '" ' +
+                'data-buying-price="' + ((device.buyingPrice || device.BuyingPrice) ? (device.buyingPrice || device.BuyingPrice).toFixed(2) : '') + '" ' +
                 'data-battery="' + (device.batteryHealthPercentage || device.BatteryHealthPercentage || '') + '" ' +
                 'data-scratches="' + (device.scratchesCondition || device.ScratchesCondition) + '" ' +
                 'data-selling-price="' + ((device.sellingPrice || device.SellingPrice) ? (device.sellingPrice || device.SellingPrice).toFixed(2) : '0.00') + '" ' +
@@ -1201,71 +1670,36 @@
 	            });
 	        });
 	
+	        var pendingDeviceLabelRequest = null;
+
 	        function initializeDevicePrintButtons() {
-	            $('.print-device-btn').click(function() {
-	                var $btn = $(this);
-	
-	                // Get all device data from button
-                const deviceData = {
-                    brand: $(this).data('brand'),
-                    model: $(this).data('model'),
-                    imei: $(this).data('imei'),
-                    networkStatus: $(this).data('network-status'),
-                    battery: $(this).data('battery'),
-                    scratches: $(this).data('scratches'),
-                    sellingPrice: $(this).data('selling-price'),
-                    notes: $(this).data('notes'),
-                    createdDate: $(this).data('created-date')
-                };
-                
-                // Update the hidden print template with current data
-                document.getElementById('printShopPhone').textContent = shopPhone;
+	            $('.print-device-btn').off('click.legacyPrint').on('click.legacyPrint', function(event) {
+                    event.preventDefault();
+                    if (!window.EmpireLabelPrinter) { alert('DYMO printing is not ready. Refresh the page and try again.'); return; }
+                    showDeviceLabelPreview(this);
+                });
+                $('#confirmDeviceLabelPrint').off('click.deviceLabel').on('click.deviceLabel', async function() {
+                    if (!pendingDeviceLabelRequest) return;
+                    var printed = await window.EmpireLabelPrinter.print(pendingDeviceLabelRequest, this);
+                    if (printed) bootstrap.Modal.getOrCreateInstance(document.getElementById('deviceLabelPreviewModal')).hide();
+                });
+        }
 
-                // Device detail: Brand + Model
-                document.getElementById('printDeviceInfo').textContent = deviceData.brand + ' ' + deviceData.model;
-
-                // IMEI
-                document.getElementById('printIMEI').textContent = deviceData.imei || 'N/A';
-
-                // Network Status
-                document.getElementById('printNetworkStatus').textContent = deviceData.networkStatus || 'N/A';
-
-                // Condition: Battery + Scratches
-                var conditionText = '';
-                if (deviceData.battery) {
-                    conditionText += 'Battery: ' + deviceData.battery + '%';
-                }
-                if (deviceData.scratches) {
-                    if (conditionText) conditionText += ' | ';
-                    conditionText += 'Scratches: ' + deviceData.scratches;
-                }
-                document.getElementById('printCondition').textContent = conditionText || 'N/A';
-
-                // Selling Price
-                document.getElementById('printSellPrice').textContent = deviceData.sellingPrice ? '$' + deviceData.sellingPrice : '$0.00';
-
-                // Created Date
-                document.getElementById('printCreatedDate').textContent = deviceData.createdDate || 'N/A';
-
-                // Notes
-                document.getElementById('printNotes').textContent = deviceData.notes || 'N/A';
-
-                // Get the print content from hidden div
-                const printContent = document.getElementById('printTemplate').innerHTML;
-                const originalContent = document.body.innerHTML;
-
-                // Replace body content with print content
-                document.body.innerHTML = printContent;
-
-                // Trigger print
-                window.print();
-
-                // Restore original content
-                document.body.innerHTML = originalContent;
-
-                // Re-initialize events since we replaced the entire body
-                initializeDevicePrintButtons();
-            });
+        async function showDeviceLabelPreview(button) {
+            var request = { labelType:'device', primary:button.dataset.model||'Device', code:button.dataset.imei||'N/A', barcode:button.dataset.imei||'N/A', model:button.dataset.model||'Device', storage:button.dataset.storage||'N/A', sellingPrice:button.dataset.sellingPrice||null, batteryHealth:button.dataset.battery||null, carrier:button.dataset.carrier||null, networkStatus:button.dataset.networkStatus||null, notes:button.dataset.notes||'' };
+            var response = await fetch('/Dymo/PreviewDeviceLabel', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(request) });
+            if (!response.ok) { alert('The sticker preview could not be prepared. Nothing was printed.'); return; }
+            var preview = await response.json();
+            var storage = request.storage && /gb/i.test(request.storage) ? request.storage : request.storage + ' GB';
+            var battery = request.batteryHealth ? 'Battery ' + String(request.batteryHealth).replace(/%$/,'') + '%' : 'Battery N/A';
+            var details = storage + '  |  ' + battery + '\n' + (request.carrier||'Carrier N/A') + '  |  ' + (request.networkStatus||'Lock N/A');
+            pendingDeviceLabelRequest = request;
+            $('#deviceLabelPreviewModel').text(preview.model).css('font-size',preview.fontSize+'pt');
+            $('#deviceLabelPreviewPrice').text(preview.sellingPrice).css('font-size',preview.fontSize+'pt');
+            $('#deviceLabelPreviewDetails').text(details); $('#deviceLabelPreviewBarcode').text(request.barcode);
+            $('#deviceLabelPreviewFont').text(preview.fontFamily+' Bold · '+preview.fontSize+' pt');
+            $('#deviceLabelPreviewWarning').toggleClass('d-none',preview.fontSize>9);
+            bootstrap.Modal.getOrCreateInstance(document.getElementById('deviceLabelPreviewModal')).show();
         }
 
         // DataTables buttons handle export and print functionality

@@ -7,10 +7,6 @@ namespace Empire.API.Middleware;
 /// Middleware to validate JWT tokens on every API request.
 /// Reads the token from the Authorization header first, then falls back to the
 /// HttpOnly cookie named "EmpirePOS.AuthToken" (used by the browser client).
-///
-/// Public paths (no token required) are listed in <see cref="PublicPaths"/> and
-/// <see cref="PublicPrefixes"/>. Any path that starts with one of the prefixes,
-/// or exactly matches one of the paths, is allowed through without authentication.
 /// </summary>
 public class JwtAuthenticationMiddleware
 {
@@ -18,24 +14,6 @@ public class JwtAuthenticationMiddleware
 
     private readonly RequestDelegate _next;
     private readonly ILogger<JwtAuthenticationMiddleware> _logger;
-
-    // Exact paths that are always public (case-insensitive)
-    private static readonly HashSet<string> PublicPaths = new(StringComparer.OrdinalIgnoreCase)
-    {
-        "/",                          // Root — Swagger UI index in development
-        "/index.html",                // Swagger UI static entry point
-        "/favicon.ico",               // Browser favicon request
-        "/health",                    // ASP.NET health check endpoint
-        "/api/health",                // Alternate health check path
-    };
-
-    // Path prefixes that are always public (case-insensitive, StartsWith match)
-    private static readonly string[] PublicPrefixes = new[]
-    {
-        "/api/auth/",                 // Login, register, forgot-password, reset-password
-        "/swagger",                   // Swagger UI and JSON (/swagger, /swagger/v1/swagger.json, etc.)
-        "/health",                    // Health checks
-    };
 
     public JwtAuthenticationMiddleware(
         RequestDelegate next,
@@ -47,8 +25,8 @@ public class JwtAuthenticationMiddleware
 
     public async Task InvokeAsync(HttpContext context, IJwtTokenService jwtTokenService)
     {
-        var path = context.Request.Path.Value ?? "/";
-
+        // Skip authentication for certain paths
+        var path = context.Request.Path.Value?.ToLower() ?? "";
         if (ShouldSkipAuthentication(path))
         {
             await _next(context);
@@ -60,7 +38,9 @@ public class JwtAuthenticationMiddleware
 
         // 2. Fall back to HttpOnly cookie (browser client via auth-context.js)
         if (string.IsNullOrEmpty(token))
+        {
             token = ExtractTokenFromCookie(context);
+        }
 
         if (string.IsNullOrEmpty(token))
         {
@@ -88,12 +68,13 @@ public class JwtAuthenticationMiddleware
             return;
         }
 
-        // Attach validated principal so controllers can read claims
+        // Set user principal
         context.User = principal;
 
+        // Log successful authentication
         var userId   = principal.FindFirst("sub")?.Value;
         var username = principal.FindFirst("unique_name")?.Value;
-        _logger.LogDebug(
+        _logger.LogInformation(
             "User {Username} (ID: {UserId}) authenticated for {Path}",
             username, userId, path);
 
@@ -118,21 +99,21 @@ public class JwtAuthenticationMiddleware
         return string.IsNullOrEmpty(token) ? null : token;
     }
 
-    // ─── Public path check ────────────────────────────────────────────────────
+    // ─── Public paths ─────────────────────────────────────────────────────────
 
     private static bool ShouldSkipAuthentication(string path)
     {
-        // Exact match
-        if (PublicPaths.Contains(path))
-            return true;
-
-        // Prefix match (case-insensitive)
-        foreach (var prefix in PublicPrefixes)
+        var publicPaths = new[]
         {
-            if (path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                return true;
-        }
+            "/api/auth/login",
+            "/api/auth/register",
+            "/api/auth/forgot-password",
+            "/api/auth/reset-password",
+            "/swagger",
+            "/health",
+            "/api/health"
+        };
 
-        return false;
+        return publicPaths.Any(p => path.StartsWith(p, StringComparison.OrdinalIgnoreCase));
     }
 }

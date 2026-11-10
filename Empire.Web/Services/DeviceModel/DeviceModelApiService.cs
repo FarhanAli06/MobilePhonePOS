@@ -54,6 +54,8 @@ public class DeviceModelApiService : IDeviceModelApiService
                 {
                     Id = dm.Id,
                     Name = dm.Name,
+                    ModelNumber = dm.ModelNumber,
+                    Year = dm.Year,
                     BrandId = dm.BrandId,
                     BrandName = dm.BrandName,
                     DeviceCategoryId = dm.DeviceCategoryId,

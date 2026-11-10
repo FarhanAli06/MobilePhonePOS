@@ -4,6 +4,7 @@ using Empire.Web.DTOs.Pos;
 using Empire.Web.DTOs.Repair;
 using Empire.Web.Services.Http;
 using Empire.Web.Services.POS;
+using System.Text.Json;
 
 namespace Empire.Web.Services.API;
 
@@ -80,7 +81,18 @@ public class POSApiService: IPOSApiService
     {
         try
         {
-            return await _httpClient.PutAsync<POSUpdateSaleRequestDto, POSSaleResponseDto>($"{BaseEndpoint}/sales/{saleId}", request);
+            using var response = await _httpClient.PutRawAsync($"{BaseEndpoint}/sales/{saleId}", request);
+            var body = await response.Content.ReadAsStringAsync();
+            using var document = JsonDocument.Parse(string.IsNullOrWhiteSpace(body) ? "{}" : body);
+            var root = document.RootElement;
+            var message = root.TryGetProperty("message", out var messageElement) ? messageElement.GetString() : null;
+            if (!response.IsSuccessStatusCode)
+                return new POSSaleResponseDto { Message = message ?? $"Sale update failed ({(int)response.StatusCode})" };
+            if (!root.TryGetProperty("data", out var dataElement))
+                return new POSSaleResponseDto { Message = message ?? "Sale update returned no data" };
+            var result = JsonSerializer.Deserialize<POSSaleResponseDto>(dataElement.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            if (result != null) result.Message = message;
+            return result;
         }
         catch (Exception ex)
         {
@@ -113,6 +125,24 @@ public class POSApiService: IPOSApiService
             _logger.LogError(ex, "Error getting last sale");
             return null;
         }
+    }
+
+    public async Task<List<SaleHistoryDto>?> GetSaleHistoryAsync(int saleId)
+    {
+        try { return await _httpClient.GetAsync<List<SaleHistoryDto>>($"{BaseEndpoint}/sales/{saleId}/history"); }
+        catch (Exception ex) { _logger.LogError(ex, "Error getting sale history"); return null; }
+    }
+
+    public async Task<List<SaleReturnHistoryDto>?> GetSaleReturnsAsync(int saleId)
+    {
+        try { return await _httpClient.GetAsync<List<SaleReturnHistoryDto>>($"{BaseEndpoint}/sales/{saleId}/returns"); }
+        catch (Exception ex) { _logger.LogError(ex, "Error getting sale returns"); return null; }
+    }
+
+    public async Task<SaleReturnResultDto?> ProcessReturnAsync(int saleId, ProcessSaleReturnDto request)
+    {
+        try { return await _httpClient.PostAsync<ProcessSaleReturnDto, SaleReturnResultDto>($"{BaseEndpoint}/sales/{saleId}/returns", request); }
+        catch (Exception ex) { _logger.LogError(ex, "Error processing sale return"); return null; }
     }
 
     public async Task<string?> GenerateInvoiceNumberAsync(int shopId)

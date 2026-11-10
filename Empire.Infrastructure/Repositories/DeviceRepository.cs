@@ -39,6 +39,7 @@ public class DeviceRepository : Repository<Device>, IDeviceRepository
     public async Task<IEnumerable<Device>> GetDevicesByShopAsync(int shopId)
     {
         return await _dbSet
+            .AsNoTracking()
             .Where(d => d.ShopId == shopId && !d.IsDeleted)
             .Include(d => d.SoldToCustomer)
             .Include(b => b.DeviceModel)
@@ -49,7 +50,7 @@ public class DeviceRepository : Repository<Device>, IDeviceRepository
     // Additional method for filtering (used by DeviceService)
     public async Task<IEnumerable<Device>> GetDevicesAsync(DeviceFilterRequest filter)
     {
-        var query = _dbSet.Where(d => !d.IsDeleted);
+        var query = _dbSet.AsNoTracking().Where(d => !d.IsDeleted);
 
         if (filter.ShopId.HasValue)
             query = query.Where(d => d.ShopId == filter.ShopId.Value);
@@ -112,6 +113,8 @@ public class DeviceRepository : Repository<Device>, IDeviceRepository
                 (d.Brand != null && d.Brand.Name.Contains(filter.SearchTerm)) ||
                 (d.DeviceModel != null && d.DeviceModel.Name.Contains(filter.SearchTerm)) ||
                 (d.IMEISerialNumber != null && d.IMEISerialNumber.Contains(filter.SearchTerm)) ||
+                d.Color.Contains(filter.SearchTerm) ||
+                d.Carrier.Contains(filter.SearchTerm) ||
                 (d.Notes != null && d.Notes.Contains(filter.SearchTerm)));
         }
 

@@ -144,6 +144,8 @@
         background: white;
         border-radius: var(--radius);
         padding: 20px;
+        min-width: 0;
+        overflow: hidden;
         box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         border-left: 4px solid var(--primary);
         transition: 0.3s;
@@ -162,12 +164,8 @@
         margin-bottom: 15px;
     }
 
-    .repair-number {
-        font-weight: 700;
-        font-size: 16px;
-        color: var(--primary);
-        font-family: monospace;
-    }
+    .repair-customer-heading { font-size:20px; font-weight:800; color:var(--text-dark); line-height:1.2; }
+    .repair-customer-phone { margin-top:3px; color:var(--text-light); font-size:13px; font-weight:600; }
 
     .status-badge {
         padding: 5px 12px;
@@ -182,6 +180,31 @@
     .status-completed { background: #d4edda; color: #155724; }
     .status-cancelled { background: #f8d7da; color: #721c24; }
     .status-ready { background: #e2d9f3; color: #6f42c1; }
+    .repair-status-select, .repair-payment-select { width:132px; max-width:132px; height:32px; border:1px solid currentColor; border-radius:16px; padding:3px 24px 3px 10px; font-size:11px; font-weight:800; line-height:20px; cursor:pointer; vertical-align:middle; }
+    .repair-status-select:disabled, .repair-payment-select:disabled { opacity:.6; cursor:wait; }
+    .repair-card-meta { min-width:0; text-align:left; }
+    .repair-card-statuses { display:flex; flex-direction:row; align-items:center; justify-content:flex-end; gap:6px; flex:0 0 auto; white-space:nowrap; }
+    .repair-card-statuses .payment-badge { margin:0; flex:0 0 auto; }
+    .repair-view-switch { display:flex; gap:8px; margin:0 0 16px; }
+    .repair-view-switch a { border:1px solid #d8dee8; border-radius:9px; padding:8px 13px; text-decoration:none; color:#27313f; font-weight:700; background:#fff; }
+    .repair-view-switch a.active { color:#fff; background:#218bdb; border-color:#218bdb; }
+    .repair-trash-trigger { margin-left:auto; border:1px solid #efc4c4; border-radius:9px; padding:8px 13px; color:#9f2525; background:#fff7f7; font-weight:700; }
+    .repair-trash-trigger:hover { background:#fdeaea; }
+    .repair-trash-item { border:1px solid #e5e9ef; border-radius:12px; padding:14px; margin-bottom:10px; background:#fff; }
+    .repair-trash-item-title { font-weight:800; color:#202937; }
+    .repair-trash-item-meta { color:#6d7785; font-size:12px; margin-top:3px; }
+    .repair-trash-empty { text-align:center; color:#7c8796; padding:54px 16px; }
+    .repair-search-wrap { position:relative; }
+    .repair-search-suggestions { display:none; position:absolute; top:100%; left:0; right:0; z-index:30; background:#fff; border:1px solid #d8dee8; border-radius:9px; box-shadow:0 8px 24px #0002; max-height:280px; overflow:auto; }
+    .repair-search-suggestions a { display:block; padding:9px 11px; color:#263238; text-decoration:none; border-bottom:1px solid #edf0f3; }
+    .repair-search-suggestions a:hover { background:#eef6ff; }
+    .repair-search-suggestions small { display:block; color:#697584; }
+    .repair-status-inprogress { background:#e8f1ff; color:#1769aa; }
+    .repair-status-pending { background:#fff7d6; color:#8a6500; }
+    .repair-status-waitingforparts { background:#fff0e1; color:#b34f00; }
+    .repair-status-diagnose { background:#e8f7f5; color:#087f72; }
+    .repair-status-completed { background:#e5f7e9; color:#237a3b; }
+    .repair-status-cancelled, .repair-status-unrepairable, .repair-status-abandoned { background:#fde9e9; color:#a72d2d; }
 
     .payment-badge {
         padding: 5px 12px;
@@ -195,6 +218,10 @@
     .payment-unpaid { background: #f8d7da; color: #721c24; }
     .payment-partial { background: #fff3cd; color: #856404; }
     .payment-paid { background: #d4edda; color: #155724; }
+
+    .repair-device-focus { margin:14px 0 4px; padding:14px; border-radius:12px; background:#f7f9fc; border:1px solid #e6ebf2; }
+    .repair-device-name { display:flex; align-items:center; gap:8px; font-size:19px; line-height:1.25; font-weight:800; color:#182230; }
+    .repair-issue-title { margin-top:7px; font-size:17px; line-height:1.3; font-weight:800; color:#1769aa; overflow-wrap:anywhere; }
 
     .repair-customer {
         display: flex;
@@ -249,12 +276,29 @@
 
     .repair-actions {
         display: flex;
+        flex-direction: column;
         gap: 8px;
         margin-top: 15px;
     }
 
+    .repair-primary-actions,
+    .repair-utility-actions {
+        display: grid;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .repair-primary-actions {
+        grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
+    }
+
+    .repair-utility-actions {
+        grid-template-columns: repeat(auto-fit, minmax(38px, 1fr));
+    }
+
     .action-btn {
-        flex: 1;
+        width: 100%;
+        min-width: 0;
         padding: 8px 12px;
         border-radius: var(--radius);
         font-size: 13px;
@@ -297,6 +341,21 @@
 
     .action-btn-cart {
         background: #28a745;
+        color: white;
+    }
+
+    .action-btn-checkout {
+        white-space: nowrap;
+    }
+
+    .action-btn-payment {
+        background: #0d6efd;
+        color: white;
+        white-space: nowrap;
+    }
+
+    .action-btn-payment:hover {
+        background: #0b5ed7;
         color: white;
     }
 
@@ -348,11 +407,45 @@
     @@media (max-width: 768px) {
         .repairs-grid {
             grid-template-columns: 1fr;
+            min-width: 0;
         }
         
         .repairs-header {
             flex-direction: column;
             align-items: stretch;
+        }
+
+        .repair-card-header {
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .repair-card-statuses {
+            max-width: 100%;
+            flex-wrap: wrap;
+            white-space: normal;
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .repair-card {
+            padding: 16px;
+        }
+
+        .repair-number {
+            overflow-wrap: anywhere;
+        }
+
+        .repair-primary-actions {
+            grid-template-columns: 1fr;
+        }
+
+        .repair-utility-actions {
+            grid-template-columns: repeat(5, minmax(34px, 1fr));
+        }
+
+        .action-btn {
+            padding: 8px 6px;
         }
     }
 </style>
@@ -375,6 +468,36 @@
         </a>
     </div>
 </div>
+
+<div class="repair-view-switch" aria-label="Repair views">
+    <a class="@(ViewBag.RepairView == "previous" ? "" : "active")" href="@Url.Action("Index", "Repairs", new { view = "active" })">Active Repairs</a>
+    <a class="@(ViewBag.RepairView == "previous" ? "active" : "")" href="@Url.Action("Index", "Repairs", new { view = "previous" })">Previous Jobs</a>
+    @if (ViewBag.CanManageTrash == true)
+    {
+        <button type="button" class="repair-trash-trigger" data-bs-toggle="offcanvas" data-bs-target="#repairTrashPanel" onclick="loadRepairTrash()">
+            <i class="material-icons" style="font-size:17px;vertical-align:middle;">delete_outline</i> Repair Trash
+        </button>
+    }
+</div>
+
+@if (ViewBag.CanManageTrash == true)
+{
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="repairTrashPanel" aria-labelledby="repairTrashTitle" style="width:min(440px,94vw);">
+        <div class="offcanvas-header border-bottom">
+            <div>
+                <h5 class="offcanvas-title fw-bold" id="repairTrashTitle"><i class="material-icons" style="vertical-align:middle;color:#b3261e;">delete_outline</i> Repair Trash</h5>
+                <small class="text-muted">Restore a repair or permanently empty the trash.</small>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body d-flex flex-column">
+            <div id="repairTrashList" class="flex-grow-1"><div class="repair-trash-empty">Loading deleted repairs…</div></div>
+            <button type="button" id="emptyRepairTrashButton" class="btn btn-outline-danger w-100 mt-3" onclick="emptyRepairTrash()" disabled>
+                <i class="material-icons" style="font-size:17px;vertical-align:middle;">delete_forever</i> Permanently Delete All
+            </button>
+        </div>
+    </div>
+}
 
 @if (TempData["Success"] != null)
 {
@@ -402,14 +525,18 @@
     </div>
     
     <form method="get" asp-action="Index">
+        <input type="hidden" name="view" value="@ViewBag.RepairView" />
         <div class="row g-3">
             <div class="col-md-3">
                 <label for="searchTerm" class="form-label">
                     <i class="material-icons" style="font-size: 16px; vertical-align: middle;">search</i>
                     Search
                 </label>
-                <input type="text" class="form-control" id="searchTerm" name="searchTerm"
-                       value="@Model.SearchTerm" placeholder="Search by repair #, customer, device...">
+                <div class="repair-search-wrap">
+                    <input type="text" class="form-control" id="searchTerm" name="searchTerm" autocomplete="off"
+                           value="@Model.SearchTerm" placeholder="Search name, phone, repair #, device...">
+                    <div class="repair-search-suggestions" id="repairSearchSuggestions" role="listbox"></div>
+                </div>
             </div>
 
             <div class="col-md-2">
@@ -470,48 +597,47 @@
     <div class="repairs-grid">
         @foreach (var repair in Model.Repairs)
         {
-            <div class="repair-card">
+            var deviceDisplay = string.Join(" ", new[] { repair.DeviceBrand, repair.DeviceModel }.Where(value => !string.IsNullOrWhiteSpace(value))).Trim();
+            var issueDisplay = repair.RepairPartNames != null && repair.RepairPartNames.Any()
+                ? string.Join(", ", repair.RepairPartNames)
+                : (!string.IsNullOrWhiteSpace(repair.IssueDescription) ? repair.IssueDescription : repair.Description);
+            if (string.IsNullOrWhiteSpace(deviceDisplay) && !string.IsNullOrWhiteSpace(issueDisplay) && issueDisplay.Contains(" — "))
+            {
+                var customSegments = issueDisplay.Split(" — ", 2, StringSplitOptions.TrimEntries);
+                deviceDisplay = customSegments[0];
+                issueDisplay = customSegments.Length > 1 ? customSegments[1] : issueDisplay;
+            }
+            if (string.IsNullOrWhiteSpace(deviceDisplay)) deviceDisplay = "Custom Device";
+            if (string.IsNullOrWhiteSpace(issueDisplay)) issueDisplay = "Repair service";
+            <div class="repair-card" id="repair-card-@repair.Id">
                 <div class="repair-card-header">
-                    <div>
-                        <div class="repair-number">#@repair.RepairNumber</div>
+                    <div class="repair-card-meta">
+                        <div class="repair-customer-heading">@repair.CustomerName</div>
+                        @if (!string.IsNullOrWhiteSpace(repair.CustomerPhone))
+                        {
+                            <div class="repair-customer-phone">@repair.CustomerPhone</div>
+                        }
                         <div class="repair-date">
                             <i class="material-icons" style="font-size: 14px;">schedule</i>
                             @repair.CreatedDate.ToString("MMM dd, yyyy hh:mm tt")
                         </div>
                     </div>
-                    <div>
-                        <span class="status-badge status-@repair.Status.ToLower().Replace(" ", "-")">
-                            @repair.Status
-                        </span>
-                        <span class="payment-badge payment-@repair.PaymentStatus.ToLower().Replace(" ", "-")">
-                            @repair.PaymentStatus
-                        </span>
+                    <div class="repair-card-statuses">
+                        <select class="repair-status-select no-select2" data-repair-id="@repair.Id" data-current-status="@repair.Status" onchange="updateRepairStatus(this)">
+                            <option value="@repair.Status">@repair.Status</option>
+                        </select>
+                        <select class="repair-payment-select no-select2 payment-@repair.PaymentStatus.ToLower().Replace(" ", "-")" data-repair-id="@repair.Id" data-customer-name="@repair.CustomerName" data-balance="@repair.RemainingDues.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)" data-current-payment-status="@repair.PaymentStatus" onchange="updateRepairPaymentStatus(this)" aria-label="Payment status for @repair.CustomerName">
+                            <option value="Unpaid" selected="@(string.Equals(repair.PaymentStatus, "Unpaid", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">Unpaid</option>
+                            <option value="Partial" selected="@(string.Equals(repair.PaymentStatus, "Partial", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">Partial</option>
+                            <option value="Paid" selected="@(string.Equals(repair.PaymentStatus, "Paid", StringComparison.OrdinalIgnoreCase) ? "selected" : null)">Paid</option>
+                        </select>
                     </div>
                 </div>
 
-                <div class="repair-customer">
-                    <i class="material-icons">person</i>
-                    <div>
-                        <div class="customer-name">@repair.CustomerName</div>
-                        @if (!string.IsNullOrEmpty(repair.CustomerPhone))
-                        {
-                            <div style="font-size: 13px; color: var(--text-light);">@repair.CustomerPhone</div>
-                        }
-                    </div>
+                <div class="repair-device-focus">
+                    <div class="repair-device-name"><i class="material-icons">smartphone</i><span>@deviceDisplay</span></div>
+                    <div class="repair-issue-title">@issueDisplay</div>
                 </div>
-
-                <div class="repair-device">
-                    <i class="material-icons">smartphone</i>
-                    <span>@repair.DeviceBrand @repair.DeviceModel</span>
-                </div>
-
-                @if (!string.IsNullOrEmpty(repair.IssueDescription))
-                {
-                    <div class="repair-device">
-                        <i class="material-icons">description</i>
-                        <span>@(repair.IssueDescription.Length > 50 ? repair.IssueDescription.Substring(0, 50) + "..." : repair.IssueDescription)</span>
-                    </div>
-                }
 
                 <div class="repair-cost">
                     <div>
@@ -530,28 +656,42 @@
                 </div>
 
                 <div class="repair-actions">
-                    <a asp-action="Details" asp-route-id="@repair.Id" class="action-btn action-btn-view">
-                        <i class="material-icons" style="font-size: 16px;">visibility</i>
-                        
-                    </a>
-                    <a asp-action="Edit" asp-route-id="@repair.Id" class="action-btn action-btn-edit">
-                        <i class="material-icons" style="font-size: 16px;">edit</i>
-                        
-                    </a>
-                    <button type="button" class="action-btn action-btn-cart"
-                        onclick="addRepairToCart(@repair.Id, '@Html.Raw(repair.RepairNumber)', '@Html.Raw((repair.CustomerName ?? string.Empty).Replace("'", "\'"))', @repair.Cost.ToString("F2", System.Globalization.CultureInfo.InvariantCulture), @repair.RemainingDues.ToString("F2", System.Globalization.CultureInfo.InvariantCulture))">
-                        <i class="material-icons" style="font-size: 16px;">add_shopping_cart</i>
-                       
-                    </button>
-                    <button type="button" class="action-btn action-btn-history"
-                        onclick="openHistoryModal(@repair.Id, '@Html.Raw(repair.RepairNumber)')">
-                        <i class="material-icons" style="font-size: 16px;">history</i>
-                       
-                    </button>
-                    <button type="button" class="action-btn action-btn-delete" onclick="confirmDelete(@repair.Id)">
-                        <i class="material-icons" style="font-size: 16px;">delete</i>
-                       
-                    </button>
+                    <div class="repair-primary-actions">
+                        <button type="button" class="action-btn action-btn-cart action-btn-checkout" title="Checkout this repair"
+                            onclick="addRepairToCart(@repair.Id, @repair.CustomerId, '@Html.Raw(repair.RepairNumber)', '@Html.Raw((repair.CustomerName ?? string.Empty).Replace("'", "\'"))', '@Html.Raw((repair.CustomerPhone ?? string.Empty).Replace("'", "\'"))', @repair.Cost.ToString("F2", System.Globalization.CultureInfo.InvariantCulture), @repair.PartCost.ToString("F2", System.Globalization.CultureInfo.InvariantCulture), @repair.RemainingDues.ToString("F2", System.Globalization.CultureInfo.InvariantCulture))">
+                            <i class="material-icons" style="font-size: 16px;">add_shopping_cart</i>
+                            <span>Checkout</span>
+                        </button>
+                        @if (repair.RemainingDues > 0)
+                        {
+                            <button type="button" class="action-btn action-btn-payment" title="Accept a payment on this repair"
+                                onclick="openRepairPaymentModal(@repair.Id, '@Html.Raw((repair.CustomerName ?? string.Empty).Replace("'", "\'"))', @repair.RemainingDues.ToString("F2", System.Globalization.CultureInfo.InvariantCulture), 'partial', null)">
+                                <i class="material-icons" style="font-size: 16px;">payments</i>
+                                <span>Accept Payment</span>
+                            </button>
+                        }
+                    </div>
+                    <div class="repair-utility-actions">
+                        @if (!string.Equals(repair.Status, "Completed", StringComparison.OrdinalIgnoreCase))
+                        {
+                            <button type="button" class="action-btn action-btn-cart" title="Finish Job" aria-label="Finish Job" onclick="finishRepairJob(@repair.Id)">
+                                <i class="material-icons" style="font-size:16px;">check_circle</i>
+                            </button>
+                        }
+                        <a asp-action="Details" asp-route-id="@repair.Id" class="action-btn action-btn-view">
+                            <i class="material-icons" style="font-size: 16px;">visibility</i>
+                        </a>
+                        <button type="button" class="action-btn action-btn-view" title="Print drop-off slip" aria-label="Print drop-off slip" onclick="printRepairDropOffSlip(@repair.Id, this)">
+                            <i class="material-icons" style="font-size: 16px;">receipt_long</i>
+                        </button>
+                        <button type="button" class="action-btn action-btn-history"
+                            onclick="openHistoryModal(@repair.Id, '@Html.Raw(repair.RepairNumber)')">
+                            <i class="material-icons" style="font-size: 16px;">history</i>
+                        </button>
+                        <button type="button" class="action-btn action-btn-delete" onclick="confirmDelete(@repair.Id)">
+                            <i class="material-icons" style="font-size: 16px;">delete</i>
+                        </button>
+                    </div>
                 </div>
             </div>
         }
@@ -563,16 +703,16 @@
         <nav aria-label="Repairs pagination" style="margin-top:20px;">
             <ul class="pagination justify-content-center">
                 <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
-                    <a class="page-link" href="@Url.Action("Index", new { searchTerm = Model.SearchTerm, status = Model.Status, paymentStatus = Model.PaymentStatus, startDate = Model.StartDate.HasValue ? Model.StartDate.Value.ToString("yyyy-MM-dd") : "", endDate = Model.EndDate.HasValue ? Model.EndDate.Value.ToString("yyyy-MM-dd") : "", pageNumber = Model.PageNumber - 1, pageSize = Model.PageSize })">&laquo; Prev</a>
+                    <a class="page-link" href="@Url.Action("Index", new { view = ViewBag.RepairView, searchTerm = Model.SearchTerm, status = Model.Status, paymentStatus = Model.PaymentStatus, startDate = Model.StartDate.HasValue ? Model.StartDate.Value.ToString("yyyy-MM-dd") : "", endDate = Model.EndDate.HasValue ? Model.EndDate.Value.ToString("yyyy-MM-dd") : "", pageNumber = Model.PageNumber - 1, pageSize = Model.PageSize })">&laquo; Prev</a>
                 </li>
                 @for (int pg = Math.Max(1, Model.PageNumber - 2); pg <= Math.Min(Model.TotalPages, Model.PageNumber + 2); pg++)
                 {
                     <li class="page-item @(pg == Model.PageNumber ? "active" : "")">
-                        <a class="page-link" href="@Url.Action("Index", new { searchTerm = Model.SearchTerm, status = Model.Status, paymentStatus = Model.PaymentStatus, startDate = Model.StartDate.HasValue ? Model.StartDate.Value.ToString("yyyy-MM-dd") : "", endDate = Model.EndDate.HasValue ? Model.EndDate.Value.ToString("yyyy-MM-dd") : "", pageNumber = pg, pageSize = Model.PageSize })">@pg</a>
+                        <a class="page-link" href="@Url.Action("Index", new { view = ViewBag.RepairView, searchTerm = Model.SearchTerm, status = Model.Status, paymentStatus = Model.PaymentStatus, startDate = Model.StartDate.HasValue ? Model.StartDate.Value.ToString("yyyy-MM-dd") : "", endDate = Model.EndDate.HasValue ? Model.EndDate.Value.ToString("yyyy-MM-dd") : "", pageNumber = pg, pageSize = Model.PageSize })">@pg</a>
                     </li>
                 }
                 <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
-                    <a class="page-link" href="@Url.Action("Index", new { searchTerm = Model.SearchTerm, status = Model.Status, paymentStatus = Model.PaymentStatus, startDate = Model.StartDate.HasValue ? Model.StartDate.Value.ToString("yyyy-MM-dd") : "", endDate = Model.EndDate.HasValue ? Model.EndDate.Value.ToString("yyyy-MM-dd") : "", pageNumber = Model.PageNumber + 1, pageSize = Model.PageSize })">Next &raquo;</a>
+                    <a class="page-link" href="@Url.Action("Index", new { view = ViewBag.RepairView, searchTerm = Model.SearchTerm, status = Model.Status, paymentStatus = Model.PaymentStatus, startDate = Model.StartDate.HasValue ? Model.StartDate.Value.ToString("yyyy-MM-dd") : "", endDate = Model.EndDate.HasValue ? Model.EndDate.Value.ToString("yyyy-MM-dd") : "", pageNumber = Model.PageNumber + 1, pageSize = Model.PageSize })">Next &raquo;</a>
                 </li>
             </ul>
             <p class="text-center text-muted" style="font-size:13px;">Page @Model.PageNumber of @Model.TotalPages &nbsp;|&nbsp; @Model.TotalCount total repair(s)</p>
@@ -614,34 +754,226 @@ else
     </div>
 </div>
 
+<!-- Accept Payment Modal -->
+<div class="modal fade" id="repairPaymentModal" tabindex="-1" aria-labelledby="repairPaymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="repairPaymentModalLabel"><i class="material-icons" style="vertical-align:middle;">payments</i> Accept Payment</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="repairPaymentRepairId" />
+                <input type="hidden" id="repairPaymentBalance" />
+                <input type="hidden" id="repairPaymentTargetStatus" />
+                <div class="alert alert-light border d-flex justify-content-between mb-3">
+                    <strong id="repairPaymentCustomerName"></strong>
+                    <strong>Balance: <span id="repairPaymentBalanceText"></span></strong>
+                </div>
+                <div class="mb-3">
+                    <label for="repairPaymentAmount" class="form-label fw-semibold">Payment amount</label>
+                    <div class="input-group input-group-lg">
+                        <span class="input-group-text">$</span>
+                        <input type="number" class="form-control" id="repairPaymentAmount" min="0.01" step="0.01" inputmode="decimal" required />
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="repairPaymentMethod" class="form-label fw-semibold">Payment method</label>
+                    <select class="form-select form-select-lg no-select2" id="repairPaymentMethod">
+                        <option value="Cash">Cash</option>
+                        <option value="Card">Card</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="repairPaymentReference" class="form-label">Reference <span class="text-muted">(optional)</span></label>
+                    <input type="text" class="form-control" id="repairPaymentReference" placeholder="Transaction or confirmation number" />
+                </div>
+                <div class="alert alert-danger mt-3 mb-0 d-none" id="repairPaymentError"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary px-4" id="repairPaymentSubmit" onclick="submitRepairPayment()">
+                    <i class="material-icons" style="font-size:18px;vertical-align:middle;">check_circle</i> Accept Payment
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @* Hidden form purely to get ASP.NET Core to inject an antiforgery token on this page *@
 <form id="_deleteTokenForm" method="post" asp-action="Delete" asp-route-id="0" style="display:none;">
 </form>
 
 <script>
-    // Auto-submit search form on input (debounced 400ms)
-    (function() {
-        var searchInput = document.getElementById('searchTerm');
-        var searchForm  = searchInput && searchInput.closest('form');
-        if (!searchInput || !searchForm) return;
-        var debounceTimer;
-        searchInput.addEventListener('input', function() {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(function() { searchForm.submit(); }, 400);
-        });
+    function repairStatusLabel(value) {
+        var labels = { inprogress:'In Progress', waitingforparts:'Waiting for Parts', diagnose:'Diagnose', pending:'Pending', completed:'Completed', cancelled:'Cancelled', unrepairable:'Unrepairable', abandoned:'Abandoned' };
+        return labels[String(value || '').toLowerCase().replace(/[\s-]/g, '')] || value;
+    }
+
+    function colorRepairStatus(select) {
+        Array.from(select.classList).filter(function(c) { return c.indexOf('repair-status-') === 0 && c !== 'repair-status-select'; }).forEach(function(c) { select.classList.remove(c); });
+        select.classList.add('repair-status-' + String(select.value || '').toLowerCase().replace(/[\s-]/g, ''));
+    }
+
+    function colorRepairPaymentStatus(select) {
+        ['payment-unpaid', 'payment-partial', 'payment-paid'].forEach(function(cssClass) { select.classList.remove(cssClass); });
+        select.classList.add('payment-' + String(select.value || 'unpaid').toLowerCase());
+    }
+
+    document.querySelectorAll('.repair-payment-select').forEach(colorRepairPaymentStatus);
+
+    (function loadInlineRepairStatuses() {
+        fetch('@Url.Action("GetRepairStatuses", "Repairs")')
+            .then(function(r) { return r.json(); })
+            .then(function(statuses) {
+                var values = Array.isArray(statuses) ? statuses : (statuses.data || []);
+                document.querySelectorAll('.repair-status-select').forEach(function(select) {
+                    var current = select.dataset.currentStatus || '';
+                    select.innerHTML = '';
+                    values.forEach(function(item) {
+                        var value = item.value || item.name || item.text || item;
+                        var option = new Option(repairStatusLabel(item.text || item.name || value), value, false, String(value).toLowerCase().replace(/\s|-/g,'') === current.toLowerCase().replace(/\s|-/g,''));
+                        select.add(option);
+                    });
+                    if (!select.value) select.add(new Option(repairStatusLabel(current), current, true, true), 0);
+                    colorRepairStatus(select);
+                });
+            });
     })();
 
-    window.addRepairToCart = function(id, repairNumber, customerName, cost, remainingDues) {
+    window.updateRepairStatus = function(select) {
+        var oldStatus = select.dataset.currentStatus;
+        if (String(select.value).toLowerCase() === 'completed' && !confirm('Are you sure you want to finish this job? It will move to Previous Jobs.')) {
+            select.value = oldStatus;
+            colorRepairStatus(select);
+            return;
+        }
+        select.disabled = true;
+        fetch('@Url.Action("UpdateStatusJson", "Repairs")', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ repairId: parseInt(select.dataset.repairId), status: select.value })
+        }).then(function(r) { return r.json(); }).then(function(result) {
+            select.disabled = false;
+            if (!result.success) { select.value = oldStatus; colorRepairStatus(select); alert(result.message || 'Could not update status'); return; }
+            select.dataset.currentStatus = result.status;
+            var option = Array.from(select.options).find(function(o){ return o.value === result.status; });
+            if (!option) select.add(new Option(repairStatusLabel(result.status), result.status, true, true), 0); else select.value = result.status;
+            colorRepairStatus(select);
+            if (String(result.status).toLowerCase() === 'completed') window.location.reload();
+        }).catch(function() { select.disabled = false; select.value = oldStatus; colorRepairStatus(select); alert('Could not update status'); });
+    };
+
+    window.updateRepairPaymentStatus = function(select) {
+        var oldStatus = select.dataset.currentPaymentStatus || 'Unpaid';
+        var requested = select.value;
+        if (requested === oldStatus) return;
+        if (requested === 'Unpaid') {
+            select.value = oldStatus;
+            colorRepairPaymentStatus(select);
+            alert('Recorded payments cannot be erased by changing this label. Use Payment History to correct or refund a payment.');
+            return;
+        }
+        var balance = Number(select.dataset.balance || 0);
+        if (balance <= 0) {
+            select.value = 'Paid';
+            select.dataset.currentPaymentStatus = 'Paid';
+            colorRepairPaymentStatus(select);
+            return;
+        }
+        select.value = oldStatus;
+        colorRepairPaymentStatus(select);
+        openRepairPaymentModal(
+            Number(select.dataset.repairId),
+            select.dataset.customerName || 'Customer',
+            balance,
+            requested.toLowerCase(),
+            select
+        );
+    };
+
+    function restorePendingPaymentSelect() {
+        var select = window.pendingRepairPaymentSelect;
+        if (select) {
+            select.disabled = false;
+            select.value = select.dataset.currentPaymentStatus || 'Unpaid';
+            colorRepairPaymentStatus(select);
+        }
+        window.pendingRepairPaymentSelect = null;
+    }
+
+    document.getElementById('repairPaymentModal').addEventListener('hidden.bs.modal', function() {
+        if (!window.repairPaymentSubmitted) restorePendingPaymentSelect();
+        window.repairPaymentSubmitted = false;
+    });
+
+    window.finishRepairJob = function(repairId) {
+        if (!confirm('Are you sure you want to finish this job? It will move to Previous Jobs.')) return;
+        fetch('@Url.Action("UpdateStatusJson", "Repairs")', {
+            method:'POST', headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({repairId:repairId,status:'Completed'})
+        }).then(function(r){return r.json();}).then(function(result){
+            if (!result.success) throw new Error(result.message || 'Could not finish job');
+            window.location.reload();
+        }).catch(function(error){alert(error.message || 'Could not finish job');});
+    };
+
+    // Match customers and repairs without changing the saved records.
+    (function() {
+        var searchInput = document.getElementById('searchTerm');
+        var list = document.getElementById('repairSearchSuggestions');
+        if (!searchInput || !list) return;
+        var debounceTimer, requestNumber = 0;
+        function addResult(label, detail, href) {
+            var link = document.createElement('a');
+            link.href = href;
+            link.setAttribute('role','option');
+            var name = document.createElement('strong'); name.textContent = label;
+            var sub = document.createElement('small'); sub.textContent = detail;
+            link.append(name,sub); list.appendChild(link);
+        }
+        searchInput.addEventListener('input', function() {
+            clearTimeout(debounceTimer);
+            var term = searchInput.value.trim();
+            if (term.length < 2) { list.style.display='none'; list.replaceChildren(); return; }
+            var currentRequest = ++requestNumber;
+            debounceTimer = setTimeout(function() {
+                Promise.all([
+                    fetch('@Url.Action("GetRepairsJson", "Repairs")?searchTerm=' + encodeURIComponent(term)).then(function(r){return r.json();}),
+                    fetch('@Url.Action("GetCustomers", "Repairs")?searchTerm=' + encodeURIComponent(term)).then(function(r){return r.json();})
+                ]).then(function(results) {
+                    if (currentRequest !== requestNumber) return;
+                    list.replaceChildren();
+                    (results[0].data || []).slice(0,6).forEach(function(job) {
+                        addResult('Repair #' + job.repairNumber + ' — ' + job.customerName,
+                            [job.customerPhone, job.deviceBrand, job.deviceModel, job.status].filter(Boolean).join(' · '),
+                            '/Repairs/Details/' + job.id);
+                    });
+                    (results[1].data || []).slice(0,4).forEach(function(customer) {
+                        addResult([customer.firstName,customer.lastName].filter(Boolean).join(' '),
+                            [customer.phone,customer.email].filter(Boolean).join(' · '), '/Customers/Edit/' + customer.id);
+                    });
+                    list.style.display = list.children.length ? 'block' : 'none';
+                }).catch(function(){ list.style.display='none'; });
+            }, 250);
+        });
+        document.addEventListener('click',function(event){if (!event.target.closest('.repair-search-wrap')) list.style.display='none';});
+    })();
+
+    window.addRepairToCart = function(id, customerId, repairNumber, customerName, customerPhone, cost, partCost, remainingDues) {
         var repairItem = {
             type: 'repair',
             repairId: id,
+            customerId: customerId,
             repairNumber: repairNumber,
             customerName: customerName,
+            customerPhone: customerPhone,
             cost: parseFloat(cost),
+            partCost: parseFloat(partCost) || 0,
             remainingDues: parseFloat(remainingDues),
-            description: 'Repair #' + repairNumber + ' - ' + customerName,
+            description: customerName + ' repair',
             quantity: 1,
-            unitPrice: parseFloat(remainingDues) > 0 ? parseFloat(remainingDues) : parseFloat(cost)
+            unitPrice: Math.max(0, parseFloat(remainingDues) || 0)
         };
         var pending = [];
         try { pending = JSON.parse(sessionStorage.getItem('pendingRepairCart') || '[]'); } catch(e) { pending = []; }
@@ -649,6 +981,85 @@ else
         pending.push(repairItem);
         sessionStorage.setItem('pendingRepairCart', JSON.stringify(pending));
         window.location.href = '/POS';
+    };
+
+    window.printRepairDropOffSlip = function(repairId, button) {
+        var original = button.innerHTML;
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span>';
+        fetch('@Url.Action("PrintDropOffSlip", "Repairs")', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ repairId: repairId })
+        }).then(function(response) { return response.json(); })
+          .then(function(result) {
+              if (!result.success) throw new Error(result.message || 'Drop-off slip could not be printed.');
+              button.innerHTML = '<i class="material-icons" style="font-size:16px;">check</i>';
+              setTimeout(function() { button.innerHTML = original; button.disabled = false; }, 1200);
+          })
+          .catch(function(error) {
+              button.innerHTML = original;
+              button.disabled = false;
+              alert(error.message || 'Drop-off slip could not be printed.');
+          });
+    };
+
+    window.openRepairPaymentModal = function(repairId, customerName, balance, targetStatus, sourceSelect) {
+        var amount = Number(balance || 0);
+        window.pendingRepairPaymentSelect = sourceSelect || null;
+        window.repairPaymentSubmitted = false;
+        if (sourceSelect) sourceSelect.disabled = true;
+        document.getElementById('repairPaymentRepairId').value = repairId;
+        document.getElementById('repairPaymentBalance').value = amount.toFixed(2);
+        document.getElementById('repairPaymentTargetStatus').value = targetStatus || 'partial';
+        document.getElementById('repairPaymentCustomerName').textContent = customerName || 'Customer';
+        document.getElementById('repairPaymentBalanceText').textContent = '$' + amount.toFixed(2);
+        document.getElementById('repairPaymentAmount').value = targetStatus === 'paid' ? amount.toFixed(2) : '';
+        document.getElementById('repairPaymentAmount').max = amount.toFixed(2);
+        document.getElementById('repairPaymentMethod').value = 'Cash';
+        document.getElementById('repairPaymentReference').value = '';
+        document.getElementById('repairPaymentError').classList.add('d-none');
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('repairPaymentModal')).show();
+        setTimeout(function() { document.getElementById('repairPaymentAmount').select(); }, 250);
+    };
+
+    window.submitRepairPayment = function() {
+        var repairId = Number(document.getElementById('repairPaymentRepairId').value);
+        var balance = Number(document.getElementById('repairPaymentBalance').value);
+        var amount = Number(document.getElementById('repairPaymentAmount').value);
+        var error = document.getElementById('repairPaymentError');
+        var submit = document.getElementById('repairPaymentSubmit');
+        error.classList.add('d-none');
+
+        if (!amount || amount <= 0 || amount > balance) {
+            error.textContent = 'Enter an amount between $0.01 and $' + balance.toFixed(2) + '.';
+            error.classList.remove('d-none');
+            return;
+        }
+
+        submit.disabled = true;
+        fetch('@Url.Action("AddRepairPayment", "Repairs")', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                repairId: repairId,
+                type: 'Payment',
+                amount: amount,
+                paymentMethod: document.getElementById('repairPaymentMethod').value,
+                reference: document.getElementById('repairPaymentReference').value || null,
+                notes: 'Payment accepted from Repairs page'
+            })
+        }).then(function(response) { return response.json(); })
+          .then(function(result) {
+              if (!result.success) throw new Error(result.message || 'Payment could not be saved.');
+              window.repairPaymentSubmitted = true;
+              window.location.reload();
+          })
+          .catch(function(ex) {
+              error.textContent = ex.message || 'Payment could not be saved.';
+              error.classList.remove('d-none');
+              submit.disabled = false;
+          });
     };
 
     // ── Repair History Modal ─────────────────────────────────────────────────
@@ -698,21 +1109,87 @@ else
     }
 
     function confirmDelete(id) {
-        if (confirm('Are you sure you want to delete this repair? This action cannot be undone.')) {
-            var form = document.createElement('form');
-            form.method = 'POST';
-            form.action = '@Url.Action("Delete", "Repairs")/' + id;
-            // Grab the antiforgery token from the hidden form above
-            var token = document.querySelector('#_deleteTokenForm input[name="__RequestVerificationToken"]');
-            if (token) {
-                var hiddenField = document.createElement('input');
-                hiddenField.type = 'hidden';
-                hiddenField.name = '__RequestVerificationToken';
-                hiddenField.value = token.value;
-                form.appendChild(hiddenField);
-            }
-            document.body.appendChild(form);
-            form.submit();
+        if (!confirm('Move this repair to Repair Trash? Any parts used on this job will be returned to inventory.')) return;
+
+        var card = document.getElementById('repair-card-' + id);
+        var button = card ? card.querySelector('.action-btn-delete') : null;
+        if (button) {
+            button.disabled = true;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span>';
         }
+
+        fetch('@Url.Action("DeleteRepairJson", "Repairs")?id=' + encodeURIComponent(id), { method:'POST' })
+            .then(function(response) {
+                if (!response.ok) throw new Error('Delete request failed (' + response.status + ')');
+                return response.json();
+            })
+            .then(function(result) {
+                if (!result.success) throw new Error(result.message || 'Repair could not be deleted');
+                if (card) card.remove();
+                var remaining = document.querySelectorAll('.repairs-grid .repair-card').length;
+                if (remaining === 0) window.location.reload();
+            })
+            .catch(function(error) {
+                if (button) {
+                    button.disabled = false;
+                    button.innerHTML = '<i class="material-icons" style="font-size:16px;">delete</i>';
+                }
+                alert(error.message || 'Repair could not be deleted');
+            });
     }
+
+    function escapeRepairTrashHtml(value) {
+        return String(value == null ? '' : value).replace(/[&<>"']/g, function(character) {
+            return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'})[character];
+        });
+    }
+
+    window.loadRepairTrash = function() {
+        var list = document.getElementById('repairTrashList');
+        var emptyButton = document.getElementById('emptyRepairTrashButton');
+        if (!list || !emptyButton) return;
+        list.innerHTML = '<div class="repair-trash-empty"><div class="spinner-border spinner-border-sm text-secondary"></div><div class="mt-2">Loading deleted repairs…</div></div>';
+        fetch('@Url.Action("GetRepairTrash", "Repairs")').then(function(response){ return response.json(); }).then(function(result) {
+            if (!result.success) throw new Error(result.message || 'Could not load Repair Trash');
+            var repairs = result.data || [];
+            emptyButton.disabled = repairs.length === 0;
+            if (!repairs.length) {
+                list.innerHTML = '<div class="repair-trash-empty"><i class="material-icons" style="font-size:40px;">delete_sweep</i><div class="fw-bold mt-2">Repair Trash is empty</div></div>';
+                return;
+            }
+            list.innerHTML = repairs.map(function(repair) {
+                return '<div class="repair-trash-item"><div class="d-flex justify-content-between gap-3">'
+                    + '<div><div class="repair-trash-item-title">#' + escapeRepairTrashHtml(repair.repairNumber) + ' · ' + escapeRepairTrashHtml(repair.customerName) + '</div>'
+                    + '<div class="repair-trash-item-meta">' + escapeRepairTrashHtml(repair.device || 'No device') + '</div>'
+                    + '<div class="repair-trash-item-meta">Deleted ' + escapeRepairTrashHtml(repair.deletedDate) + '</div></div>'
+                    + '<button type="button" class="btn btn-sm btn-primary align-self-center" onclick="restoreRepairFromTrash(' + Number(repair.id) + ')"><i class="material-icons" style="font-size:15px;vertical-align:middle;">restore</i> Restore</button>'
+                    + '</div></div>';
+            }).join('');
+        }).catch(function(error) {
+            emptyButton.disabled = true;
+            list.innerHTML = '<div class="alert alert-danger">' + escapeRepairTrashHtml(error.message) + '</div>';
+        });
+    };
+
+    window.restoreRepairFromTrash = function(id) {
+        if (!confirm('Restore this repair? Its returned inventory parts will be applied to the repair again.')) return;
+        fetch('@Url.Action("RestoreRepairJson", "Repairs")?id=' + encodeURIComponent(id), { method:'POST' })
+            .then(function(response){ return response.json(); })
+            .then(function(result) {
+                if (!result.success) throw new Error(result.message || 'Could not restore repair');
+                loadRepairTrash();
+                alert(result.message);
+                window.location.reload();
+            }).catch(function(error){ alert(error.message || 'Could not restore repair'); });
+    };
+
+    window.emptyRepairTrash = function() {
+        if (!confirm('Permanently delete every repair in Repair Trash? This cannot be undone.')) return;
+        fetch('@Url.Action("EmptyRepairTrashJson", "Repairs")', { method:'POST' })
+            .then(function(response){ return response.json(); })
+            .then(function(result) {
+                if (!result.success) throw new Error(result.message || 'Could not empty Repair Trash');
+                loadRepairTrash();
+            }).catch(function(error){ alert(error.message || 'Could not empty Repair Trash'); });
+    };
 </script>

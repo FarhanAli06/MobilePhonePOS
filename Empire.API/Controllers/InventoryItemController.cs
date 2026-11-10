@@ -159,6 +159,17 @@ public class InventoryItemController : BaseApiController
     {
         try
         {
+            var role = GetCurrentUserRole();
+            if (!role.Equals("Admin", StringComparison.OrdinalIgnoreCase) &&
+                !role.Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, new
+                {
+                    success = false,
+                    message = "Only an administrator can delete inventory."
+                });
+            }
+
             var shopId = GetCurrentShopId();
             var deleted = await _service.DeleteInventoryItemAsync(id, shopId);
             if (!deleted)
@@ -193,6 +204,44 @@ public class InventoryItemController : BaseApiController
         }
     }
 
+    [HttpPost("{id:int}/receive")]
+    public async Task<IActionResult> Receive(int id, [FromBody] ReceiveInventoryBatchRequest request)
+    {
+        try
+        {
+            var shopId = GetCurrentShopId();
+            var batch = await _service.ReceiveBatchAsync(id, request, shopId);
+            return SuccessResponse(batch, $"Received {request.Quantity} item(s) as a new FIFO batch");
+        }
+        catch (ArgumentException ex) { return ErrorResponse(ex.Message, 400); }
+        catch (InvalidOperationException ex) { return ErrorResponse(ex.Message, 404); }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error receiving inventory batch for {Id}", id);
+            return ErrorResponse("Error receiving inventory batch", 500);
+        }
+    }
+
+    [HttpGet("{id:int}/batches")]
+    public async Task<IActionResult> Batches(int id)
+    {
+        var batches = await _service.GetBatchesAsync(id, GetCurrentShopId());
+        return SuccessResponse(batches);
+    }
+
+    [HttpPost("reset-stock")]
+    public async Task<IActionResult> ResetStock([FromBody] ResetInventoryStockRequest request)
+    {
+        if (!GetCurrentUserRole().Equals("SuperAdmin", StringComparison.OrdinalIgnoreCase))
+            return ErrorResponse("Only a super administrator can reset all inventory stock", 403);
+        if (!string.Equals(request.Confirmation, "RESET INVENTORY", StringComparison.Ordinal))
+            return ErrorResponse("Inventory reset confirmation did not match", 400);
+
+        var itemCount = await _service.ResetStockAsync(GetCurrentShopId());
+        _logger.LogWarning("Inventory stock reset to zero for {ItemCount} items in shop {ShopId}", itemCount, GetCurrentShopId());
+        return SuccessResponse(new { itemCount }, "Inventory quantities and FIFO batch balances reset to zero");
+    }
+
     // GET /api/inventory-items/sku-exists?sku=ABC-DEF-GHI-0001&shopId=1
     [HttpGet("sku-exists")]
     public async Task<IActionResult> SkuExists(
@@ -211,4 +260,9 @@ public class InventoryItemController : BaseApiController
             return ErrorResponse("Error checking SKU", 500);
         }
     }
+}
+
+public sealed class ResetInventoryStockRequest
+{
+    public string Confirmation { get; set; } = string.Empty;
 }

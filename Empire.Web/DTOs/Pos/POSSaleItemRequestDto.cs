@@ -15,6 +15,7 @@
         public bool IsCustomItem { get; set; }
         public bool IsTaxable { get; set; }
         public string? Note { get; set; }
+        public string ItemStatus { get; set; } = "In Stock";
         public int? RepairId { get; set; }
         public decimal? OriginalPrice { get; set; }
     }

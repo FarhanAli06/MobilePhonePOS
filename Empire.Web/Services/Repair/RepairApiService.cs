@@ -95,6 +95,23 @@ public class RepairApiService : BaseApiService, IRepairApiService
         }
     }
 
+    public async Task<IEnumerable<RepairDto>> GetDeletedAsync()
+    {
+        var result = await GetAsync<IEnumerable<RepairDto>>($"{RouteConstants.ApiPaths.Repairs}/trash");
+        return result ?? Enumerable.Empty<RepairDto>();
+    }
+
+    public async Task<bool> RestoreAsync(int repairId)
+    {
+        var result = await PostAsync<object, string>($"{RouteConstants.ApiPaths.Repairs}/{repairId}/restore", new { });
+        return result != null;
+    }
+
+    public async Task<bool> EmptyTrashAsync()
+    {
+        return await DeleteAsync($"{RouteConstants.ApiPaths.Repairs}/trash");
+    }
+
     public async Task<IEnumerable<RepairDto>> GetByCustomerAsync(int customerId, int shopId)
     {
         try
@@ -243,6 +260,36 @@ public class RepairApiService : BaseApiService, IRepairApiService
         {
             _typedLogger.LogError(ex, "Error getting parts for repair {RepairId}", repairId);
             return Enumerable.Empty<RepairPartDto>();
+        }
+    }
+
+    public async Task<IEnumerable<WaitingPartAlertDto>> GetReadyWaitingPartsAsync()
+    {
+        try
+        {
+            var result = await GetAsync<IEnumerable<WaitingPartAlertDto>>(
+                $"{RouteConstants.ApiPaths.Repairs}/waiting-parts/ready");
+            return result ?? Enumerable.Empty<WaitingPartAlertDto>();
+        }
+        catch (Exception ex)
+        {
+            _typedLogger.LogError(ex, "Error getting ready waiting-part alerts");
+            return Enumerable.Empty<WaitingPartAlertDto>();
+        }
+    }
+
+    public async Task<bool> AllocateWaitingPartAsync(int repairPartId)
+    {
+        try
+        {
+            var result = await PostAsync<object, object>(
+                $"{RouteConstants.ApiPaths.Repairs}/parts/{repairPartId}/allocate", new { });
+            return result != null;
+        }
+        catch (Exception ex)
+        {
+            _typedLogger.LogError(ex, "Error allocating waiting part {RepairPartId}", repairPartId);
+            return false;
         }
     }
 

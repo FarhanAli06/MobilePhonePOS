@@ -5,6 +5,11 @@ using Empire.Web.Services.InventoryManagement;
 using Empire.Web.Services.Session;
 using Empire.Web.DTOs.Inventory;
 using Empire.Web.Services;
+using System.Text;
+using Windows.Data.Pdf;
+using Windows.Graphics.Imaging;
+using Windows.Media.Ocr;
+using Windows.Storage.Streams;
 namespace Empire.Web.Controllers;
 
 [SessionAuthorize]
@@ -39,7 +44,9 @@ public class InventoriesController : BaseController
                 return RedirectToAction("Login", "Home");
             }
 
-            var currentShopId = GetCurrentShopId();            ViewBag.PageTitle = "Inventory Management";
+            var currentShopId = GetCurrentShopId();
+            ViewBag.PageTitle = "Inventory Management";
+            ViewBag.IsInventoryAdmin = IsAdmin();
             
             return View();
         }
@@ -50,13 +57,135 @@ public class InventoriesController : BaseController
         }
     }
 
+    [HttpPost("ExtractSupplierDocument")]
+    [RequestSizeLimit(15 * 1024 * 1024)]
+    public async Task<IActionResult> ExtractSupplierDocument(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return Json(new { success = false, message = "Choose a PDF or screenshot first." });
+        }
+
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        var allowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            ".pdf", ".png", ".jpg", ".jpeg", ".webp"
+        };
+
+        if (!allowedExtensions.Contains(extension))
+        {
+            return Json(new { success = false, message = "Only PDF, PNG, JPG, JPEG, and WEBP invoice files are supported." });
+        }
+
+        try
+        {
+            var ocrEngine = OcrEngine.TryCreateFromUserProfileLanguages();
+            if (ocrEngine == null)
+            {
+                return Json(new { success = false, message = "Windows text recognition is unavailable. Install the English language OCR feature, then try again." });
+            }
+
+            await using var uploaded = file.OpenReadStream();
+            using var content = new MemoryStream();
+            await uploaded.CopyToAsync(content);
+            content.Position = 0;
+
+            var text = extension == ".pdf"
+                ? await ReadPdfTextAsync(content, ocrEngine)
+                : await ReadImageTextAsync(content, ocrEngine);
+
+            return Json(new
+            {
+                success = true,
+                text = text.Trim(),
+                message = string.IsNullOrWhiteSpace(text)
+                    ? "No readable text was found in the document."
+                    : "Document text extracted successfully."
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unable to extract supplier document {FileName}", file.FileName);
+            return Json(new { success = false, message = "The document could not be read. Try a clearer screenshot or paste the order text instead." });
+        }
+    }
+
+    private static async Task<string> ReadImageTextAsync(Stream source, OcrEngine ocrEngine)
+    {
+        using var randomAccessStream = source.AsRandomAccessStream();
+        var decoder = await BitmapDecoder.CreateAsync(randomAccessStream);
+        using var bitmap = await decoder.GetSoftwareBitmapAsync(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied);
+        var result = await ocrEngine.RecognizeAsync(bitmap);
+        return FormatOcrRows(result);
+    }
+
+    private static async Task<string> ReadPdfTextAsync(Stream source, OcrEngine ocrEngine)
+    {
+        using var randomAccessStream = source.AsRandomAccessStream();
+        var document = await PdfDocument.LoadFromStreamAsync(randomAccessStream);
+        var text = new StringBuilder();
+        var pageCount = Math.Min(document.PageCount, 25u);
+
+        for (uint pageNumber = 0; pageNumber < pageCount; pageNumber++)
+        {
+            using var page = document.GetPage(pageNumber);
+            using var renderedPage = new InMemoryRandomAccessStream();
+            var destinationWidth = (uint)Math.Clamp(page.Size.Width * 2.0, 1200.0, 2400.0);
+            await page.RenderToStreamAsync(renderedPage, new PdfPageRenderOptions { DestinationWidth = destinationWidth });
+            renderedPage.Seek(0);
+
+            var decoder = await BitmapDecoder.CreateAsync(renderedPage);
+            using var bitmap = await decoder.GetSoftwareBitmapAsync(BitmapPixelFormat.Bgra8, BitmapAlphaMode.Premultiplied);
+            var result = await ocrEngine.RecognizeAsync(bitmap);
+            var pageText = FormatOcrRows(result);
+            if (!string.IsNullOrWhiteSpace(pageText))
+            {
+                text.AppendLine(pageText);
+            }
+        }
+
+        return text.ToString();
+    }
+
+    private static string FormatOcrRows(OcrResult result)
+    {
+        var segments = result.Lines
+            .Where(line => line.Words.Count > 0 && !string.IsNullOrWhiteSpace(line.Text))
+            .Select(line => new
+            {
+                Top = line.Words.Min(word => word.BoundingRect.Y),
+                Left = line.Words.Min(word => word.BoundingRect.X),
+                Text = line.Text.Trim()
+            })
+            .OrderBy(segment => segment.Top)
+            .ThenBy(segment => segment.Left)
+            .ToList();
+
+        var rows = new List<List<(double Top, double Left, string Text)>>();
+        foreach (var segment in segments)
+        {
+            var row = rows.LastOrDefault();
+            var rowTop = row?.Average(value => value.Top) ?? double.MinValue;
+            if (row == null || Math.Abs(segment.Top - rowTop) > 26)
+            {
+                row = new List<(double Top, double Left, string Text)>();
+                rows.Add(row);
+            }
+            row.Add((segment.Top, segment.Left, segment.Text));
+        }
+
+        return string.Join(Environment.NewLine, rows.Select(row =>
+            string.Join("   ", row.OrderBy(value => value.Left).Select(value => value.Text))));
+    }
+
     [HttpGet("GetInventoryItems")]
     public async Task<IActionResult> GetInventoryItems(
         int? brandId = null,
         int? deviceCategoryId = null,
         int? deviceModelId = null,
         int? inventoryCategoryId = null,
-        string stockStatus = null)
+        string stockStatus = null,
+        string search = null)
     {
         try
         {
@@ -68,7 +197,8 @@ public class InventoriesController : BaseController
                 deviceCategoryId,
                 deviceModelId,
                 inventoryCategoryId,
-                stockStatus);
+                stockStatus,
+                search);
 
             _logger.LogInformation("Found {Count} inventory items for shop {ShopId}", items.Count, currentShopId);
 
@@ -102,6 +232,8 @@ public class InventoriesController : BaseController
                 id = item.Id,
                 name = item.Name,
                 sku = item.SKU,
+                variant = item.Variant,
+                color = item.Color,
                 description = item.Description,
                 brandId = item.BrandId,
                 brandName = item.Brand,
@@ -180,6 +312,8 @@ public class InventoriesController : BaseController
                 CategoryId = request.CategoryId,
                 Name = request.Name?.Trim() ?? string.Empty,
                 SKU = request.SKU.Trim(),
+                Variant = request.Variant?.Trim() ?? string.Empty,
+                Color = request.Color?.Trim() ?? string.Empty,
                 Description = request.Description?.Trim() ?? string.Empty,
                 BrandId = request.BrandId,
                 DeviceCategoryId = request.DeviceCategoryId,
@@ -196,13 +330,13 @@ public class InventoriesController : BaseController
             };
 
             var currentUserId = GetCurrentUserId();
-            await _inventoryService.CreateInventoryItemAsync(inventoryItem, currentUserId);
+            var createdItem = await _inventoryService.CreateInventoryItemAsync(inventoryItem, currentUserId);
 
             var stockMessage = request.CurrentStock > 0 
                 ? $"Inventory item created with initial stock of {request.CurrentStock}."
                 : "Inventory item created. Use Stock Movements to add stock.";
             
-            return Json(new { success = true, message = stockMessage });
+            return Json(new { success = true, message = stockMessage, id = createdItem.Id });
         }
         catch (Exception ex)
         {
@@ -246,6 +380,8 @@ public class InventoriesController : BaseController
             item.CategoryId = request.CategoryId;
             item.Name = request.Name?.Trim() ?? string.Empty;
             item.SKU = request.SKU?.Trim() ?? string.Empty;
+            item.Variant = request.Variant?.Trim() ?? string.Empty;
+            item.Color = request.Color?.Trim() ?? string.Empty;
             item.Description = request.Description?.Trim() ?? string.Empty;
             item.BrandId = request.BrandId ?? item.BrandId;
             item.DeviceCategoryId = request.DeviceCategoryId ?? item.DeviceCategoryId;
@@ -293,6 +429,12 @@ public class InventoriesController : BaseController
     {
         try
         {
+            if (!IsAdmin())
+            {
+                return StatusCode(StatusCodes.Status403Forbidden,
+                    new { success = false, message = "Only an administrator can delete inventory." });
+            }
+
             var currentShopId = GetCurrentShopId();
             var deleted = await _inventoryService.DeleteInventoryItemAsync(id, currentShopId);
 
@@ -308,5 +450,30 @@ public class InventoriesController : BaseController
             _logger.LogError(ex, "Error deleting inventory item");
             return Json(new { success = false, message = $"Error deleting inventory item: {ex.Message}" });
         }
+    }
+
+    [HttpPost("ReceiveBatch/{id:int}")]
+    public async Task<IActionResult> ReceiveBatch(int id, [FromBody] ReceiveInventoryBatchRequest request)
+    {
+        try
+        {
+            if (request.Quantity <= 0) return Json(new { success = false, message = "Quantity must be greater than zero." });
+            var batch = await _inventoryService.ReceiveBatchAsync(id, request);
+            return batch == null
+                ? Json(new { success = false, message = "The batch could not be received." })
+                : Json(new { success = true, message = $"Received {request.Quantity} item(s) as a new FIFO batch.", data = batch });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error receiving FIFO batch for inventory item {Id}", id);
+            return Json(new { success = false, message = ex.Message });
+        }
+    }
+
+    [HttpGet("BatchHistory/{id:int}")]
+    public async Task<IActionResult> BatchHistory(int id)
+    {
+        try { return Json(new { success = true, data = await _inventoryService.GetBatchesAsync(id) }); }
+        catch (Exception ex) { return Json(new { success = false, message = ex.Message }); }
     }
 }

@@ -1,6 +1,8 @@
 using Empire.Web.DTOs.Auth;
 using Empire.Web.Services.Auth;
 using Empire.Web.Services.Http;
+using System.Net;
+using System.Text.Json;
 
 namespace Empire.Web.Services.API;
 
@@ -23,15 +25,26 @@ public class AuthApiService : IAuthApiService
 
     public async Task<LoginResponseDto?> LoginAsync(LoginRequestDto request)
     {
-        try
-        {
-            return await _httpClient.PostAsync<LoginRequestDto, LoginResponseDto>($"{BaseEndpoint}/login", request);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error during login");
+        // Use the raw response here so a stopped API is not mistaken for bad
+        // credentials. The generic HTTP helper intentionally converts every
+        // failure to null, which made the login page show the wrong message.
+        using var response = await _httpClient.PostRawAsync($"{BaseEndpoint}/login", request);
+
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
             return null;
-        }
+
+        response.EnsureSuccessStatusCode();
+
+        var json = await response.Content.ReadAsStringAsync();
+        using var document = JsonDocument.Parse(json);
+        var payload = document.RootElement.TryGetProperty("data", out var data)
+            ? data.GetRawText()
+            : json;
+
+        return JsonSerializer.Deserialize<LoginResponseDto>(payload, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        });
     }
 
     public async Task<LoginResponseDto?> RegisterAsync(RegisterRequest request)

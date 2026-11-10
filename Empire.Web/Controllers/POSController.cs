@@ -20,6 +20,8 @@ using Empire.Web.DTOs.SaleItem;
 using Empire.Web.DTOs.Common;
 using Empire.Web.Services.Helper;
 using Empire.Web.Services.POSMapping;
+using Empire.Web.Services.Printing;
+using System.Text;
 
 namespace Empire.Web.Controllers
 {
@@ -374,8 +376,15 @@ namespace Empire.Web.Controllers
                         {
                             results.AddRange(devices.Select(d => new
                             {
-                                id = $"dev_{d.Id}",
+                                id = d.Id,
                                 name = $"{d.Brand} {d.Model}",
+                                description = string.Join(" | ", new[]
+                                {
+                                    string.IsNullOrWhiteSpace(d.Imei) ? null : $"IMEI: {d.Imei}",
+                                    string.IsNullOrWhiteSpace(d.Storage) ? null : d.Storage,
+                                    string.IsNullOrWhiteSpace(d.Color) ? null : d.Color,
+                                    string.IsNullOrWhiteSpace(d.Carrier) ? null : d.Carrier
+                                }.Where(value => !string.IsNullOrWhiteSpace(value))),
                                 brand = d.Brand,
                                 category = d.Category,
                                 imei = d.Imei,
@@ -486,6 +495,7 @@ namespace Empire.Web.Controllers
                     },
                     customer = new
                     {
+                        id    = sale.CustomerId,
                         name  = string.IsNullOrEmpty(sale.CustomerName) ? "Walk-in Customer" : sale.CustomerName,
                         email = "",
                         phone = "",
@@ -494,14 +504,22 @@ namespace Empire.Web.Controllers
                     shop = new { name = "", email = "", address = "", logo = "", website = "" },
                     items = sale.Items?.Select(i => new
                     {
+                        id              = i.Id,
                         name            = i.ItemName ?? "",
                         description     = i.Description ?? "",
                         quantity        = i.Quantity,
                         unitPrice       = i.UnitPrice,
                         totalPrice      = i.TotalPrice,
                         costPrice       = i.CostPrice,
+                        itemStatus      = i.ItemStatus,
                         inventoryItemId = i.InventoryItemId,
-                        isCustomItem    = i.IsCustomItem
+                        repairId        = i.RepairId,
+                        isCustomItem    = i.IsCustomItem,
+                        itemType        = i.RepairId.HasValue ? "Repair"
+                            : i.InventoryItemId.HasValue ? "Inventory"
+                            : i.IsCustomItem ? "Custom"
+                            : "Device",
+                        isTaxable       = true
                     }) ?? Enumerable.Empty<object>(),
                     payment = new
                     {
@@ -528,6 +546,96 @@ namespace Empire.Web.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting invoice data");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> PrintReceipt(int saleId)
+        {
+            try
+            {
+                var sale = await _posApiService.GetSaleAsync(saleId);
+                if (sale == null) return Json(new { success = false, message = "Sale not found" });
+
+                var line = new StringBuilder();
+                line.AppendLine($"Receipt: {sale.SaleNumber ?? sale.InvoiceNumber}");
+                line.AppendLine($"Date: {sale.SaleDate.ToUserTime(_timezoneService):MM/dd/yyyy h:mm tt}");
+                line.AppendLine($"Customer: {(string.IsNullOrWhiteSpace(sale.CustomerName) ? "Walk-in Customer" : sale.CustomerName)}");
+                line.AppendLine("------------------------------------------");
+                foreach (var item in sale.Items ?? [])
+                {
+                    line.AppendLine(item.ItemName ?? "Item");
+                    line.AppendLine($"  {item.Quantity} x {item.UnitPrice:C2}     {item.TotalPrice:C2}");
+                }
+                line.AppendLine("------------------------------------------");
+                line.AppendLine($"Subtotal:                    {sale.SubTotal:C2}");
+                if (sale.TaxAmount != 0) line.AppendLine($"Tax:                         {sale.TaxAmount:C2}");
+                if (sale.DiscountAmount != 0) line.AppendLine($"Discount:                   -{sale.DiscountAmount:C2}");
+                line.AppendLine($"TOTAL:                       {sale.TotalAmount:C2}");
+                var payments = sale.Payments?.Select(p => p.PaymentMethod).Where(p => !string.IsNullOrWhiteSpace(p));
+                line.AppendLine($"Payment: {string.Join(", ", payments ?? [])}");
+
+                var number = sale.SaleNumber ?? sale.InvoiceNumber ?? saleId.ToString();
+                RawReceiptPrinter.Print(line.ToString(), number, logoPath: Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "empire-original-logo.png"));
+                return Json(new { success = true, printer = RawReceiptPrinter.ReceiptPrinterName });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error printing receipt {SaleId}", saleId);
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public IActionResult PrintReceiptTest(int copies = 1)
+        {
+            try
+            {
+                var stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
+                RawReceiptPrinter.Print("THERMAL PRINTER TEST\nPOS-80C connection successful\n80mm receipt route (not DYMO)\n", $"TEST-{stamp}", Math.Clamp(copies, 1, 3), Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "empire-original-logo.png"));
+                return Json(new { success = true, printer = RawReceiptPrinter.ReceiptPrinterName, copies = Math.Clamp(copies, 1, 3) });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error printing POS-80C test receipt");
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public IActionResult PrintCartReceipt([FromBody] PrintCartReceiptRequestDto request)
+        {
+            try
+            {
+                if (request.Items.Count == 0)
+                    return Json(new { success = false, message = "Cart is empty" });
+
+                var number = $"CART-{DateTime.Now:yyyyMMdd-HHmmss}";
+                var line = new StringBuilder();
+                line.AppendLine($"Receipt: {number}");
+                line.AppendLine($"Date: {DateTime.Now:MM/dd/yyyy h:mm tt}");
+                line.AppendLine($"Customer: {(string.IsNullOrWhiteSpace(request.CustomerName) ? "Walk-in Customer" : request.CustomerName)}");
+                line.AppendLine("------------------------------------------");
+                foreach (var item in request.Items)
+                {
+                    var quantity = Math.Max(1, item.Quantity);
+                    line.AppendLine(item.Name ?? "Item");
+                    line.AppendLine($"  {quantity} x {item.Price:C2}     {(quantity * item.Price):C2}");
+                }
+                line.AppendLine("------------------------------------------");
+                line.AppendLine($"TOTAL:                       {request.Total:C2}");
+                line.AppendLine("CURRENT CART / PAYMENT PENDING");
+
+                RawReceiptPrinter.Print(line.ToString(), number, logoPath: Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "images", "empire-original-logo.png"));
+                return Json(new { success = true, printer = RawReceiptPrinter.ReceiptPrinterName });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error printing current POS cart receipt");
                 return Json(new { success = false, message = ex.Message });
             }
         }
@@ -685,30 +793,57 @@ namespace Empire.Web.Controllers
         {
             try
             {
+                request.Items ??= new List<UpdateSaleItemRequestDto>();
+                request.Payments ??= new List<UpdatePaymentRequestDto>();
+                if (request.Items.Count == 0)
+                    return Json(new { success = false, message = "Sale must contain at least one item." });
+
+                var subtotal = request.SubTotal ?? request.Items.Sum(i =>
+                    i.TotalPrice ?? (i.UnitPrice * i.Quantity));
+                var tax = request.TaxAmount ?? 0m;
+                var discount = request.DiscountAmount ?? 0m;
+                var total = request.TotalAmount ?? (subtotal + tax - discount);
+
                 var posRequest = new POSUpdateSaleRequestDto
                 {
                     CustomerId = request.CustomerId,
                     Items = request.Items.Select(i => new POSSaleItemRequestDto
                     {
-                        ItemType        = i.ItemType,
+                        ItemType        = !string.IsNullOrWhiteSpace(i.ItemType)
+                            ? i.ItemType
+                            : i.RepairId.HasValue ? "Repair"
+                            : i.InventoryItemId.HasValue ? "Inventory"
+                            : i.IsCustomItem ? "Custom"
+                            : "Device",
                         ItemReferenceId = i.ItemReferenceId,
+                        InventoryItemId = i.InventoryItemId,
+                        RepairId        = i.RepairId,
                         ItemName        = i.ItemName,
+                        Description     = i.Description,
                         Quantity        = i.Quantity,
                         UnitPrice       = i.UnitPrice,
-                        TotalPrice      = i.TotalPrice ?? 0m,
-                        Cost            = i.CostPrice  // map CostPrice → Cost
+                        TotalPrice      = i.TotalPrice ?? (i.UnitPrice * i.Quantity),
+                        DiscountAmount  = i.DiscountAmount ?? 0m,
+                        Cost            = i.CostPrice,
+                        IsCustomItem    = i.IsCustomItem,
+                        IsTaxable       = i.IsTaxable,
+                        ItemStatus      = string.IsNullOrWhiteSpace(i.ItemStatus) ? "In Stock" : i.ItemStatus
                     }).ToList(),
                     Payments = request.Payments.Select(p => new POSPaymentRequestDto
                     {
                         PaymentMethod = p.PaymentMethod,
                         Amount = p.Amount,
+                        // The API contract calls this TransactionId. Preserve the
+                        // existing reference while allowing a payment-method-only edit.
+                        TransactionId = p.TransactionId ?? p.ReferenceNumber,
                         ReferenceNumber = p.ReferenceNumber
                     }).ToList(),
-                    SubTotal = request.SubTotal,
-                    TaxAmount = request.TaxAmount,
-                    DiscountAmount = request.DiscountAmount,
-                    TotalAmount = request.TotalAmount,
+                    SubTotal = subtotal,
+                    TaxAmount = tax,
+                    DiscountAmount = discount,
+                    TotalAmount = total,
                     PaymentStatus = request.PaymentStatus
+                    ,ChangeReason = request.ChangeReason
                 };
 
                 var result = await _posApiService.UpdateSaleAsync(request.SaleId, posRequest);
@@ -731,6 +866,27 @@ namespace Empire.Web.Controllers
                 _logger.LogError(ex, "Error updating sale");
                 return Json(new { success = false, message = ex.Message });
             }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetSaleHistory(int saleId)
+        {
+            var history = await _posApiService.GetSaleHistoryAsync(saleId);
+            return Json(new { success = history != null, data = history ?? new List<SaleHistoryDto>() });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetSaleReturns(int saleId)
+        {
+            var returns = await _posApiService.GetSaleReturnsAsync(saleId);
+            return Json(new { success = returns != null, data = returns ?? new List<SaleReturnHistoryDto>() });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ProcessReturn(int saleId, [FromBody] ProcessSaleReturnDto request)
+        {
+            var result = await _posApiService.ProcessReturnAsync(saleId, request);
+            return Json(new { success = result != null, data = result, message = result == null ? "Return could not be processed" : "Return processed successfully" });
         }
     }
 }

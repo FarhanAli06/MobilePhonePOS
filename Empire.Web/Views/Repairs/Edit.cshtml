@@ -63,15 +63,16 @@
 <div id="editNotification" class="alert no-print" role="alert"></div>
 
 <!-- Page header -->
-<div class="page-header no-print">
+<div class="page-header no-print" id="repairLabelData"
+     data-customer-name="@Model.CustomerName"
+     data-customer-phone="@Model.CustomerPhone"
+     data-repair-type="@Model.Description"
+     data-repair-date="@Model.CreatedDate.ToString("MM/dd/yyyy")">
     <h4>
         <i class="fas fa-edit me-2 text-primary"></i>Edit Repair
         <small class="text-muted ms-2" style="font-size:.85rem;">@Model.CustomerName</small>
     </h4>
     <div class="d-flex gap-2">
-        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="printRepair()">
-            <i class="fas fa-print me-1"></i>Print
-        </button>
         <a asp-action="Index" class="btn btn-sm btn-outline-secondary">
             <i class="fas fa-arrow-left me-1"></i>Back
         </a>
@@ -153,6 +154,11 @@
                                    value="@Model.Cost.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)" />
                         </div>
                     </div>
+                </div>
+                <div class="form-check mt-3">
+                    <input class="form-check-input" type="checkbox" id="noInventoryPartUsed">
+                    <label class="form-check-label" for="noInventoryPartUsed">This repair used no inventory part (labor/diagnostic only)</label>
+                    <div class="form-text">A completed repair must include an inventory part unless this box is checked.</div>
                 </div>
             </div>
         </div>
@@ -342,7 +348,6 @@
 </div>
 
 @section Scripts {
-    <script src="~/js/device-selector.js"></script>
     <script src="~/js/repair-data-loader.js"></script>
     <script>
     (function () {
@@ -924,6 +929,7 @@
                 parts:            selectedParts.map(function(p) {
                     return { inventoryItemId: parseInt(p.id), quantity: p.quantity, unitPrice: p.price, partName: p.name };
                 }),
+                noInventoryPartUsed: document.getElementById('noInventoryPartUsed').checked,
                 payments:         []  // payments are managed via the ledger API independently
             };
 
@@ -949,12 +955,6 @@
                     showNotif('Network error — please try again', 'danger');
                 }
             });
-        };
-
-        /* ── Print ─────────────────────────────────────────────────── */
-        window.printRepair = function() {
-            document.getElementById('printRepairNum').textContent = repairId;
-            window.print();
         };
 
         /* ── Notification ──────────────────────────────────────────── */

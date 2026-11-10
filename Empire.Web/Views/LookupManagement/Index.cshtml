@@ -640,6 +640,23 @@ $(document).ready(function() {
                 break;
         }
     });
+
+    // Open the requested management section when launched from Inventory's
+    // "Add new" cards, while keeping all creation inside the existing manager.
+    const lookupParams = new URLSearchParams(window.location.search);
+    const requestedTab = lookupParams.get('tab');
+    const createRequested = lookupParams.get('create') === '1';
+    const createActions = {
+        'brands': showCreateBrandModal,
+        'device-categories': showCreateDeviceCategoryModal,
+        'device-models': showCreateDeviceModelModal,
+        'items': showCreateItemModal
+    };
+    if (requestedTab && createActions[requestedTab]) {
+        const trigger = document.querySelector('#' + requestedTab + '-tab');
+        if (trigger) bootstrap.Tab.getOrCreateInstance(trigger).show();
+        if (createRequested) setTimeout(createActions[requestedTab], 150);
+    }
     
     // Form submissions
     $('#brandForm').submit(function(e) {
@@ -1300,6 +1317,31 @@ function saveInventoryCategory() {
     });
 }
 
+function deleteInventoryCategory(id) {
+    if (!confirm('Are you sure you want to delete this inventory category?')) {
+        return;
+    }
+
+    $.ajax({
+        url: '@Url.Action("DeleteInventoryCategory", "LookupManagement")/' + id,
+        type: 'DELETE',
+        success: function(response) {
+            if (response.success) {
+                loadInventoryCategories();
+                showToast('success', response.message);
+            } else {
+                showToast('error', response.message || 'This inventory category could not be deleted.');
+            }
+        },
+        error: function(xhr) {
+            const message = xhr.responseJSON && xhr.responseJSON.message
+                ? xhr.responseJSON.message
+                : 'Error deleting inventory category';
+            showToast('error', message);
+        }
+    });
+}
+
 function saveLookupValue() {
     let lvValid = true;
     ['#lookupValueCategory','#lookupValueValue'].forEach(function(sel) {
@@ -1714,4 +1756,3 @@ function loadStylesForSelect(selector, selectedId) {
 
 </script>
 }
-

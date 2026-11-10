@@ -159,9 +159,12 @@ function renderBrands() {
         brandCard.style.borderColor = brand.color || '#ccc';
         brandCard.onclick = () => selectBrand(brand.id);
         
+        const hasLogo = window.EmpireManufacturerLogos && window.EmpireManufacturerLogos.hasLogo(brand.name);
+        if (hasLogo) brandCard.classList.add('logo-only');
+        brandCard.setAttribute('aria-label', brand.name || 'Brand');
         brandCard.innerHTML = `
-            <i class="${brand.icon || 'fas fa-mobile-alt'}" style="color: ${brand.color || '#000'}"></i>
-            <span>${brand.name}</span>
+            ${hasLogo ? '' : `<i class="${brand.icon || 'fas fa-mobile-alt'}" style="color: ${brand.color || '#000'}"></i>`}
+            <span>${window.EmpireManufacturerLogos ? window.EmpireManufacturerLogos.markup(brand.name) : brand.name}</span>
         `;
         
         brandGrid.appendChild(brandCard);

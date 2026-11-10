@@ -3,8 +3,16 @@
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
 
+<style>
+    #createDeviceForm .device-section { background:#f8fafc; border:1px solid #e5e7eb; border-radius:14px; padding:16px; margin-bottom:14px; }
+    #createDeviceForm .form-label { color:#334155; font-size:.82rem; font-weight:700; margin-bottom:5px; }
+    #createDeviceForm .form-control, #createDeviceForm .form-select, #createDeviceForm .input-group-text { min-height:42px; border-color:#dbe2ea; }
+    #createDeviceForm .device-actions { display:flex; justify-content:flex-end; gap:10px; }
+    #createDeviceForm .device-actions .btn { min-width:145px; border-radius:10px; font-weight:700; }
+</style>
+
 <form id="createDeviceForm">
-    <div class="row">
+    <div class="row device-section">
         <div class="col-md-6 mb-3">
             <label for="deviceCustomerId" class="form-label">Customer *</label>
             <select id="deviceCustomerId" name="CustomerId" class="form-select" required>
@@ -20,66 +28,63 @@
         </div>
     </div>
     
-    <div class="row">
-        <div class="col-md-6 mb-3">
-            <label for="deviceBrandId" class="form-label">Brand *</label>
-            <select id="deviceBrandId" name="BrandId" class="form-select" required>
-                <option value="">Select Brand</option>
-            </select>
-        </div>
+    <div class="device-section">
+        <label class="form-label fw-semibold">Brand / Device Type / Model *</label>
+        <div id="posCreateDeviceSelectorContainer"></div>
+        <input type="hidden" id="deviceBrandId" name="BrandId" />
+        <input type="hidden" id="deviceCategoryId" name="DeviceCategoryId" />
+        <input type="hidden" id="deviceModelId" name="DeviceModelId" />
     </div>
     
-    <div class="row">
-        <div class="col-md-6 mb-3">
-            <label for="deviceCategoryId" class="form-label">Device Category *</label>
-            <select id="deviceCategoryId" name="DeviceCategoryId" class="form-select" required>
-                <option value="">Select Category</option>
-            </select>
-        </div>
-        
-        <div class="col-md-6 mb-3">
-            <label for="deviceModelId" class="form-label">Device Model *</label>
-            <select id="deviceModelId" name="DeviceModelId" class="form-select" required disabled>
-                <option value="">Select Model</option>
-            </select>
-        </div>
-    </div>
-    
-    <div class="row">
+    <div class="row device-section">
         <div class="col-md-6 mb-3">
             <label for="deviceIMEI" class="form-label">IMEI</label>
-            <input type="text" id="deviceIMEI" name="IMEI" class="form-control" placeholder="Enter IMEI">
-        </div>
-        
-        <div class="col-md-6 mb-3">
-            <label for="deviceSerialNumber" class="form-label">Serial Number</label>
-            <input type="text" id="deviceSerialNumber" name="SerialNumber" class="form-control" placeholder="Enter Serial Number">
-        </div>
-    </div>
-    
-    <div class="row">
-        <div class="col-md-6 mb-3">
-            <label for="deviceColor" class="form-label">Color</label>
-            <input type="text" id="deviceColor" name="Color" class="form-control" placeholder="Enter Color">
+            <input type="text" id="deviceIMEI" name="IMEISerialNumber" class="form-control" placeholder="IMEI or serial number">
         </div>
         
         <div class="col-md-6 mb-3">
             <label for="deviceStorage" class="form-label">Storage</label>
-            <input type="text" id="deviceStorage" name="Storage" class="form-control" placeholder="e.g., 64GB, 128GB">
+            <select id="deviceStorage" name="GB" class="form-select">
+                <option value="">Select or type storage</option>
+                <option value="16">16 GB</option><option value="32">32 GB</option><option value="64">64 GB</option>
+                <option value="128">128 GB</option><option value="256">256 GB</option><option value="512">512 GB</option>
+                <option value="1 TB">1 TB</option><option value="2 TB">2 TB</option>
+            </select>
         </div>
-    </div>
-    
-    <div class="mb-3">
-        <label for="deviceCondition" class="form-label">Condition</label>
-        <textarea id="deviceCondition" name="Condition" class="form-control" rows="2" placeholder="Device condition notes"></textarea>
-    </div>
-    
-    <div class="row">
+
+        <div class="col-md-6 mb-3">
+            <label for="deviceColor" class="form-label">Color</label>
+            <input type="text" id="deviceColor" name="Color" class="form-control" placeholder="Black, Blue, Natural Titanium">
+        </div>
+        
+        <div class="col-md-6 mb-3">
+            <label for="deviceCarrier" class="form-label">Carrier</label>
+            <select id="deviceCarrier" name="Carrier" class="form-select">
+                <option value="">Select or type carrier</option><option>Unlocked</option><option>AT&amp;T</option><option>T-Mobile</option><option>Verizon</option><option>Boost Mobile</option><option>Metro by T-Mobile</option><option>Cricket</option><option>US Cellular</option>
+            </select>
+        </div>
+
+        <div class="col-md-4 mb-3">
+            <label for="deviceNetworkStatus" class="form-label">Lock Status</label>
+            <select id="deviceNetworkStatus" name="NetworkStatus" class="form-select">
+                <option value="Unlocked">Unlocked</option>
+                <option value="Locked">Locked</option>
+            </select>
+        </div>
+        <div class="col-md-4 mb-3">
+            <label for="deviceBatteryHealth" class="form-label">Battery Health</label>
+            <div class="input-group"><input type="number" id="deviceBatteryHealth" name="BatteryHealthPercentage" class="form-control" min="0" max="100" placeholder="100"><span class="input-group-text">%</span></div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <label for="deviceCondition" class="form-label">Condition</label>
+            <input type="text" id="deviceCondition" name="ScratchesCondition" class="form-control" placeholder="Excellent, Good, Fair">
+        </div>
+
         <div class="col-md-6 mb-3">
             <label for="devicePurchasePrice" class="form-label">Purchase Price</label>
             <div class="input-group">
                 <span class="input-group-text">$</span>
-                <input type="number" id="devicePurchasePrice" name="PurchasePrice" class="form-control" step="0.01" min="0" placeholder="0.00">
+                <input type="number" id="devicePurchasePrice" name="BuyingPrice" class="form-control" step="0.01" min="0" placeholder="0.00">
             </div>
         </div>
         
@@ -90,30 +95,42 @@
                 <input type="number" id="deviceSellingPrice" name="SellingPrice" class="form-control" step="0.01" min="0" placeholder="0.00">
             </div>
         </div>
+        <div class="col-12 mb-1">
+            <label for="deviceNotes" class="form-label">Notes</label>
+            <textarea id="deviceNotes" name="Notes" class="form-control" rows="2" placeholder="Additional notes"></textarea>
+        </div>
     </div>
     
-    <div class="mb-3">
-        <label for="deviceNotes" class="form-label">Notes</label>
-        <textarea id="deviceNotes" name="Notes" class="form-control" rows="2" placeholder="Additional notes"></textarea>
-    </div>
-    
-    <div class="d-grid gap-2">
+    <div class="device-actions">
+        <button type="button" class="btn btn-light border" onclick="parent.$('#addDeviceModal').modal('hide')">
+            Cancel
+        </button>
         <button type="submit" class="btn btn-primary">
             <i class="fas fa-save me-2"></i>Save Device
-        </button>
-        <button type="button" class="btn btn-secondary" onclick="parent.$('#addDeviceModal').modal('hide')">
-            <i class="fas fa-times me-2"></i>Cancel
         </button>
     </div>
 </form>
 
 <script>
 $(document).ready(function() {
-    // Initialize Select2 for all dropdowns
-    $('#deviceCustomerId, #deviceCompanyId, #deviceBrandId, #deviceCategoryId, #deviceModelId').select2({
+    // Customer/company remain searchable dropdowns. Device selection uses the
+    // same visual step-by-step selector as the Repair page.
+    $('#deviceCustomerId, #deviceCompanyId').select2({
         theme: 'bootstrap-5',
         dropdownParent: $('#addDeviceModal'),
         width: '100%'
+    });
+    $('#deviceStorage, #deviceCarrier').select2({
+        theme: 'bootstrap-5', dropdownParent: $('#addDeviceModal'), width: '100%', tags: true,
+        placeholder: function(){ return $(this).attr('id') === 'deviceStorage' ? 'Select or type storage' : 'Select or type carrier'; }
+    });
+
+    EmpireDeviceSelector.create('posCreateDeviceSelectorContainer', {
+        selectorId: 'posCreateDevice',
+        showParts: false,
+        hiddenBrand: 'deviceBrandId',
+        hiddenCategory: 'deviceCategoryId',
+        hiddenModel: 'deviceModelId'
     });
     
     // Load customers
@@ -136,66 +153,32 @@ $(document).ready(function() {
         }
     });
     
-    // Load brands
-    $.get('/api/Lookup/GetBrands', function(response) {
-        const select = $('#deviceBrandId');
-        if (response.success && response.data) {
-            response.data.forEach(function(brand) {
-                select.append(`<option value="${brand.id}">${brand.name}</option>`);
-            });
-        }
-    });
-    
-    // Load categories
-    $.get('/api/Lookup/GetDeviceCategories', function(response) {
-        const select = $('#deviceCategoryId');
-        if (response.success && response.data) {
-            response.data.forEach(function(category) {
-                select.append(`<option value="${category.id}">${category.name}</option>`);
-            });
-        }
-    });
-    
-    // Load models when category changes
-    $('#deviceCategoryId').on('change', function() {
-        const categoryId = $(this).val();
-        const modelSelect = $('#deviceModelId');
-        
-        modelSelect.empty().append('<option value="">Select Model</option>');
-        
-        if (!categoryId) {
-            modelSelect.prop('disabled', true);
-            return;
-        }
-        
-        $.get(`/api/Lookup/GetDeviceModels?categoryId=${categoryId}`, function(response) {
-            if (response.success && response.data) {
-                response.data.forEach(function(model) {
-                    modelSelect.append(`<option value="${model.id}">${model.name}</option>`);
-                });
-                modelSelect.prop('disabled', false);
-            }
-        });
-    });
-    
     // Handle form submission
     $('#createDeviceForm').on('submit', function(e) {
         e.preventDefault();
         
+        if (!$('#deviceBrandId').val() || !$('#deviceCategoryId').val() || !$('#deviceModelId').val()) {
+            alert('Please select a brand, device type, and model.');
+            return;
+        }
+
         const formData = {
             CustomerId: parseInt($('#deviceCustomerId').val()) || null,
             CompanyId: parseInt($('#deviceCompanyId').val()) || null,
             BrandId: parseInt($('#deviceBrandId').val()),
             DeviceCategoryId: parseInt($('#deviceCategoryId').val()),
             DeviceModelId: parseInt($('#deviceModelId').val()),
-            IMEI: $('#deviceIMEI').val(),
-            SerialNumber: $('#deviceSerialNumber').val(),
+            IMEISerialNumber: $('#deviceIMEI').val().trim(),
+            GB: $('#deviceStorage').val().trim(),
             Color: $('#deviceColor').val(),
-            Storage: $('#deviceStorage').val(),
-            Condition: $('#deviceCondition').val(),
-            PurchasePrice: parseFloat($('#devicePurchasePrice').val()) || 0,
+            Carrier: $('#deviceCarrier').val(),
+            NetworkStatus: $('#deviceNetworkStatus').val(),
+            BatteryHealthPercentage: parseInt($('#deviceBatteryHealth').val()) || null,
+            ScratchesCondition: $('#deviceCondition').val(),
+            BuyingPrice: parseFloat($('#devicePurchasePrice').val()) || 0,
             SellingPrice: parseFloat($('#deviceSellingPrice').val()) || 0,
-            Notes: $('#deviceNotes').val()
+            Notes: $('#deviceNotes').val(),
+            IsAvailableForSale: true
         };
         
         $.ajax({

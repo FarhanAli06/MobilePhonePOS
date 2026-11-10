@@ -8,6 +8,7 @@ namespace Empire.Web.DTOs.Pos
         public string SaleNumber { get; set; } = string.Empty;
         public string InvoiceNumber { get; set; } = string.Empty;
         public DateTime SaleDate { get; set; }
+        public int? CustomerId { get; set; }
         public string? CustomerName { get; set; }
         public string? Notes { get; set; }
         public List<POSSaleItemDto> Items { get; set; } = new();

@@ -44,6 +44,7 @@ public class EditRepairViewModel
 
     // Read-only display properties
     public string CustomerName { get; set; } = string.Empty;
+    public string CustomerPhone { get; set; } = string.Empty;
     public string BrandName { get; set; } = string.Empty;
+    public DateTime CreatedDate { get; set; }
 }
-

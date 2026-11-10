@@ -17,6 +17,8 @@ namespace Empire.Web.DTOs.Device
         public string DeviceType { get; set; } = string.Empty;
         public string IMEISerialNumber { get; set; } = string.Empty;
         public string? GB { get; set; }
+        public string Color { get; set; } = string.Empty;
+        public string Carrier { get; set; } = string.Empty;
         public int? BatteryHealthPercentage { get; set; }
         public int? CompanyId { get; set; }
         public string NetworkStatus { get; set; } = string.Empty;
@@ -37,6 +39,6 @@ namespace Empire.Web.DTOs.Device
 
         public string DisplayName => $"{Brand} {Model} {(Year.HasValue ? $"({Year})" : "")}".Trim();
         public string StatusDisplay => IsSold ? "Sold" : (IsAvailableForSale ? "Available" : "Not for Sale");
-        public string ConditionSummary => $"Battery: {BatteryHealthPercentage ?? 0}%, Scratches: {ScratchesCondition}, Network: {NetworkStatus}";
+        public string ConditionSummary => $"Battery: {BatteryHealthPercentage ?? 0}%, Color: {Color}, Carrier: {Carrier}, Network: {NetworkStatus}";
     }
 }

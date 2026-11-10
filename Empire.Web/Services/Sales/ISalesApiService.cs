@@ -10,9 +10,5 @@ namespace Empire.Web.Services.Sales
         Task<ProfitReportDto?> GetProfitReportAsync(int shopId, DateTime startDate, DateTime endDate);
         Task<SaleSummaryDto?> GetSaleSummaryAsync(int shopId, DateTime startDate, DateTime endDate);
         Task<SalesReportDto?> GetSalesReportAsync(int shopId, DateTime startDate, DateTime endDate);
-        Task<object?> GetSaleDetailAsync(int saleId);
-        Task<object?> AddSalePaymentAsync(int saleId, string paymentMethod, decimal amount, string? transactionId);
-        Task<bool> UpdateSalePaymentAsync(int paymentId, string paymentMethod, decimal amount, string? transactionId);
-        Task<bool> DeleteSalePaymentAsync(int paymentId);
     }
 }

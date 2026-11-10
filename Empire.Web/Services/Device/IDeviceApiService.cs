@@ -13,6 +13,7 @@ namespace Empire.Web.Services.Device
         Task<IEnumerable<DeviceSelectionDto>> GetByShopAsync(int shopId);
         Task<IEnumerable<DeviceSelectionDto>> GetDevicesAsync(int shopId);
         Task<bool> DeleteAsync(int deviceId, int shopId);
+        Task<IEnumerable<DeviceHistoryDto>> GetHistoryAsync(int deviceId);
         
         // Business logic methods
         Task<DeviceDto?> ToggleAvailabilityAsync(int deviceId);

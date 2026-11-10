@@ -31,6 +31,8 @@ public class InventoryItemDto
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string SKU { get; set; } = string.Empty;
+    public string Variant { get; set; } = string.Empty;
+    public string Color { get; set; } = string.Empty;
 
     public int CurrentStock { get; set; }
     public int ReorderPoint { get; set; }
@@ -40,6 +42,13 @@ public class InventoryItemDto
     public decimal CostPrice { get; set; }
     public decimal RetailPrice { get; set; }
     public decimal WholesalePrice { get; set; }
+    public decimal LatestCost { get; set; }
+    public decimal AverageCost { get; set; }
+    public decimal FifoCost { get; set; }
+    public int FifoBatchRemaining { get; set; }
+    public DateTime? FifoBatchReceivedDate { get; set; }
+    public decimal CostDifference { get; set; }
+    public List<InventoryBatchDto> Batches { get; set; } = new();
 
     public bool EnableLowStockNotifications { get; set; }
     public bool IsActive { get; set; } = true;

@@ -84,6 +84,7 @@ public class POSMappingService : IPOSMappingService
                 IsCustomItem    = i.IsCustomItem,
                 IsTaxable       = i.IsTaxable,
                 Note            = i.Note,
+                ItemStatus      = i.ItemStatus,
                 RepairId        = i.RepairId
             }).ToList(),
             Payments = request.Payments.Select(p => new POSPaymentRequestDto

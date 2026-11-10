@@ -499,23 +499,249 @@
             display: none !important;
         }
     }
+
+    /* POS workflow shell: scoped to this page only. */
+    .pos-mode-bar { display:flex; gap:12px; padding:12px 16px; background:#fff; border-bottom:1px solid #e5e7eb; }
+    .pos-mode-button { flex:1; min-height:58px; border:1px solid #d9dee7; border-radius:14px; background:#fff; color:#172033; font-weight:700; font-size:16px; text-align:left; padding:10px 16px; transition:.18s ease; }
+    .pos-mode-button small { display:block; color:#7a8497; font-size:11px; font-weight:500; margin-top:2px; }
+    .pos-mode-button.active { background:#172033; color:#fff; border-color:#172033; box-shadow:0 7px 20px rgba(23,32,51,.18); }
+    .pos-mode-button.active small { color:#dce2ee; }
+    .pos-quick-heading { display:flex; align-items:center; justify-content:space-between; margin:4px 0 10px; }
+    .pos-category-grid { display:grid; grid-template-columns:repeat(3,minmax(130px,1fr)); gap:10px; margin-bottom:16px; }
+    .pos-category-tile { min-height:88px; border:1px solid #dfe3ea; border-radius:14px; background:#fff; padding:14px; cursor:pointer; display:flex; flex-direction:column; align-items:flex-start; justify-content:center; box-shadow:0 3px 10px rgba(16,24,40,.05); user-select:none; }
+    .pos-category-tile:hover { border-color:#315efb; transform:translateY(-1px); }
+    .pos-category-tile.dragging { opacity:.45; }
+    .pos-category-tile i { color:#315efb; font-size:21px; margin-bottom:8px; }
+    .pos-category-tile span { font-weight:700; color:#202a3c; }
+    .pos-drag-note { color:#8a93a3; font-size:11px; }
+    .pos-repair-row { cursor:pointer; }
+    .pos-repair-row:hover { background:#f3f6ff !important; }
+    .pos-repair-customer { font-size:15px; color:#172033; }
+    body.pos-quick-mode .pos-customer-block { display:none !important; }
+    .pos-cart-section { width:420px; min-width:350px; }
+    .cart-header { padding:9px 12px; }
+    .cart-items { padding:5px 8px; }
+    .cart-summary { padding:7px 10px !important; height:auto; max-height:55%; }
+    .cart-summary .card { margin-bottom:6px !important; }
+    .cart-summary .card-body { padding:8px !important; }
+    .pos-price-entry { border:2px solid #111 !important; background:#fff !important; font-weight:800; min-width:68px; }
+    .pos-price-entry:focus { border-color:#315efb !important; box-shadow:0 0 0 2px rgba(49,94,251,.15); }
+    @@media (max-width:900px) { .pos-category-grid { grid-template-columns:repeat(2,minmax(120px,1fr)); } }
+
+    /* Modern Empire checkout — intentionally scoped to the POS page. */
+    body:has(.pos-modern-shell) { overflow:hidden; background:#eef1f6; }
+    body:has(.pos-modern-shell) > .container-fluid { padding:0; max-width:none; }
+    body:has(.pos-modern-shell) > .container-fluid > .row { margin:0; }
+    body:has(.pos-modern-shell) .pos-command-bar { display:none !important; }
+    body:has(.pos-modern-shell) .main-content { padding:0 !important; overflow:hidden; }
+    body:has(.pos-modern-shell) .main-content > .pt-3 { margin:0 !important; padding:0 !important; }
+
+    .pos-modern-shell { --pos-red:#e33c3f; --pos-blue:#3377f2; --pos-green:#168a59; --pos-ink:#151820; --pos-muted:#6f7785; --pos-line:rgba(25,31,45,.10); --pos-panel:rgba(255,255,255,.88); display:grid; grid-template-columns:minmax(0,1fr); height:100vh; min-height:680px; overflow:hidden; color:var(--pos-ink); background:radial-gradient(circle at 75% 0%,rgba(227,60,63,.11),transparent 30%),radial-gradient(circle at 20% 100%,rgba(51,119,242,.09),transparent 32%),#eef1f6; font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    .pos-modern-rail { display:none !important; }
+    .pos-modern-mark { width:48px; height:48px; border-radius:16px; display:grid; place-items:center; color:#fff; text-decoration:none; background:linear-gradient(145deg,#ff5b5d,#c91d25); box-shadow:0 8px 24px rgba(227,60,63,.35); font-size:20px; }
+    .pos-modern-rail-links { display:flex; flex-direction:column; gap:8px; width:100%; margin-top:10px; }
+    .pos-modern-rail-links a,.pos-modern-rail> a:not(.pos-modern-mark) { width:52px; min-height:52px; border-radius:16px; display:grid; place-items:center; margin:auto; color:#8e96a6; text-decoration:none; transition:.16s ease; }
+    .pos-modern-rail-links a:hover,.pos-modern-rail-links a.active,.pos-modern-rail> a:not(.pos-modern-mark):hover { color:#fff; background:rgba(255,255,255,.12); }
+    .pos-modern-rail-spacer { flex:1; }
+    .pos-modern-avatar { width:40px; height:40px; border-radius:50%; background:#fff; color:#151820; display:grid; place-items:center; font-weight:800; }
+    .pos-modern-body { min-width:0; padding:18px; position:relative; display:flex; flex-direction:column; overflow:hidden; }
+    .pos-modern-topbar { display:flex; align-items:center; gap:14px; flex:0 0 auto; margin-bottom:16px; padding-right:406px; }
+    .pos-modern-brand { min-width:175px; }
+    .pos-modern-brand strong { display:block; font-size:18px; line-height:1.2; }
+    .pos-modern-brand span { color:var(--pos-muted); font-size:12px; }
+    .pos-modern-topbar .pos-search-section { flex:1; padding:0; border:0; background:transparent; }
+    .pos-modern-topbar .input-group { height:46px; }
+    .pos-modern-topbar .input-group-text,.pos-modern-topbar #searchInput { border-color:var(--pos-line); background:var(--pos-panel); box-shadow:none !important; }
+    .pos-modern-topbar .input-group-text { border-radius:16px 0 0 16px; padding-left:16px; color:var(--pos-muted); }
+    .pos-modern-topbar #searchInput { border-radius:0 16px 16px 0; font-size:14px; }
+    .pos-modern-clock { display:none; }
+    .pos-modern-clock strong { display:block; font-size:14px; }
+    .pos-modern-clock span { display:block; color:var(--pos-muted); font-size:11px; }
+
+    .pos-modern-shell .pos-container { height:auto; flex:1; min-height:0; overflow:hidden; }
+    .pos-mode-bar { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:12px; padding:5px; border:0; border-radius:17px; background:rgba(25,31,45,.055); }
+    .pos-mode-button { min-height:52px; border:0; border-radius:13px; background:transparent; color:var(--pos-muted); text-align:center; padding:10px 14px; font-size:14px; box-shadow:none; }
+    .pos-mode-button small { display:none; }
+    .pos-mode-button.active { color:var(--pos-ink); background:#fff; border:0; box-shadow:0 6px 18px rgba(20,29,48,.09); }
+    .pos-mode-button i { color:inherit; }
+    .pos-main-content { gap:16px; padding-right:406px; overflow:hidden; }
+    .pos-products-section,.pos-cart-section { border:1px solid var(--pos-line); border-radius:22px; background:var(--pos-panel); backdrop-filter:blur(22px); box-shadow:0 12px 34px rgba(22,30,48,.07); }
+    .pos-products-section { padding:16px; border-right:1px solid var(--pos-line); }
+    .pos-cart-section { width:390px; min-width:360px; position:absolute; z-index:4; right:18px; top:18px; bottom:18px; height:auto; background:var(--pos-panel); box-shadow:0 12px 34px rgba(22,30,48,.07); }
+    .add-new-btns,.filter-tabs { display:none !important; }
+    .pos-quick-heading { margin:2px 2px 12px; }
+    .pos-quick-heading strong { font-size:22px; }
+    .pos-drag-note { color:var(--pos-muted); }
+    .pos-category-grid { grid-template-columns:repeat(4,minmax(100px,1fr)); gap:10px; }
+    .pos-category-tile { min-height:110px; border:1px solid var(--pos-line); border-radius:17px; background:#fff; padding:14px; box-shadow:none; }
+    .pos-category-tile:hover { border-color:rgba(51,119,242,.42); background:rgba(51,119,242,.04); transform:translateY(-1px); }
+    .pos-category-tile i { color:var(--pos-red); font-size:22px; }
+    .pos-category-tile span { color:var(--pos-ink); font-size:13px; }
+    #productsContainer .product-card { border:1px solid var(--pos-line); border-radius:16px; box-shadow:none; }
+    #customSaleContainer,#deviceSearchContainer,#repairSearchContainer,#searchContainer { background:transparent !important; padding:4px !important; border-radius:0 !important; }
+    #repairSearchContainer h4,#deviceSearchContainer h4 { font-size:22px; color:var(--pos-ink); }
+    #repairSearchContainer .input-group { height:40px; }
+    #repairSearchContainer .input-group-text,#repairSearchInput,#repairSearchContainer .btn-outline-secondary { background:#fff; border-color:var(--pos-line); }
+    #repairSearchContainer .input-group-text { border-radius:13px 0 0 13px; }
+    #repairSearchContainer .btn-outline-secondary { border-radius:0 13px 13px 0; }
+    .pos-repair-results { display:grid; gap:8px; }
+    .pos-repair-card { width:100%; border:1px solid transparent; border-radius:16px; background:rgba(255,255,255,.68); color:var(--pos-ink); padding:13px 14px; display:grid; grid-template-columns:minmax(145px,1.05fr) minmax(150px,1fr) 105px 90px; gap:12px; align-items:center; text-align:left; transition:.15s ease; }
+    .pos-repair-card:hover { border-color:rgba(51,119,242,.38); background:rgba(51,119,242,.055); }
+    .pos-repair-card .repair-card-name { font-weight:800; font-size:15px; }
+    .pos-repair-card .repair-card-muted { color:var(--pos-muted); font-size:12px; margin-top:3px; }
+    .pos-repair-card .repair-card-device { font-weight:700; font-size:13px; }
+    .pos-repair-card .repair-card-status { display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700; }
+    .pos-repair-card .repair-card-status:before { content:""; width:8px; height:8px; border-radius:50%; background:#e4a11b; }
+    .pos-repair-card .repair-card-status.ready:before { background:var(--pos-green); }
+    .pos-repair-card .repair-card-balance { text-align:right; font-weight:800; }
+    .pos-repair-card .repair-card-balance small { display:block; color:var(--pos-muted); font-size:11px; font-weight:500; }
+    .pos-repair-addons { margin-top:16px; padding-top:14px; border-top:1px solid var(--pos-line); }
+    .pos-repair-addons-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+    .pos-repair-addons-head span { color:var(--pos-muted); font-size:12px; }
+    .pos-repair-addons-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+    .pos-repair-addon { min-height:82px; border:1px solid var(--pos-line); border-radius:15px; background:#fff; color:var(--pos-ink); padding:11px; text-align:left; }
+    .pos-repair-addon i { color:var(--pos-red); font-size:18px; }
+    .pos-repair-addon strong { display:block; margin-top:8px; font-size:12px; }
+    .pos-repair-addon span { display:block; color:var(--pos-muted); font-size:11px; margin-top:2px; }
+
+    .cart-header { padding:15px 16px 8px; border:0; }
+    .cart-header h5 { color:var(--pos-ink) !important; font-size:17px; }
+    .cart-header .badge { background:var(--pos-red) !important; }
+    .cart-header #cartSubtotalLabel { display:none; }
+    #cartCustomerBanner { margin:0 14px 8px !important; padding:12px 14px !important; border-radius:17px !important; border:1px solid rgba(51,119,242,.24) !important; background:linear-gradient(135deg,rgba(51,119,242,.12),#fff) !important; }
+    #cartCustomerBanner .text-uppercase { font-size:10px !important; letter-spacing:.12em !important; color:var(--pos-muted) !important; }
+    #cartCustomerName { color:var(--pos-ink) !important; font-size:20px !important; font-weight:800 !important; }
+    #cartCustomerMeta { font-size:12px; margin-top:2px; }
+    .cart-items { padding:0 14px; overflow-x:hidden !important; background:transparent; }
+    #cartTable { width:100%; --bs-table-bg:transparent; }
+    #cartTableBody { display:block; width:100%; }
+    #cartTable thead { display:none; }
+    #cartTable tbody tr:not(.table-light) { display:grid; grid-template-columns:minmax(0,1fr) 84px 30px; grid-template-rows:auto auto; column-gap:7px; padding:10px 0; border-bottom:1px solid var(--pos-line); }
+    #cartTable td { padding:2px 0; border:0; }
+    #cartTable td:first-child { grid-column:1; grid-row:1 / span 2; width:auto; max-width:none !important; }
+    #cartTable td:first-child .fw-semibold { display:block; color:var(--pos-ink); font-size:14px !important; font-weight:800 !important; overflow:visible; text-overflow:clip; white-space:normal; }
+    #cartTable tbody tr:not(.table-light) td:first-child > .d-flex > .badge { display:none; }
+    #cartTable tbody tr:not(.table-light) td:nth-child(2) { grid-column:2; grid-row:1; }
+    #cartTable tbody tr:not(.table-light) td:nth-child(3) { grid-column:2; grid-row:2; margin-top:3px; }
+    #cartTable tbody tr:not(.table-light) td:nth-child(4) { display:none; }
+    #cartTable tbody tr:not(.table-light) td:nth-child(5) { grid-column:3; grid-row:1 / span 2; align-self:center; }
+    #cartTable tbody tr:not(.table-light) td:nth-child(2) .input-group,
+    #cartTable tbody tr:not(.table-light) td:nth-child(3) .input-group { width:84px !important; }
+    #cartTable tbody tr.table-light { display:none; }
+    #cartTable .badge { border-radius:8px; }
+    .pos-price-entry { border:1px solid var(--pos-line) !important; border-radius:9px !important; background:#fff !important; }
+    .pos-item-purpose { color:var(--pos-muted); font-size:9px; font-weight:800; letter-spacing:.11em; text-transform:uppercase; }
+    .pos-cost-entry-row { display:flex; align-items:center; gap:5px; margin-top:4px; color:var(--pos-muted); font-size:10px; font-weight:700; }
+    .pos-cost-entry { width:68px; height:25px; padding:2px 5px; border:1px solid #111 !important; border-radius:7px; background:#fff; font-size:11px; font-weight:700; }
+    .empty-cart { padding:28px 12px; }
+    .empty-cart i { color:var(--pos-muted); font-size:34px; }
+    .cart-summary { height:auto; max-height:55%; padding:7px 14px 14px !important; border-top:1px solid var(--pos-line); background:transparent; overflow-y:auto; }
+    .cart-summary .card { border:0 !important; background:transparent !important; margin:0 0 7px !important; }
+    .cart-summary .card-header { border:0; background:transparent !important; padding:5px 0 !important; }
+    .cart-summary .card-body { padding:4px 0 !important; }
+    .cart-summary h6 { color:var(--pos-muted) !important; }
+    .cart-summary hr { border-color:var(--pos-line); opacity:1; }
+    #total { color:var(--pos-ink) !important; font-size:22px !important; }
+    #posTaxToggle { border-radius:999px; }
+    .pos-customer-block + * { border:0; }
+    .pos-pm-grid { gap:7px; }
+    .pos-pm-card { border:1px solid var(--pos-line) !important; border-radius:13px !important; background:#fff !important; box-shadow:none !important; min-height:48px; }
+    .pos-pm-card.active { color:var(--pos-blue) !important; border-color:rgba(51,119,242,.38) !important; background:rgba(51,119,242,.08) !important; }
+    .pos-pm-icon { font-size:16px !important; }
+    .pos-payment-add-row .input-group-text,.pos-payment-add-row .form-control { border-color:var(--pos-line); background:#fff; }
+    .pos-save-sale,.pos-print-sale { min-height:48px; border-radius:15px; }
+    .pos-save-sale { color:#fff; border:0; background:linear-gradient(135deg,#f14c50,#cb2028); box-shadow:0 10px 25px rgba(227,60,63,.25); }
+    .pos-save-sale:hover,.pos-save-sale:focus { color:#fff; background:linear-gradient(135deg,#e94448,#bc1921); }
+    .pos-print-sale { color:var(--pos-ink); border:1px solid var(--pos-line); background:#fff; }
+    .pos-print-sale:hover,.pos-print-sale:focus { color:var(--pos-blue); border-color:rgba(51,119,242,.38); background:rgba(51,119,242,.06); }
+    .pos-primary-actions .btn { min-height:48px; font-size:12px; white-space:nowrap; padding-inline:7px; }
+    .pos-action-sticky .btn-sm { border-radius:12px; }
+
+    @@media (max-width:1100px) {
+        .pos-modern-shell { grid-template-columns:minmax(0,1fr); }
+        .pos-modern-brand { min-width:130px; }
+        .pos-modern-topbar { padding-right:376px; }
+        .pos-main-content { padding-right:376px; }
+        .pos-cart-section { width:360px; min-width:330px; }
+        .pos-category-grid { grid-template-columns:repeat(3,minmax(100px,1fr)); }
+    }
+    @@media (max-width:850px) {
+        body:has(.pos-modern-shell) { overflow:auto; }
+        .pos-modern-shell { height:auto; min-height:100vh; grid-template-columns:1fr; overflow:visible; }
+        .pos-modern-rail { display:none; }
+        .pos-modern-body { overflow:visible; padding:10px; }
+        .pos-modern-topbar { padding-right:0; }
+        .pos-main-content { flex-direction:column; padding-right:0; overflow:visible; }
+        .pos-products-section,.pos-cart-section { width:100%; min-width:0; height:auto; overflow:visible; }
+        .pos-cart-section { position:relative; right:auto; top:0; bottom:auto; }
+        .pos-modern-shell .pos-container { overflow:visible; }
+        .pos-modern-brand,.pos-modern-clock { display:none; }
+        .pos-category-grid { grid-template-columns:repeat(2,minmax(100px,1fr)); }
+        .pos-repair-card { grid-template-columns:1fr 100px; }
+        .pos-repair-card>div:nth-child(2),.pos-repair-card .repair-card-balance { display:none; }
+    }
 </style>
 
+<div class="pos-modern-shell">
+    <aside class="pos-modern-rail" aria-hidden="true">
+        <a class="pos-modern-mark" href="/Home/Dashboard" aria-label="Empire dashboard"><i class="fas fa-crown"></i></a>
+        <nav class="pos-modern-rail-links">
+            <a href="/Home/Dashboard" aria-label="Dashboard"><i class="fas fa-th-large"></i></a>
+            <a href="/POS" class="active" aria-label="Point of sale"><i class="fas fa-shopping-bag"></i></a>
+            <a href="/Repairs" aria-label="Repairs"><i class="fas fa-tools"></i></a>
+            <a href="/Inventories" aria-label="Inventory"><i class="fas fa-box"></i></a>
+            <a href="/Customers" aria-label="Customers"><i class="fas fa-users"></i></a>
+        </nav>
+        <div class="pos-modern-rail-spacer"></div>
+        <a href="/LookupManagement" aria-label="Settings"><i class="fas fa-cog"></i></a>
+        <span class="pos-modern-avatar" aria-label="Signed in">A</span>
+    </aside>
+    <section class="pos-modern-body">
+        <header class="pos-modern-topbar">
+            <div class="pos-modern-brand"><strong>Empire POS</strong><span>Huntington Beach</span></div>
+            <div class="pos-search-section">
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text border-end-0"><i class="fas fa-search"></i></span>
+                    <input type="text" class="form-control border-start-0" id="searchInput"
+                           placeholder="Search customer, phone, device, SKU or barcode…" autocomplete="off">
+                </div>
+            </div>
+            <div class="pos-modern-clock"><strong id="posModernTime">--:--</strong><span id="posModernDate">Today</span></div>
+        </header>
 <div class="pos-container">
-    <!-- Search Section (compact) -->
-    <div class="pos-search-section">
-        <div class="input-group input-group-sm" style="max-width:600px;">
-            <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
-            <input type="text" class="form-control border-start-0" id="searchInput"
-                   placeholder="Search by name, IMEI, repair #, invoice #..." autocomplete="off"
-                   style="box-shadow:none;">
-        </div>
-    </div>
-
     <!-- Main Content -->
     <div class="pos-main-content">
         <!-- Products Section -->
         <div class="pos-products-section">
+            <div class="pos-mode-bar" aria-label="POS sale mode">
+                <button type="button" class="pos-mode-button active" id="quickSaleMode" onclick="setPosMode('quick')">
+                    <i class="fas fa-bolt me-2"></i>Quick Sale
+                    <small>Scan, total and pay — customer is optional</small>
+                </button>
+                <button type="button" class="pos-mode-button" id="repairPickupMode" onclick="setPosMode('repair')">
+                    <i class="fas fa-tools me-2"></i>Repair Pickup
+                    <small>See every open ticket and open it with one click</small>
+                </button>
+                <button type="button" class="pos-mode-button" id="deviceSaleMode" onclick="setPosMode('device')">
+                    <i class="fas fa-mobile-alt me-2"></i>Device Sale
+                    <small>Find and sell a device from stock</small>
+                </button>
+            </div>
+            <div id="quickSaleHome">
+                <div class="pos-quick-heading">
+                    <strong>Fast Add</strong>
+                    <span class="pos-drag-note"><i class="fas fa-grip-vertical me-1"></i>Drag boxes to rearrange</span>
+                </div>
+                <div class="pos-category-grid" id="posCategoryGrid">
+                    <button type="button" class="pos-category-tile" draggable="true" data-category="Cases" onclick="quickFindCategory('case')"><i class="fas fa-mobile-alt"></i><span>Cases</span></button>
+                    <button type="button" class="pos-category-tile" draggable="true" data-category="Screen Protectors" onclick="quickFindCategory('screen protector')"><i class="fas fa-shield-alt"></i><span>Screen Protectors</span></button>
+                    <button type="button" class="pos-category-tile" draggable="true" data-category="Chargers" onclick="quickFindCategory('charger')"><i class="fas fa-charging-station"></i><span>Chargers</span></button>
+                    <button type="button" class="pos-category-tile" draggable="true" data-category="Cables" onclick="quickFindCategory('cable')"><i class="fas fa-plug"></i><span>Cables</span></button>
+                    <button type="button" class="pos-category-tile" draggable="true" data-category="Adapters" onclick="quickFindCategory('adapter')"><i class="fas fa-random"></i><span>Adapters</span></button>
+                    <button type="button" class="pos-category-tile" draggable="true" data-category="Headphones" onclick="quickFindCategory('headphone')"><i class="fas fa-headphones"></i><span>Headphones</span></button>
+                    <button type="button" class="pos-category-tile" draggable="true" data-category="Custom Item" onclick="showCustomSaleTab()"><i class="fas fa-plus-circle"></i><span>Custom Item</span></button>
+                </div>
+            </div>
             <!-- Add New Buttons -->
             <div class="add-new-btns">
                 <div class="add-new-btn" onclick="showAddRepairModal()">
@@ -562,7 +788,7 @@
                 <h4 class="mb-4">Add Custom Sale Item</h4>
                 
                 <!-- Quick Item Suggestions with Price Options -->
-                <div class="mb-3">
+                <div class="mb-3 pos-customer-block">
                     <label class="form-label">Quick Items - Click a price to add</label>
                     
                     <!-- Screen Protector -->
@@ -632,7 +858,7 @@
                 
                 <!-- Single Line Form -->
                 <div class="row g-2 mb-3">
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label for="customItemName" class="form-label small">Item Name *</label>
                         <input type="text" class="form-control form-control-sm" id="customItemName" placeholder="Item name" required>
                     </div>
@@ -648,7 +874,16 @@
                         <label for="customItemPrice" class="form-label small">Price *</label>
                         <input type="number" class="form-control form-control-sm" id="customItemPrice" step="0.01" min="0" value="0.00" placeholder="0.00" required>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
+                        <label for="customItemStatus" class="form-label small">Item Status</label>
+                        <select class="form-select form-select-sm" id="customItemStatus">
+                            <option value="In Stock">In Stock</option>
+                            <option value="Special Order">Special Order</option>
+                            <option value="Backordered">Backordered</option>
+                            <option value="Delivered">Delivered</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
                         <label for="customItemNote" class="form-label small">Note</label>
                         <input type="text" class="form-control form-control-sm" id="customItemNote" placeholder="Optional note">
                     </div>
@@ -831,7 +1066,7 @@
                 <div class="input-group mb-3">
                     <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
                     <input type="text" class="form-control" id="repairSearchInput"
-                           placeholder="Search by repair #, customer, device, description...">
+                           placeholder="Search by customer, phone, device or repair type…">
                     <button class="btn btn-outline-secondary" type="button" onclick="clearRepairSearch()">
                         <i class="fas fa-times"></i>
                     </button>
@@ -841,6 +1076,15 @@
                     <div class="text-center text-muted py-5">
                         <i class="fas fa-tools" style="font-size:48px;opacity:.3"></i>
                         <p class="mt-2">Start typing to search repair orders</p>
+                    </div>
+                </div>
+                <div class="pos-repair-addons">
+                    <div class="pos-repair-addons-head"><strong>Fast add-ons</strong><span>Common with a repair pickup</span></div>
+                    <div class="pos-repair-addons-grid">
+                        <button type="button" class="pos-repair-addon" onclick="quickFindCategory('screen protector')"><i class="fas fa-shield-alt"></i><strong>Screen Protector</strong><span>Enter price in cart</span></button>
+                        <button type="button" class="pos-repair-addon" onclick="quickFindCategory('case')"><i class="fas fa-mobile-alt"></i><strong>Case</strong><span>Enter price in cart</span></button>
+                        <button type="button" class="pos-repair-addon" onclick="quickFindCategory('cable')"><i class="fas fa-plug"></i><strong>Cable</strong><span>Enter price in cart</span></button>
+                        <button type="button" class="pos-repair-addon" onclick="quickFindCategory('charger')"><i class="fas fa-charging-station"></i><strong>Charger</strong><span>Enter price in cart</span></button>
                     </div>
                 </div>
             </div>
@@ -898,6 +1142,12 @@
                 </button>
             </div>
 
+            <div id="cartCustomerBanner" class="mx-2 mt-2 mb-1 px-3 py-2 rounded-3 border bg-light">
+                <div class="text-uppercase text-muted fw-semibold" style="font-size:0.65rem;letter-spacing:.08em;">Customer</div>
+                <div id="cartCustomerName" class="fw-bold text-dark text-truncate" style="font-size:1.08rem;">Walk-in Customer</div>
+                <div id="cartCustomerMeta" class="text-muted text-truncate">Customer optional for quick sale</div>
+            </div>
+
             <!-- Cart Items Table -->
             <div class="cart-items" id="cartItems" style="overflow-x: auto; flex: 1; min-height: 0;">
                 <table id="cartTable" class="table table-sm mb-0" style="display: none;">
@@ -931,35 +1181,9 @@
                             <span class="text-muted">Subtotal</span>
                             <span id="subtotal" class="fw-medium">$0.00</span>
                         </div>
-                        <!-- Tax UI Component -->
-                        <div class="mb-2" style="font-size:0.88rem;">
-                            <div class="d-flex justify-content-between align-items-center mb-1">
-                                <span class="text-muted">Tax (<span id="taxRateDisplay">0.00</span>%)</span>
-                                <span id="tax" class="fw-medium">$0.00</span>
-                            </div>
-                            <div class="d-flex align-items-center gap-2 flex-wrap">
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <input type="radio" class="btn-check" name="posTaxMode" id="posTaxModeExempt" value="exempt" checked onchange="onPosTaxModeChange()">
-                                    <label class="btn btn-outline-secondary py-0 px-2" for="posTaxModeExempt" style="font-size:0.75rem;"><i class="fas fa-ban me-1"></i>Exempt</label>
-                                    <input type="radio" class="btn-check" name="posTaxMode" id="posTaxModeApply" value="apply" onchange="onPosTaxModeChange()">
-                                    <label class="btn btn-outline-primary py-0 px-2" for="posTaxModeApply" style="font-size:0.75rem;"><i class="fas fa-percent me-1"></i>Apply</label>
-                                </div>
-                                <div id="posTaxRateWrapper" style="display:none;flex:1;min-width:80px;">
-                                    <div class="input-group input-group-sm">
-                                        <input type="number" class="form-control form-control-sm" id="posTaxRate" value="10.25" min="0" max="100" step="0.01" oninput="onPosTaxRateInput()" style="max-width:70px;">
-                                        <span class="input-group-text" style="font-size:0.75rem;">%</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <input type="hidden" id="posTaxRateHidden" value="0">
-                        </div>
-                        <!-- Discount Input -->
                         <div class="d-flex justify-content-between align-items-center mb-1" style="font-size:0.88rem;">
-                            <span class="text-muted">Discount ($)</span>
-                            <div class="input-group input-group-sm" style="max-width:110px;">
-                                <span class="input-group-text" style="font-size:0.75rem;">$</span>
-                                <input type="number" class="form-control form-control-sm" id="discountInput" value="0" min="0" step="0.01" oninput="updateCart()" style="max-width:80px;">
-                            </div>
+                            <span class="text-muted">Tax (11%)</span>
+                            <div class="d-flex align-items-center gap-2"><button type="button" id="posTaxToggle" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="togglePosTax()" aria-pressed="false">Tax Off</button><span id="tax" class="fw-medium">$0.00</span></div>
                         </div>
                         <div class="d-flex justify-content-between mb-1" style="font-size:0.88rem;">
                             <span class="text-muted">Discount</span>
@@ -980,7 +1204,7 @@
                 <!-- ── Customer ── -->
                 <div class="mb-3">
                     <label class="form-label fw-semibold small mb-1">
-                        <i class="fas fa-user me-1 text-primary"></i>Customer <span class="text-danger">*</span>
+                        <i class="fas fa-user me-1 text-primary"></i>Customer <span class="text-muted fw-normal">(optional for Quick Sale)</span>
                     </label>
                     <div class="d-flex gap-2">
                         <select class="form-select form-select-sm" id="customerSelect" style="flex:1;">
@@ -1014,13 +1238,18 @@
                         <!-- Payment Method Icon Cards -->
                         <div class="mb-2">
                             <label class="form-label small fw-medium mb-1">Payment Method <span class="text-danger">*</span></label>
-                            <div class="pos-pm-grid">
+                            <div class="pos-pm-grid pos-pm-grid-primary">
                                 <div class="pos-pm-card active" data-method="Cash" onclick="selectPosPaymentMethod('Cash',this)">
                                     <div class="pos-pm-icon">&#x1F4B5;</div><div class="pos-pm-label">Cash</div>
                                 </div>
                                 <div class="pos-pm-card" data-method="Card" onclick="selectPosPaymentMethod('Card',this)">
                                     <div class="pos-pm-icon">&#x1F4B3;</div><div class="pos-pm-label">Card</div>
                                 </div>
+                                <div class="pos-pm-card pos-pm-more" onclick="toggleMorePaymentMethods(this)">
+                                    <div class="pos-pm-icon"><i class="fas fa-ellipsis-h"></i></div><div class="pos-pm-label">More</div>
+                                </div>
+                            </div>
+                            <div class="pos-pm-grid pos-pm-grid-more mt-1" id="posMorePaymentMethods" style="display:none;">
                                 <div class="pos-pm-card" data-method="Check" onclick="selectPosPaymentMethod('Check',this)">
                                     <div class="pos-pm-icon">&#x1F3E6;</div><div class="pos-pm-label">Check</div>
                                 </div>
@@ -1074,27 +1303,20 @@
 
                 <!-- ── Sticky Action Buttons ── -->
                 <div class="pos-action-sticky">
-                    <div class="row g-1 mb-1">
-                        <div class="col-8">
-                            <button class="btn btn-success fw-bold w-100" id="completeSaleBtn" onclick="completeSale()">
-                                <i class="fas fa-check-circle me-1"></i>Complete Sale
+                    <div class="row g-2 pos-primary-actions">
+                        <div class="col-4">
+                            <button class="btn fw-bold w-100 pos-save-sale" id="completeSaleBtn" onclick="completeSale()">
+                                <i class="fas fa-check-circle me-1"></i>Sale
                             </button>
                         </div>
                         <div class="col-4">
-                            <button class="btn btn-outline-danger fw-semibold w-100" id="saveUnpaidBtn" onclick="completeSaleUnpaid()" title="Save sale as Unpaid (no payment collected)">
+                            <button class="btn fw-bold w-100 pos-print-sale" onclick="printLastInvoice()" id="printLastInvoiceBtn">
+                                <i class="fas fa-print me-1"></i>Print
+                            </button>
+                        </div>
+                        <div class="col-4">
+                            <button class="btn btn-outline-danger btn-sm w-100" id="saveUnpaidBtn" onclick="completeSaleUnpaid()" title="Save sale as Unpaid (no payment collected)">
                                 <i class="fas fa-clock me-1"></i>Unpaid
-                            </button>
-                        </div>
-                    </div>
-                    <div class="row g-2">
-                        <div class="col-6">
-                            <button class="btn btn-outline-primary btn-sm w-100" onclick="printLastInvoice()" id="printLastInvoiceBtn">
-                                <i class="fas fa-print me-1"></i>Print Invoice
-                            </button>
-                        </div>
-                        <div class="col-6">
-                            <button class="btn btn-outline-secondary btn-sm w-100" onclick="clearCart()">
-                                <i class="fas fa-trash-alt me-1"></i>Clear Cart
                             </button>
                         </div>
                     </div>
@@ -1103,6 +1325,8 @@
             </div><!-- /cart-summary -->
         </div><!-- /pos-cart-section -->
     </div>
+</div>
+    </section>
 </div>
 
 <!-- Success Modal -->
@@ -1155,7 +1379,7 @@
 
 <!-- Add Device Modal (Popup) -->
 <div class="modal fade" id="addDeviceModal" tabindex="-1">
-    <div class="modal-dialog modal-lg">
+    <div class="modal-dialog modal-xl">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title"><i class="fas fa-mobile-alt me-2"></i>Add New Device</h5>
@@ -1210,6 +1434,7 @@
     
     // Load cart from localStorage or initialize empty
     let cart = [];
+    let pendingCheckoutCustomer = null;
     try {
         const savedCart = localStorage.getItem('pos_cart');
         if (savedCart) {
@@ -1226,6 +1451,14 @@
         const pendingRepairs = JSON.parse(sessionStorage.getItem('pendingRepairCart') || '[]');
         if (pendingRepairs.length > 0) {
             console.log('Found', pendingRepairs.length, 'pending repair(s) from Repairs page');
+            const checkoutRepair = pendingRepairs[pendingRepairs.length - 1];
+            if (checkoutRepair.customerId) {
+                pendingCheckoutCustomer = {
+                    id: String(checkoutRepair.customerId),
+                    name: checkoutRepair.customerName || '',
+                    phone: checkoutRepair.customerPhone || ''
+                };
+            }
             pendingRepairs.forEach(function(r) {
                 // Check if already in cart (avoid duplicates)
                 const alreadyIn = cart.some(function(c) {
@@ -1235,11 +1468,11 @@
                     cart.push({
                         Id: 'rep_' + r.repairId,
                         Type: 'Repair',
-                        Name: 'Repair #' + r.repairNumber + ' - ' + r.customerName,
-                        Description: r.description || ('Repair #' + r.repairNumber),
-                        Price: parseFloat(r.unitPrice || r.remainingDues || r.cost || 0),
-                        OriginalPrice: parseFloat(r.unitPrice || r.remainingDues || r.cost || 0),
-                        Cost: parseFloat(r.cost || 0),
+                        Name: r.customerName || 'Repair Service',
+                        Description: r.description || 'Repair Service',
+                        Price: Math.max(0, Number(r.unitPrice ?? r.remainingDues ?? 0)),
+                        OriginalPrice: Math.max(0, Number(r.unitPrice ?? r.remainingDues ?? 0)),
+                        Cost: Math.max(0, Number(r.partCost ?? 0)),
                         quantity: 1,
                         ReferenceId: r.repairId,
                         RepairId: r.repairId,
@@ -1325,13 +1558,15 @@
                     };
                 },
                 processResults: function (data) {
-                    // Controller returns { success: true, data: [{id, text, name, phone}] }
-                    var items = Array.isArray(data) ? data : (data.data || data.results || []);
+                    console.log('GetCustomers response:', data);
+                    // Controller returns { success: true, data: [...] }
+                    var items = data.data || data.results || [];
+                    console.log('Found', items.length, 'customers');
                     return {
                         results: items.map(function(customer) {
                             return {
                                 id: customer.id,
-                                text: customer.text || (customer.name + (customer.phone ? ' — ' + customer.phone : ''))
+                                text: customer.text || customer.name
                             };
                         })
                     };
@@ -1341,40 +1576,32 @@
             minimumInputLength: 0  // 0 means show all customers when dropdown opens
         });
         
-        // Trigger Select2 to search with empty term on open (loads all customers)
+        // Trigger Select2 to load all customers on first open
         $('#customerSelect').on('select2:open', function() {
-            // Focus the search input and trigger search with empty string
-            setTimeout(function() {
-                var searchInput = document.querySelector('.select2-container--open .select2-search__field');
-                if (searchInput) {
-                    searchInput.dispatchEvent(new Event('input'));
-                }
-            }, 50);
+            if (!$(this).data('loaded')) {
+                $(this).data('loaded', true);
+            }
         });
-
-        // Pre-load all customers into the dropdown on page load
-        function preloadCustomers() {
-            $.get('/POS/GetCustomers', { search: '' }, function(data) {
-                if (!data.success) return;
-                var items = data.data || [];
-                var select = $('#customerSelect');
-                // Remove existing options except the placeholder
-                select.find('option:not([value=""])').remove();
-                items.forEach(function(c) {
-                    var opt = new Option(c.text || c.name, c.id, false, false);
-                    select.append(opt);
-                });
-            });
-        }
-        preloadCustomers();
         
         // Handle customer selection change
         $('#customerSelect').on('change', function() {
             selectedCustomerId = $(this).val();
+            updateCartCustomerBanner();
             if (selectedCustomerId) {
                 loadCustomerRepairs(selectedCustomerId);
             }
         });
+
+        // A repair sent from the Repairs page opens checkout with its customer selected.
+        if (pendingCheckoutCustomer) {
+            const customerLabel = [pendingCheckoutCustomer.name, pendingCheckoutCustomer.phone]
+                .filter(Boolean)
+                .join(' · ');
+            $('#customerSelect')
+                .append(new Option(customerLabel || ('Customer #' + pendingCheckoutCustomer.id), pendingCheckoutCustomer.id, true, true))
+                .trigger('change');
+            selectedCustomerId = pendingCheckoutCustomer.id;
+        }
         
         // Handle payment type change
         $('#paymentType').on('change', function() {
@@ -1418,10 +1645,14 @@
         setTimeout(function() {
             displayCartItems(''); // Empty string for 'All Items' tab
         }, 100);
+
+        restorePosCategoryOrder();
+        wirePosCategoryDragging();
+        setPosMode(pendingCheckoutCustomer ? 'repair' : (localStorage.getItem('empire_pos_mode') || 'quick'));
     });
     
     function loadCustomerRepairs(customerId) {
-        if (!customerId) {
+        if (!customerId && window.empirePosMode !== 'quick') {
             return;
         }
         
@@ -1632,22 +1863,21 @@
     // Print invoice by ID
     function printInvoiceById(saleId) {
         window.lastSaleId = saleId;
-        
-        // Fetch complete invoice data from server
+        // Receipts go directly to POS-80C. DYMO is reserved for repair labels.
         $.ajax({
-            url: '@Url.Action("GetInvoiceData", "POS")',
-            type: 'GET',
+            url: '@Url.Action("PrintReceipt", "POS")',
+            type: 'POST',
             data: { saleId: saleId },
             success: function(response) {
                 if (response.success) {
-                    generateAndPrintInvoice(response);
+                    $('#paymentStatusMsg').html('<small class="text-success"><i class="fas fa-print me-1"></i>Receipt sent to '+response.printer+'</small>');
                 } else {
-                    alert('Error loading invoice data.');
+                    alert('Receipt printer error: ' + (response.message || 'POS-80C is unavailable'));
                 }
             },
             error: function(xhr) {
                 console.error('Error:', xhr);
-                alert('Error loading invoice. Please try again.');
+                alert('Could not send the receipt to POS-80C.');
             }
         });
     }
@@ -1788,6 +2018,7 @@
 
     function filterByType(type) {
         currentFilter = type;
+        if (type !== 'repair') $('#repairSearchContainer').hide();
         
         // Update active tab
         $('.filter-tab').removeClass('active');
@@ -1948,15 +2179,19 @@
         // Attach click handlers to add buttons
         $('.add-search-item-btn').off('click').on('click', function() {
             const itemData = JSON.parse($(this).attr('data-item'));
+            const itemType = String(itemData.type || 'Custom');
+            const referenceMatch = String(itemData.id ?? '').match(/(\d+)$/);
+            const referenceId = referenceMatch ? parseInt(referenceMatch[1], 10) : null;
             addToCart({
-                Id: `${itemData.type.toLowerCase()}_${itemData.id}`,
+                Id: `${itemType.toLowerCase()}_${referenceId ?? Date.now()}`,
                 Name: itemData.name,
                 Description: itemData.description || '',
                 Price: parseFloat(itemData.price),
                 OriginalPrice: parseFloat(itemData.price),
-                Type: itemData.type,
+                Cost: parseFloat(itemData.wholesalePrice || itemData.purchasePrice || 0),
+                Type: itemType.charAt(0).toUpperCase() + itemType.slice(1).toLowerCase(),
                 quantity: 1,
-                ReferenceId: itemData.id
+                ReferenceId: referenceId
             });
             alert('Item added to cart!');
         });
@@ -2076,6 +2311,7 @@
         const quantity = parseInt($('#customItemQuantity').val());
         const cost = parseFloat($('#customItemCost').val()) || 0;
         const price = parseFloat($('#customItemPrice').val());
+        const itemStatus = $('#customItemStatus').val() || 'In Stock';
         const note = $('#customItemNote').val();
 
         if (!name || quantity <= 0 || price < 0) {
@@ -2092,6 +2328,7 @@
             OriginalPrice: price,
             Cost: cost,
             quantity: quantity,
+            ItemStatus: itemStatus,
             Note: note,
             ReferenceId: null
         };
@@ -2107,6 +2344,7 @@
         $('#customItemQuantity').val('1');
         $('#customItemCost').val('0.00');
         $('#customItemPrice').val('0.00');
+        $('#customItemStatus').val('In Stock');
         $('#customItemNote').val('');
         
         // Focus back to item name for quick entry
@@ -2192,11 +2430,12 @@
             }
         } else {
             // Parse ReferenceId safely
-            let referenceId = null;
-            if (product.Id && typeof product.Id === 'string' && product.Id.includes('_')) {
-                referenceId = parseInt(product.Id.split('_')[1]);
-            } else if (typeof product.Id === 'number') {
-                referenceId = product.Id;
+            let referenceId = Number.isInteger(Number(product.ReferenceId))
+                ? Number(product.ReferenceId)
+                : null;
+            if (!referenceId && product.Id !== undefined && product.Id !== null) {
+                const referenceMatch = String(product.Id).match(/(\d+)$/);
+                referenceId = referenceMatch ? parseInt(referenceMatch[1], 10) : null;
             }
             
             // Ensure Name and Price are never undefined
@@ -2222,6 +2461,7 @@
                 ReferenceId: referenceId,
                 RepairId: repairId,
                 Note: product.Note || product.note || '',
+                ItemStatus: product.ItemStatus || product.itemStatus || 'In Stock',
                 IsCustomItem: product.Type === 'Custom',
                 IsTaxable: true
             });
@@ -2274,33 +2514,22 @@
         updateCart();
     }
 
-    // ── Tax UI handlers ──────────────────────────────────────────────────────
-    function onPosTaxModeChange() {
-        var mode = document.querySelector('input[name="posTaxMode"]:checked').value;
-        var wrapper = document.getElementById('posTaxRateWrapper');
-        var hidden  = document.getElementById('posTaxRateHidden');
-        if (mode === 'apply') {
-            wrapper.style.display = 'flex';
-            hidden.value = document.getElementById('posTaxRate').value || '10.25';
-        } else {
-            wrapper.style.display = 'none';
-            hidden.value = '0';
-        }
-        updateSummary();
+    function updateCost(index, newCost) {
+        cart[index].Cost = Math.max(0, parseFloat(newCost) || 0);
+        updateCart();
     }
-    function onPosTaxRateInput() {
-        var mode = document.querySelector('input[name="posTaxMode"]:checked').value;
-        if (mode === 'apply') {
-            document.getElementById('posTaxRateHidden').value = document.getElementById('posTaxRate').value || '0';
-        }
-        updateSummary();
+
+    function updateItemStatus(index, newStatus) {
+        cart[index].ItemStatus = newStatus || 'In Stock';
+        updateCart();
     }
-    // ────────────────────────────────────────────────────────────────────────
 
     function updateCart() {
         const tableBody = $('#cartTableBody');
         const emptyMessage = $('#emptyCartMessage');
         const cartTable = $('#cartTable');
+
+        updateCartCustomerBanner();
 
         tableBody.empty();
         if (cart.length === 0) {
@@ -2309,7 +2538,7 @@
             $('#cartCount').text('0');
         } else {
             emptyMessage.hide();
-            cartTable.show();
+            cartTable.css('display', 'block');
 
             cart.forEach(function(item, index) {
                 if (!item || typeof item !== 'object') return;
@@ -2321,12 +2550,14 @@
                 item.Cost          = parseFloat(item.Cost)          || 0;
                 item.quantity      = parseInt(item.quantity)        || 1;
                 item.Type          = item.Type                      || 'Custom';
+                item.ItemStatus    = item.ItemStatus                || 'In Stock';
 
                 const itemTotal    = item.Price * item.quantity;
                 const priceChanged = item.Price !== item.OriginalPrice;
 
                 const typeColour = { 'Inventory': 'primary', 'Device': 'info', 'Repair': 'warning', 'Custom': 'secondary' }[item.Type] || 'secondary';
                 const canChangeQty = (item.Type === 'Inventory' || item.Type === 'Custom');
+                const purposeLabel = { 'Inventory': 'Retail Item', 'Device': 'Device Sale', 'Repair': 'Repair Pickup', 'Custom': 'Quick Sale' }[item.Type] || 'Sale Item';
 
                 const row = $(`
                     <tr style="vertical-align:middle;">
@@ -2334,18 +2565,21 @@
                             <div class="d-flex align-items-start gap-1">
                                 <span class="badge bg-${typeColour} mt-1 flex-shrink-0" style="font-size:0.65rem;">${item.Type}</span>
                                 <div style="min-width:0;">
+                                    <div class="pos-item-purpose">${purposeLabel}</div>
                                     <div class="fw-semibold text-truncate" style="font-size:0.85rem;" title="${item.Name}">${item.Name}</div>
                                     ${item.Description ? '<div class="text-muted text-truncate" style="font-size:0.75rem;">' + item.Description + '</div>' : ''}
                                     ${priceChanged ? '<small class="text-warning" style="font-size:0.72rem;"><i class="fas fa-tag me-1"></i>Was $' + (item.OriginalPrice||0).toFixed(2) + '</small>' : ''}
-                                    ${item.Cost > 0 ? '<small class="text-muted" style="font-size:0.72rem;">Cost: $' + item.Cost.toFixed(2) + '</small>' : ''}
+                                    ${item.Type === 'Custom' ? '<label class="pos-cost-entry-row">Private cost $<input type="number" class="pos-cost-entry" value="' + item.Cost.toFixed(2) + '" placeholder="0.00" step="0.01" min="0" onchange="updateCost(' + index + ', this.value)" onclick="this.select()"></label>' : (item.Cost > 0 ? '<small class="text-muted" style="font-size:0.72rem;">Cost: $' + item.Cost.toFixed(2) + '</small>' : '')}
+                                    ${item.Type === 'Custom' ? '<select class="form-select form-select-sm mt-1" aria-label="Item status" onchange="updateItemStatus(' + index + ', this.value)"><option value="In Stock"' + (item.ItemStatus === 'In Stock' ? ' selected' : '') + '>In Stock</option><option value="Special Order"' + (item.ItemStatus === 'Special Order' ? ' selected' : '') + '>Special Order</option><option value="Backordered"' + (item.ItemStatus === 'Backordered' ? ' selected' : '') + '>Backordered</option><option value="Delivered"' + (item.ItemStatus === 'Delivered' ? ' selected' : '') + '>Delivered</option></select>' : ''}
                                 </div>
                             </div>
                         </td>
                         <td style="white-space:nowrap;">
                             <div class="input-group input-group-sm" style="width:90px;">
                                 <span class="input-group-text p-1">$</span>
-                                <input type="number" class="form-control form-control-sm p-1 text-end"
+                                <input type="number" class="form-control form-control-sm p-1 text-end pos-price-entry"
                                     value="${item.Price.toFixed(2)}"
+                                    placeholder="Price"
                                     onchange="updatePrice(${index}, this.value)"
                                     step="0.01" min="0" style="font-size:0.82rem;">
                             </div>
@@ -2383,6 +2617,39 @@
 
     // ── POS Payment Icon Card Logic ──────────────────────────────────────────
     var posPayments = []; // array of { method, amount }
+    const POS_TAX_RATE = 0.11;
+    var posTaxEnabled = false;
+
+    function getPosTotals() {
+        const subtotal = cart.reduce((sum,item)=>sum+(parseFloat(item.Price)||0)*(parseInt(item.quantity)||1),0);
+        const taxableSubtotal = cart.reduce((sum,item)=>sum+(item.IsTaxable === false ? 0 : (parseFloat(item.Price)||0)*(parseInt(item.quantity)||1)),0);
+        const tax = posTaxEnabled ? Math.round(taxableSubtotal * POS_TAX_RATE * 100) / 100 : 0;
+        return { subtotal:subtotal, tax:tax, discount:0, total:subtotal + tax };
+    }
+
+    function togglePosTax() {
+        posTaxEnabled = !posTaxEnabled;
+        const button = document.getElementById('posTaxToggle');
+        button.textContent = posTaxEnabled ? 'Tax Applied' : 'Tax Off';
+        button.setAttribute('aria-pressed', posTaxEnabled ? 'true' : 'false');
+        button.classList.toggle('btn-success', posTaxEnabled);
+        button.classList.toggle('btn-outline-secondary', !posTaxEnabled);
+        updateSummary();
+    }
+
+    function updateCartCustomerBanner() {
+        const customerSelect = $('#customerSelect');
+        const selected = customerSelect.hasClass('select2-hidden-accessible')
+            ? customerSelect.select2('data')
+            : (customerSelect.find('option:selected').val() ? [{text:customerSelect.find('option:selected').text()}] : []);
+        let label = selected && selected.length ? String(selected[0].text || '').trim() : '';
+        if (!label || label.toLowerCase() === 'select customer') label = 'Walk-in Customer';
+        const pieces = label.split(/\s*[·|]\s*/).filter(Boolean);
+        $('#cartCustomerName').text(pieces[0] || label);
+        $('#cartCustomerMeta').text(pieces.slice(1).join(' · ') || (selectedCustomerId ? 'Selected customer' : 'Customer optional for quick sale'));
+        $('#cartCustomerBanner').toggleClass('border-primary bg-primary-subtle', !!selectedCustomerId)
+            .toggleClass('bg-light', !selectedCustomerId);
+    }
 
     function selectPosPaymentMethod(method, el) {
         document.querySelectorAll('.pos-pm-card').forEach(c => c.classList.remove('active'));
@@ -2394,7 +2661,7 @@
     function posAddAnotherPayment() { posAddPaymentLine(); }  // backward compat alias
 
     function posAddPaymentLine() {
-        var total = cart.reduce((s,i)=>s+(parseFloat(i.Price)||0)*(parseInt(i.quantity)||1),0);
+        var total = getPosTotals().total;
         var entered = parseFloat($('#paymentAmount').val()) || 0;
         if (entered <= 0) {
             // If no amount entered, treat as full remaining payment
@@ -2457,17 +2724,14 @@
     // ─────────────────────────────────────────────────────────────────────────
 
     function updateSummary() {
-        const subtotal = cart.reduce((sum, item) => {
-            return sum + (parseFloat(item.Price)||0) * (parseInt(item.quantity)||1);
-        }, 0);
-        const taxRate   = parseFloat(document.getElementById('posTaxRateHidden').value) || 0;
-        const tax      = subtotal * (taxRate / 100);
-        const discount = parseFloat(document.getElementById('discountInput').value) || 0;
-        const total    = subtotal + tax - discount;
+        const totals = getPosTotals();
+        const subtotal = totals.subtotal;
+        const tax = totals.tax;
+        const discount = totals.discount;
+        const total = totals.total;
 
         $('#subtotal').text('$' + subtotal.toFixed(2));
         $('#tax').text('$' + tax.toFixed(2));
-        $('#taxRateDisplay').text(taxRate.toFixed(2));
         $('#discount').text('-$' + discount.toFixed(2));
         $('#total').text('$' + total.toFixed(2));
         // Update cart header subtotal label
@@ -2518,6 +2782,8 @@
     // Reset payment UI helper
     function resetPosPaymentUI() {
         posPayments = [];
+        posTaxEnabled = false;
+        $('#posTaxToggle').text('Tax Off').attr('aria-pressed','false').removeClass('btn-success').addClass('btn-outline-secondary');
         renderPosPaymentHistory();
         $('#paymentAmount').val('').attr('placeholder','Leave blank for full payment');
         $('#posRemainingHint').hide();
@@ -2534,18 +2800,19 @@
             return;
         }
         const customerId = $('#customerSelect').val();
-        if (!customerId) {
+        if (!customerId && window.empirePosMode !== 'quick') {
             alert('Please select a customer');
             $('#customerSelect').focus();
             return;
         }
         if (!confirm('Save this sale as Unpaid? No payment will be recorded.')) return;
 
-        const subtotal = cart.reduce((sum, item) => sum + (item.Price * item.quantity), 0);
-        const totalAmount = subtotal;
+        const totals = getPosTotals();
+        const subtotal = totals.subtotal;
+        const totalAmount = totals.total;
 
         const saleData = {
-            CustomerId: parseInt(customerId),
+            CustomerId: customerId ? parseInt(customerId) : null,
             Items: cart.map(item => ({
                 ItemType: item.Type,
                 ItemReferenceId: item.ReferenceId,
@@ -2559,12 +2826,13 @@
                 Cost: item.Cost || 0,
                 DiscountAmount: 0,
                 Note: item.Note || '',
+                ItemStatus: item.ItemStatus || 'In Stock',
                 IsCustomItem: item.Type === 'Custom',
                 IsTaxable: item.IsTaxable,
                 OriginalPrice: item.OriginalPrice,
             })),
             SubTotal: subtotal,
-            TaxAmount: 0,
+            TaxAmount: totals.tax,
             DiscountAmount: 0,
             TotalAmount: totalAmount,
             PaymentStatus: 'Unpaid',
@@ -2594,6 +2862,8 @@
                     $('#customerSelect').val(null).trigger('change');
                     selectedCustomerId = null;
                     posPayments = [];
+                    posTaxEnabled = false;
+                    $('#posTaxToggle').text('Tax Off').attr('aria-pressed','false').removeClass('btn-success').addClass('btn-outline-secondary');
                     renderPosPaymentHistory();
                     updateSummary();
                 } else {
@@ -2618,7 +2888,7 @@
         }
 
         const customerId = $('#customerSelect').val();
-        if (!customerId) {
+        if (!customerId && window.empirePosMode !== 'quick') {
             alert('Please select a customer');
             $('#customerSelect').focus();
             return;
@@ -2628,11 +2898,11 @@
         const paymentMethod = document.getElementById('paymentMethod').value;
 
         // Calculate totals
-        const subtotal = cart.reduce((sum, item) => sum + (item.Price * item.quantity), 0);
-        const taxRate = parseFloat(document.getElementById('posTaxRateHidden').value) || 0;
-        const taxAmount = subtotal * (taxRate / 100);
-        const discountAmount = parseFloat(document.getElementById('discountInput').value) || 0;
-        const totalAmount = subtotal + taxAmount - discountAmount;
+        const totals = getPosTotals();
+        const subtotal = totals.subtotal;
+        const taxAmount = totals.tax;
+        const discountAmount = totals.discount;
+        const totalAmount = totals.total;
         
         // Build payments array from posPayments history + current amount input
         var currentEnteredAmt = parseFloat($('#paymentAmount').val()) || 0;
@@ -2663,7 +2933,7 @@
 
         // Prepare sale data
         const saleData = {
-            CustomerId: parseInt(customerId),
+            CustomerId: customerId ? parseInt(customerId) : null,
             Items: cart.map(item => ({
                 ItemType: item.Type,
                 ItemReferenceId: item.ReferenceId,
@@ -2677,6 +2947,7 @@
                 Cost: item.Cost || 0,
                 DiscountAmount: 0,
                 Note: item.Note || '',
+                ItemStatus: item.ItemStatus || 'In Stock',
                 IsCustomItem: item.Type === 'Custom',
                 IsTaxable: item.IsTaxable,
                 OriginalPrice: item.OriginalPrice,
@@ -2738,7 +3009,7 @@
                     }
                     
                     $('#successModal').modal('show');
-                    
+
                     // Clear cart
                     cart = [];
                     updateCart();
@@ -2763,6 +3034,31 @@
         // If we have a recent sale in memory, use it
         if (window.lastSaleId) {
             printInvoiceById(window.lastSaleId);
+            return;
+        }
+
+        // No saved invoice yet: print the current repair/quick-sale cart directly.
+        if (cart.length > 0) {
+            var customer = $('#customerSelect').select2('data')[0];
+            var payload = {
+                CustomerName: customer ? customer.text : 'Walk-in Customer',
+                Items: cart.map(function(item) {
+                    return { Name: item.Name || 'Item', Quantity: item.quantity || 1, Price: item.Price || 0 };
+                }),
+                Total: getPosTotals().total,
+                Tax: getPosTotals().tax
+            };
+            $.ajax({
+                url: '@Url.Action("PrintCartReceipt", "POS")',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(payload),
+                success: function(response) {
+                    if (response.success) $('#paymentStatusMsg').html('<small class="text-success"><i class="fas fa-print me-1"></i>Current cart sent to '+response.printer+'</small>');
+                    else alert('Receipt printer error: ' + (response.message || 'POS-80C is unavailable'));
+                },
+                error: function() { alert('Could not send the current cart receipt to POS-80C.'); }
+            });
             return;
         }
         
@@ -3477,6 +3773,7 @@
             Description: deviceInfo,
             Price: price,
             OriginalPrice: price,
+            Cost: deviceData.buyingPrice || 0,
             quantity: 1,
             ReferenceId: deviceId,
             IsTaxable: true,
@@ -3688,6 +3985,93 @@
         });
     }
     
+    // ─── Streamlined POS modes and rearrangeable quick-sale categories ────────
+    window.empirePosMode = 'quick';
+
+    function setPosMode(mode) {
+        window.empirePosMode = mode === 'repair' || mode === 'device' ? mode : 'quick';
+        localStorage.setItem('empire_pos_mode', window.empirePosMode);
+        $('#repairPickupMode').toggleClass('active', window.empirePosMode === 'repair');
+        $('#quickSaleMode').toggleClass('active', window.empirePosMode === 'quick');
+        $('#deviceSaleMode').toggleClass('active', window.empirePosMode === 'device');
+        $('body').toggleClass('pos-quick-mode', window.empirePosMode === 'quick');
+        $('#quickSaleHome').toggle(window.empirePosMode === 'quick');
+
+        if (window.empirePosMode === 'repair') {
+            filterByType('repair');
+            $('#searchInput').attr('placeholder', 'Search open tickets by customer, phone or device…');
+        } else if (window.empirePosMode === 'device') {
+            filterByType('device');
+            $('#searchInput').attr('placeholder', 'Search devices by brand, model, IMEI or barcode…');
+        } else {
+            filterByType('');
+            $('#searchInput').attr('placeholder', 'Scan barcode or search cases, chargers, protectors...').focus();
+        }
+    }
+
+    function updateModernPosClock() {
+        const now = new Date();
+        $('#posModernTime').text(now.toLocaleTimeString([], {hour:'numeric', minute:'2-digit'}));
+        $('#posModernDate').text(now.toLocaleDateString([], {weekday:'long', month:'short', day:'numeric'}));
+    }
+    updateModernPosClock();
+    setInterval(updateModernPosClock, 30000);
+
+    function quickFindCategory(term) {
+        if (window._posTileWasDragged) { window._posTileWasDragged = false; return; }
+        var names = {'case':'Case','screen protector':'Screen Protector','charger':'Charger','cable':'Cable','adapter':'Adapter','headphone':'Headphones'};
+        var name = names[term] || term;
+        var existing = cart.find(function(i){ return i.Type === 'Custom' && i.Name === name; });
+        if (existing) existing.quantity += 1;
+        else cart.push({ Id:'quick_'+term.replace(/\s/g,'_')+'_'+Date.now(), Type:'Custom', Name:name, Description:'Quick Sale', Price:0, OriginalPrice:0, Cost:0, quantity:1, Note:'', ReferenceId:null, IsTaxable:true });
+        updateCart();
+        setTimeout(function(){ $('.pos-price-entry').last().focus().select(); }, 50);
+    }
+
+    function toggleMorePaymentMethods(trigger) {
+        var panel = document.getElementById('posMorePaymentMethods');
+        if (!panel) return;
+        var opening = panel.style.display === 'none';
+        panel.style.display = opening ? 'grid' : 'none';
+        if (trigger) trigger.classList.toggle('active', opening);
+    }
+
+    function restorePosCategoryOrder() {
+        var grid = document.getElementById('posCategoryGrid');
+        if (!grid) return;
+        var saved;
+        try { saved = JSON.parse(localStorage.getItem('empire_pos_category_order') || '[]'); } catch (_) { saved = []; }
+        saved.forEach(function(name) {
+            var tile = Array.from(grid.children).find(function(el) { return el.dataset.category === name; });
+            if (tile) grid.appendChild(tile);
+        });
+    }
+
+    function wirePosCategoryDragging() {
+        var grid = document.getElementById('posCategoryGrid');
+        if (!grid) return;
+        var dragged = null;
+        grid.querySelectorAll('.pos-category-tile').forEach(function(tile) {
+            tile.addEventListener('dragstart', function() {
+                dragged = tile;
+                window._posTileWasDragged = true;
+                tile.classList.add('dragging');
+            });
+            tile.addEventListener('dragend', function() {
+                tile.classList.remove('dragging');
+                dragged = null;
+                localStorage.setItem('empire_pos_category_order', JSON.stringify(Array.from(grid.children).map(function(el) { return el.dataset.category; })));
+                setTimeout(function(){ window._posTileWasDragged = false; }, 100);
+            });
+            tile.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                if (!dragged || dragged === tile) return;
+                var rect = tile.getBoundingClientRect();
+                grid.insertBefore(dragged, e.clientX < rect.left + rect.width / 2 ? tile : tile.nextSibling);
+            });
+        });
+    }
+
     // ─── Repair Search (POS Repair Tab) ───────────────────────────────────────
     var _repairSearchTimer;
     var _repairSearchUrl = '@Url.Action("GetRepairsJson", "Repairs")';
@@ -3702,6 +4086,17 @@
         var r  = _repairRowsCache[id];
         if (r) posAddRepairToCart(r);
     });
+
+    function selectRepairForCheckout(id) {
+        var r = _repairRowsCache[id];
+        if (!r) return;
+        if (r.customerId) {
+            var label = r.customerName || r.customerPhone || ('Customer #' + r.customerId);
+            $('#customerSelect').append(new Option(label, r.customerId, true, true)).trigger('change');
+            selectedCustomerId = String(r.customerId);
+        }
+        posAddRepairToCart(r);
+    }
 
     // Wire up the search input
     $(document).on('input', '#repairSearchInput', function() {
@@ -3726,7 +4121,10 @@
                     $('#repairResultsArea').html('<div class="alert alert-danger">'+res.message+'</div>');
                     return;
                 }
-                var rows = res.data;
+                var rows = (res.data || []).filter(function(r) {
+                    var status = String(r.status || '').toLowerCase().replace(/\s/g, '');
+                    return status !== 'completed' && status !== 'cancelled' && status !== 'canceled';
+                });
                 // Cache rows by id for the delegated click handler
                 _repairRowsCache = {};
                 if (rows) rows.forEach(function(r){ _repairRowsCache[r.id] = r; });
@@ -3734,34 +4132,20 @@
                     $('#repairResultsArea').html('<div class="text-center text-muted py-5"><i class="fas fa-tools" style="font-size:48px;opacity:.3"></i><p class="mt-2">No repair orders found</p></div>');
                     return;
                 }
-                var html = '<div class="table-responsive"><table class="table table-hover table-sm align-middle">';
-                html += '<thead class="table-light"><tr>';
-                html += '<th>Repair #</th><th>Customer</th><th>Device</th><th>Description</th>';
-                html += '<th>Status</th><th>Payment</th><th class="text-end">Cost</th><th class="text-end">Balance</th><th>Date</th><th>Actions</th>';
-                html += '</tr></thead><tbody>';
+                var html = '<div class="pos-repair-results">';
                 $.each(rows, function(i, r) {
-                    var statusClass = r.status === 'Completed' ? 'success' : r.status === 'InProgress' ? 'info' : r.status === 'Cancelled' ? 'danger' : 'warning';
-                    var payClass    = r.paymentStatus === 'Paid' ? 'success' : r.paymentStatus === 'Partial' ? 'warning' : 'danger';
-                    html += '<tr>';
-                    html += '<td><span class="badge bg-primary font-monospace">'+(r.repairNumber||'—')+'</span></td>';
-                    html += '<td><strong>'+(r.customerName||'—')+'</strong><br><small class="text-muted">'+(r.customerPhone||'')+'</small></td>';
-                    html += '<td><small>'+(r.deviceBrand||'')+(r.deviceModel?' / '+r.deviceModel:'')+'</small></td>';
-                    html += '<td><small class="text-truncate d-inline-block" style="max-width:160px" title="'+(r.description||'')+'">'+(r.description||'—')+'</small></td>';
-                    html += '<td><span class="badge bg-'+statusClass+'">'+r.status+'</span></td>';
-                    html += '<td><span class="badge bg-'+payClass+'">'+r.paymentStatus+'</span></td>';
-                    html += '<td class="text-end">$'+parseFloat(r.cost||0).toFixed(2)+'</td>';
-                    html += '<td class="text-end">'+(r.remainingDues>0?'<span class="text-danger fw-bold">$'+parseFloat(r.remainingDues).toFixed(2)+'</span>':'<span class="text-success">—</span>')+'</td>';
-                    html += '<td><small>'+r.createdDate+'</small></td>';
-                    html += '<td><div class="d-flex gap-1 align-items-center">';
-                    html += '<button class="btn btn-success btn-sm px-2 py-1 fw-semibold pos-add-repair-btn" title="Add to Cart" data-repair-id="'+r.id+'"><i class="fas fa-cart-plus me-1"></i>Add</button>';
-                    html += '<div class="btn-group btn-group-sm">';
-                    html += '<a href="'+_repairViewUrl+'/'+r.id+'" target="_blank" class="btn btn-outline-secondary" title="View"><i class="fas fa-eye"></i></a>';
-                    html += '<a href="'+_repairEditUrl+'/'+r.id+'" target="_blank" class="btn btn-outline-primary" title="Edit"><i class="fas fa-edit"></i></a>';
-                    html += '<button class="btn btn-outline-danger" title="Delete" onclick="posDeleteRepair('+r.id+',this)"><i class="fas fa-trash"></i></button>';
-                    html += '</div></div></td>';
-                    html += '</tr>';
+                    var statusText = String(r.status || 'Open').replace(/([a-z])([A-Z])/g,'$1 $2');
+                    var isReady = /ready/i.test(statusText);
+                    var device = [r.deviceBrand,r.deviceModel].filter(Boolean).join(' ');
+                    var balance = Math.max(0, Number(r.remainingDues ?? 0));
+                    html += '<button type="button" class="pos-repair-card" onclick="selectRepairForCheckout('+Number(r.id)+')">';
+                    html += '<div><div class="repair-card-name">'+posEscape(r.customerName||'Customer')+'</div><div class="repair-card-muted">'+posEscape(r.customerPhone||'')+'</div></div>';
+                    html += '<div><div class="repair-card-device">'+posEscape(device||'Device')+'</div><div class="repair-card-muted">'+posEscape(r.description||'Repair service')+'</div></div>';
+                    html += '<div><span class="repair-card-status '+(isReady?'ready':'')+'">'+posEscape(statusText)+'</span><div class="repair-card-muted">'+posEscape(r.createdDate||'')+'</div></div>';
+                    html += '<div class="repair-card-balance">$'+balance.toFixed(2)+'<small>Balance</small></div>';
+                    html += '</button>';
                 });
-                html += '</tbody></table></div>';
+                html += '</div>';
                 $('#repairResultsArea').html(html);
             },
             error: function() {
@@ -3770,17 +4154,20 @@
         });
     }
 
+    function posEscape(value) {
+        return $('<div>').text(value == null ? '' : String(value)).html();
+    }
+
     function posAddRepairToCart(r) {
         // Build a unique ID for this repair cart item
         var cartId = 'rep_' + r.id;
         // Check if already in cart
         var existing = cart.find(function(c) { return c.Id === cartId; });
         if (existing) {
-            alert('Repair #' + (r.repairNumber || r.id) + ' is already in the cart.');
+            alert('This customer repair is already in the cart.');
             return;
         }
-        var repairName = 'Repair #' + (r.repairNumber || r.id);
-        if (r.customerName) repairName += ' – ' + r.customerName;
+        var repairName = r.customerName || 'Repair Service';
         var desc = '';
         if (r.deviceBrand) desc += r.deviceBrand;
         if (r.deviceModel) desc += ' ' + r.deviceModel;
@@ -3791,9 +4178,9 @@
             Type: 'Repair',
             Name: repairName,
             Description: desc,
-            Price: parseFloat(r.cost || 0),
-            OriginalPrice: parseFloat(r.cost || 0),
-            Cost: parseFloat(r.cost || 0),
+            Price: Math.max(0, Number(r.remainingDues ?? 0)),
+            OriginalPrice: Math.max(0, Number(r.remainingDues ?? 0)),
+            Cost: Math.max(0, Number(r.partCost ?? 0)),
             quantity: 1,
             ReferenceId: r.id,
             RepairId: r.id,
@@ -3826,7 +4213,7 @@
         $toast[0].addEventListener('hidden.bs.toast', function() { $toast.remove(); });
     }
     function posDeleteRepair(id, btn) {
-        if (!confirm('Delete this repair? This cannot be undone.')) return;
+        if (!confirm('Move this repair to Repair Trash? Any parts used on this job will be returned to inventory.')) return;
         $(btn).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
         $.ajax({
             url: _repairDeleteUrl,

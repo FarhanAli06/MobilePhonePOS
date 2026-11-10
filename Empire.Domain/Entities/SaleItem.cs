@@ -45,6 +45,14 @@ public class SaleItem : AuditableEntity
     [MaxLength(1000)]
     public string? Note { get; set; }
 
+    /// <summary>
+    /// Operational status for a custom quick-sale item (for example In Stock,
+    /// Special Order, Backordered, or Delivered). Regular inventory items keep
+    /// their availability in InventoryItem and use the default value here.
+    /// </summary>
+    [MaxLength(50)]
+    public string ItemStatus { get; set; } = "In Stock";
+
     public bool IsCustomItem { get; set; } = false;
     public bool IsTaxable { get; set; } = true;
 

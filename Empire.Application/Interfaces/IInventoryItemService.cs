@@ -9,4 +9,7 @@ public interface IInventoryItemService
     Task<bool> DeleteInventoryItemAsync(int id, int shopId);
     Task<string> GenerateSkuAsync(int brandId, int deviceCategoryId, int deviceModelId);
     Task<bool> SkuExistsAsync(string sku, int shopId, int? excludeItemId = null);
+    Task<InventoryBatchDto> ReceiveBatchAsync(int id, ReceiveInventoryBatchRequest request, int shopId);
+    Task<IReadOnlyList<InventoryBatchDto>> GetBatchesAsync(int id, int shopId);
+    Task<int> ResetStockAsync(int shopId);
 }

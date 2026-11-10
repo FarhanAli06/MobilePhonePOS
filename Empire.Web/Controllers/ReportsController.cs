@@ -13,7 +13,6 @@ using Empire.Web.Services.Helper;
 using Empire.Web.DTOs.Common;
 using Empire.Web.DTOs.Reports;
 using Empire.Web.DTOs.Lookup;
-using Empire.Web.DTOs.Sale;
 namespace Empire.Web.Controllers;
 
 public class ReportsController : BaseController
@@ -152,15 +151,21 @@ public class ReportsController : BaseController
                 category = item.Category,
                 quantity = item.Quantity,
                 revenue = item.Revenue,
+                collected = item.Collected,
+                balance = item.Balance,
                 cost = item.Cost,
                 profit = item.Profit,
                 margin = item.Margin,
-                paymentStatus = item.PaymentStatus
+                paymentStatus = item.PaymentStatus,
+                paymentMethod = item.PaymentMethod,
+                source = item.Source
             });
 
             var summary = new
             {
                 totalRevenue = report.Summary.TotalRevenue,
+                totalCollected = report.Summary.TotalCollected,
+                outstandingBalance = report.Summary.OutstandingBalance,
                 totalCost = report.Summary.TotalCost,
                 totalProfit = report.Summary.TotalProfit,
                 profitMargin = report.Summary.ProfitMargin,
@@ -369,8 +374,6 @@ public class ReportsController : BaseController
                     paymentMethods = s.Payments != null
                         ? string.Join(", ", s.Payments.Select(p => p.PaymentMethod).Distinct())
                         : s.PaymentMethod,
-                    totalPaid      = s.Payments != null ? s.Payments.Sum(p => p.Amount) : 0m,
-                    balance        = Math.Max(0m, s.TotalAmount - (s.Payments != null ? s.Payments.Sum(p => p.Amount) : 0m)),
                     cashier        = ""  // not tracked on SaleDto
                 })
             };
@@ -561,72 +564,6 @@ public class ReportsController : BaseController
             _logger.LogError(ex, "Error loading repair report page");
             TempData["Error"] = "Error loading repair report: " + ex.Message;
             return RedirectToAction("Dashboard", "Home");
-        }
-    }
-
-    // ── Sale Payment Management (called from SalesReport page) ───────────────────────────
-
-    [HttpGet]
-    public async Task<IActionResult> GetSaleDetail(int id)
-    {
-        try
-        {
-            var detail = await _salesApi.GetSaleDetailAsync(id);
-            if (detail == null)
-                return Json(new { success = false, message = "Sale not found" });
-            return Json(new { success = true, data = detail });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error getting sale detail {Id}", id);
-            return Json(new { success = false, message = ex.Message });
-        }
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> AddSalePayment([FromBody] AddSalePaymentWebRequest request)
-    {
-        try
-        {
-            var result = await _salesApi.AddSalePaymentAsync(request.SaleId, request.PaymentMethod, request.Amount, request.TransactionId);
-            if (result == null)
-                return Json(new { success = false, message = "Failed to add payment" });
-            return Json(new { success = true, data = result });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error adding payment to sale {SaleId}", request.SaleId);
-            return Json(new { success = false, message = ex.Message });
-        }
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> UpdateSalePayment([FromBody] UpdateSalePaymentWebRequest request)
-    {
-        try
-        {
-            var ok = await _salesApi.UpdateSalePaymentAsync(request.PaymentId, request.PaymentMethod, request.Amount, request.TransactionId);
-            return Json(new { success = ok });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error updating sale payment {PaymentId}", request.PaymentId);
-            return Json(new { success = false, message = ex.Message });
-        }
-    }
-
-    [HttpPost]
-    public async Task<IActionResult> DeleteSalePayment(int paymentId)
-    {
-        try
-        {
-            var ok = await _salesApi.DeleteSalePaymentAsync(paymentId);
-            return Json(new { success = ok });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error deleting sale payment {PaymentId}", paymentId);
-            return Json(new { success = false, message = ex.Message });
         }
     }
 }

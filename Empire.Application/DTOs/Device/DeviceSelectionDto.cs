@@ -18,6 +18,8 @@ public class DeviceSelectionDto
     public DeviceType DeviceType { get; set; }
     public string IMEISerialNumber { get; set; } = string.Empty;
     public string? GB { get; set; }
+    public string Color { get; set; } = string.Empty;
+    public string Carrier { get; set; } = string.Empty;
     public int? BatteryHealthPercentage { get; set; }
     public int? CompanyId { get; set; }
     public string NetworkStatus { get; set; } = string.Empty;
@@ -29,6 +31,7 @@ public class DeviceSelectionDto
     public string Notes { get; set; } = string.Empty;
     public bool IsAvailableForSale { get; set; }
     public bool IsSold { get; set; }
+    public string LifecycleStatus { get; set; } = "Available";
     public DateTime? SoldDate { get; set; }
     public int? SoldToCustomerId { get; set; }
     public string SoldToCustomerName { get; set; } = string.Empty;
@@ -38,6 +41,6 @@ public class DeviceSelectionDto
     
     public string DisplayName => $"{Brand} {Model} {(Year.HasValue ? $"({Year})" : "")}".Trim();
     public string StatusDisplay => IsSold ? "Sold" : (IsAvailableForSale ? "Available" : "Not for Sale");
-    public string ConditionSummary => $"Battery: {BatteryHealthPercentage ?? 0}%, Scratches: {ScratchesCondition}, Network: {NetworkStatus}";
+    public string ConditionSummary => $"Battery: {BatteryHealthPercentage ?? 0}%, Color: {Color}, Carrier: {Carrier}, Network: {NetworkStatus}";
 }
 

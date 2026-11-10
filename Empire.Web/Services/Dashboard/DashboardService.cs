@@ -47,14 +47,27 @@ public class DashboardService : IDashboardService
             var repairsTask = _repairService.GetRepairsAsync(shopId);
             var inventoryTask = _inventoryService.GetInventoryAsync(shopId);
             var lowStockTask = _inventoryService.GetLowStockItemsAsync(shopId);
-            var statisticsTask = GetDashboardStatisticsAsync(shopId);
+            var readyWaitingPartsTask = _repairService.GetReadyWaitingPartsAsync();
+            var today = DateTime.UtcNow.Date;
+            var dailySalesTask = _homeService.GetDailySalesAsync(shopId, today);
+            var dailyProfitTask = _homeService.GetDailyProfitAsync(shopId, today);
 
-            await Task.WhenAll(repairsTask, inventoryTask, lowStockTask, statisticsTask);
+            await Task.WhenAll(repairsTask, inventoryTask, lowStockTask, readyWaitingPartsTask, dailySalesTask, dailyProfitTask);
 
             var repairs = await repairsTask;
             var inventory = await inventoryTask;
             var lowStockItems = await lowStockTask;
-            var statistics = await statisticsTask;
+            var readyWaitingParts = await readyWaitingPartsTask;
+            var statistics = new DashboardStatisticsDto
+            {
+                TotalRepairs = repairs.Count(),
+                InProgressRepairs = _helperService.CountByStatus(repairs, InProgressStatuses, r => r.Status),
+                CompletedRepairs = _helperService.CountByStatus(repairs, CompletedStatuses, r => r.Status),
+                TotalInventoryValue = _helperService.CalculateInventoryValue(inventory, i => i.CurrentStock, i => i.RetailPrice),
+                LowStockItemsCount = lowStockItems.Count(),
+                DailySales = await dailySalesTask,
+                DailyProfit = await dailyProfitTask
+            };
 
             // Debug logging
             _logger.LogInformation("Dashboard - Total Repairs: {Count}", repairs.Count());
@@ -74,7 +87,8 @@ public class DashboardService : IDashboardService
                 DailySales = statistics.DailySales,
                 DailyProfit = statistics.DailyProfit,
                 RecentRepairs = repairs.OrderByDescending(r => r.CreatedDate).Take(5).ToList(),
-                LowStockItems = lowStockItems.Take(5).ToList()
+                LowStockItems = lowStockItems.Take(5).ToList(),
+                ReadyWaitingParts = readyWaitingParts.ToList()
             };
 
             _logger.LogInformation("Dashboard data loaded successfully for shop {ShopId}", shopId);
@@ -143,7 +157,24 @@ public class DashboardService : IDashboardService
             
             if (!userShops.Any())
             {
-                _logger.LogWarning("User {UserId} has no shops", userId);
+                // An established session already carrying a shop ID must not be
+                // treated as a brand-new account when the API call fails (for
+                // example, because its JWT expired). Send it through login so a
+                // temporary authentication failure never opens Create Shop.
+                if (currentShopId > 0)
+                {
+                    _logger.LogWarning(
+                        "Shop lookup returned no data for user {UserId} with existing shop {ShopId}",
+                        userId, currentShopId);
+                    return new ShopValidationResult
+                    {
+                        IsValid = false,
+                        NeedsShopCreation = false,
+                        ErrorMessage = "Your session expired. Please sign in again."
+                    };
+                }
+
+                _logger.LogWarning("New user {UserId} has no shops", userId);
                 return new ShopValidationResult
                 {
                     IsValid = false,

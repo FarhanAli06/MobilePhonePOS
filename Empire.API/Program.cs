@@ -5,6 +5,7 @@ using Microsoft.OpenApi.Models;
 using System.Text;
 using Empire.Infrastructure.Data;
 using Empire.Infrastructure.Extensions;
+using Empire.API.Services;
 using Empire.Domain.Interfaces;
 using Empire.Infrastructure.Repositories;
 using Empire.Application.Interfaces;
@@ -15,13 +16,24 @@ using Empire.API.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// The desktop POS runs as a normal Windows user. The default Windows Event Log
+// provider can require elevated access and previously caused startup to abort
+// while reporting an otherwise harmless EF warning. Console/debug logging keeps
+// diagnostics available without that protected system dependency.
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+builder.Services.AddSingleton<DatabaseBackupState>();
+builder.Services.AddHostedService<DatabaseBackupService>();
+
 // Add services to the container
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         // Use camelCase to match the Web client (BaseApiService serializes with CamelCase)
         options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
-        options.JsonSerializerOptions.WriteIndented = true;
+        // Compact JSON reduces payload size and parsing work throughout the POS.
+        options.JsonSerializerOptions.WriteIndented = false;
         // Accept both string ("Unpaid") and integer (1) enum values from Web clients
         options.JsonSerializerOptions.Converters.Add(
             new System.Text.Json.Serialization.JsonStringEnumConverter(
@@ -154,27 +166,16 @@ builder.Services.AddAuthentication(options =>
 
 builder.Services.AddAuthorization();
 
-// Configure CORS
-// AllowedOrigins is read from appsettings.json so production deployments only need
-// to update the config file, not recompile. Localhost is always allowed for development.
-var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
-    ?? Array.Empty<string>();
-
+//// Configure CORS
 //builder.Services.AddCors(options =>
 //{
 //    options.AddPolicy("AllowWeb", policy =>
 //    {
 //        policy.SetIsOriginAllowed(origin =>
 //            {
-//                Always allow localhost(any port) for development
-//               var uri = new Uri(origin);
-//                if (uri.Host == "localhost" || uri.Host == "127.0.0.1")
-//                        return true;
-
-//                Allow any origin explicitly listed in appsettings.json AllowedOrigins
-//                return allowedOrigins.Any(allowed =>
-//                    string.Equals(allowed.TrimEnd('/'), origin.TrimEnd('/'),
-//                        StringComparison.OrdinalIgnoreCase));
+//                // Allow any localhost origin regardless of port
+//                var uri = new Uri(origin);
+//                return uri.Host == "localhost" || uri.Host == "127.0.0.1";
 //            })
 //            .AllowAnyMethod()
 //            .AllowAnyHeader()
@@ -187,27 +188,26 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()
-              .AllowAnyMethod()
-              .AllowAnyHeader();
+        policy.AllowAnyOrigin()   // Allows all domains
+              .AllowAnyMethod()   // Allows GET, POST, PUT, DELETE, etc.
+              .AllowAnyHeader();  // Allows all request headers
     });
 });
-
-
 // Add health checks
 builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
-// Swagger is enabled in all environments so the deployed API can be browsed.
-// The JWT middleware already whitelists /swagger/* paths so no auth is needed.
-app.UseSwagger();
-app.UseSwaggerUI(options =>
+if (app.Environment.IsDevelopment())
 {
-    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Empire POS API v1");
-    options.RoutePrefix = string.Empty; // Serve Swagger UI at root /
-});
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Empire POS API v1");
+        options.RoutePrefix = string.Empty; // Serve Swagger at root
+    });
+}
 
 // Note: UseHttpsRedirection is intentionally omitted.
 // The API is configured to listen on HTTP in development (http://localhost:5002).

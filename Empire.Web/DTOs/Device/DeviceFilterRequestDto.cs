@@ -4,6 +4,8 @@
     {
         public int ShopId { get; set; }
         public string? SearchTerm { get; set; }
+        public string? Brand { get; set; }
+        public string? Model { get; set; }
         public bool? IsAvailableForSale { get; set; }
         public bool? IsSold { get; set; }
     }

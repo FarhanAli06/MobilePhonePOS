@@ -58,7 +58,8 @@
 
 .eds-brand-card {
     background: #fff;
-    padding: 14px 10px;
+    min-height: 96px;
+    padding: 12px 10px;
     border-radius: 10px;
     text-align: center;
     cursor: pointer;
@@ -75,23 +76,16 @@
     background: rgba(33,150,243,0.05);
 }
 
-.eds-brand-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
+.eds-brand-logo {
+    min-height: 68px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto 10px;
-    color: #fff;
-    font-size: 22px;
-}
-
-.eds-brand-name {
+    color: #1a1a1a;
     font-weight: 600;
     font-size: 13px;
-    color: #1a1a1a;
 }
+.eds-brand-logo .manufacturer-logo { display:block; width:auto; height:52px; max-width:145px; object-fit:contain; }
 
 /* ── Category grid ────────────────────────────────────────────────────────── */
 .eds-category-grid {
@@ -104,12 +98,18 @@
 .eds-category-card {
     background: #fff;
     padding: 18px 12px;
+    min-height: 104px;
     border-radius: 10px;
     text-align: center;
     cursor: pointer;
     border: 2px solid transparent;
     transition: all 0.25s;
     box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
 }
 .eds-category-card:hover {
     transform: translateY(-3px);
@@ -124,12 +124,20 @@
     font-size: 30px;
     margin-bottom: 8px;
     color: #2196f3;
+    line-height: 1;
+    flex: 0 0 auto;
 }
 
 .eds-category-name {
     font-weight: 600;
     font-size: 13px;
     color: #1a1a1a;
+    line-height: 1.25;
+    width: 100%;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: normal;
 }
 
 /* ── Model grid ───────────────────────────────────────────────────────────── */
@@ -149,6 +157,8 @@
     border: 2px solid transparent;
     transition: all 0.25s;
     box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    min-height: 96px;
+    overflow: hidden;
 }
 .eds-model-card:hover {
     transform: translateY(-3px);
@@ -168,14 +178,17 @@
     font-weight: 600;
     font-size: 12px;
     color: #1a1a1a;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+    word-break: normal;
 }
 
 /* ── Parts grid ───────────────────────────────────────────────────────────── */
 .eds-parts-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 16px;
-    margin-bottom: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(245px, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
 }
 
 .eds-part-card {
@@ -196,9 +209,32 @@
     background: rgba(76,175,80,0.06);
 }
 
-.eds-part-icon  { font-size: 28px; margin-bottom: 8px; }
+.eds-brand-card[draggable="true"],
+.eds-category-card[draggable="true"],
+.eds-model-card[draggable="true"],
+.eds-part-card[draggable="true"] { cursor: grab; }
+.eds-dragging { opacity: .48; transform: scale(.98); }
+.eds-part-color { display:flex; align-items:center; gap:6px; margin-top:4px; font-size:12px; color:#5f6368; }
+.eds-color-dot { width:12px; height:12px; border:1px solid #aeb4ba; border-radius:50%; box-shadow:inset 0 0 0 1px rgba(255,255,255,.55); }
+
+.eds-repair-card { display:flex; align-items:center; gap:14px; min-height:116px; padding:16px; }
+.eds-repair-card .eds-part-icon { width:48px; height:64px; flex:0 0 48px; display:flex; align-items:center; justify-content:center; font-size:38px; margin:0; }
+.eds-repair-card-body { flex:1; min-width:0; }
 .eds-part-name  { font-weight: 600; font-size: 13px; margin-bottom: 4px; color: #1a1a1a; }
-.eds-part-price { font-size: 14px; font-weight: 700; color: #2196f3; margin-bottom: 4px; }
+.eds-repair-price-label { display:flex; align-items:center; gap:5px; font-size:12px; color:#687386; margin:6px 0; cursor:text; }
+.eds-repair-price-input { width:100%; min-width:0; height:34px; padding:5px 8px; border:1px solid #ccd5e2; border-radius:7px; font-size:14px; background:#fff; }
+.eds-repair-price-input:focus { outline:none; border-color:#2196f3; box-shadow:0 0 0 2px rgba(33,150,243,.12); }
+
+.eds-screen-card { align-items:flex-start; }
+.eds-screen-options { display:flex; flex-wrap:wrap; gap:6px; margin:8px 0; }
+.eds-screen-option { display:flex; align-items:center; flex-wrap:wrap; gap:5px; padding:7px 10px; border:1px solid #ccd5e2; border-radius:8px; background:#fff; color:#233044; cursor:pointer; font-size:12px; font-weight:600; }
+.eds-screen-dot { width:12px; height:12px; flex:0 0 12px; border:2px solid #8995a7; border-radius:50%; background:#fff; }
+.eds-screen-option.selected .eds-screen-dot { border-color:#2196f3; background:#2196f3; box-shadow:inset 0 0 0 2px #fff; }
+.eds-screen-option small { color:#687386; font-size:10px; font-weight:500; }
+.eds-screen-option:hover:not(:disabled) { border-color:#2196f3; background:#f3f9ff; }
+.eds-screen-option.selected { border-color:#2196f3; background:#eaf4ff; box-shadow:inset 0 0 0 1px #2196f3; }
+.eds-screen-option:disabled { opacity:.5; cursor:not-allowed; }
+.eds-screen-stock-note { font-size:11px; color:#a26300; margin:4px 0 7px; }
 
 .eds-part-stock { font-size: 11px; font-weight: 600; }
 .eds-part-stock.in-stock  { color: #4caf50; }
@@ -231,6 +267,12 @@
 .eds-banner-brand { font-size: 18px; font-weight: 700; }
 .eds-banner-model { font-size: 13px; opacity: 0.85; }
 
+.eds-add-service-btn { width:100%; margin:-6px 0 12px; padding:10px 14px; border:1px dashed #2196f3; border-radius:10px; background:#f8fbff; color:#1976d2; font-size:13px; font-weight:600; cursor:pointer; }
+.eds-add-service-btn:hover { background:#eaf3ff; }
+.eds-create-lookup-btn { width:100%; margin:14px 0 2px; padding:11px 16px; border:1px dashed #2563eb; border-radius:12px; background:#f8fbff; color:#1d4ed8; font-size:14px; font-weight:750; cursor:pointer; transition:background .15s ease,border-color .15s ease,transform .15s ease; }
+.eds-create-lookup-btn:hover { background:#eaf2ff; border-color:#1d4ed8; transform:translateY(-1px); }
+.eds-create-lookup-btn i { margin-right:7px; }
+
 /* ── Breadcrumb ───────────────────────────────────────────────────────────── */
 .eds-breadcrumb {
     display: flex;
@@ -247,6 +289,7 @@
     font-weight: 600;
     color: #2196f3;
 }
+.eds-crumb .manufacturer-logo { max-width:18px; max-height:18px; vertical-align:middle; }
 
 .eds-crumb-sep { color: #aaa; font-size: 10px; }
 

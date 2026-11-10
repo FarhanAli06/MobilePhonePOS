@@ -7,6 +7,8 @@ public class CreateInventoryItemRequestDto
     public int? CategoryId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string SKU { get; set; } = string.Empty;
+    public string Variant { get; set; } = string.Empty;
+    public string Color { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
     public int? BrandId { get; set; }
     public int? DeviceCategoryId { get; set; }

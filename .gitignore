@@ -1,0 +1,115 @@
+# Visual Studio and user-specific files
+.vs/
+.vscode/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+# .NET build output
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+artifacts/
+TestResults/
+BenchmarkDotNet.Artifacts/
+
+# Compiled binaries and debugging symbols
+*.exe
+*.dll
+*.pdb
+*.ilk
+*.exp
+*.lib
+*.apphost
+*.deps.json
+*.runtimeconfig.json
+*.runtimeconfig.dev.json
+
+# NuGet packages and generated package files
+packages/
+.nuget/
+*.nupkg
+*.snupkg
+*.nuget.props
+*.nuget.targets
+
+# Local and sensitive configuration
+.env
+.env.*
+!.env.example
+appsettings.json
+appsettings.Local.json
+appsettings.*.Local.json
+appsettings.Development.local.json
+appsettings.Production.json
+secrets.json
+*.secrets.json
+.runtime-keys/
+
+# ASP.NET development certificates and signing keys
+*.pfx
+*.p12
+*.key
+*.pem
+*.cer
+.aspnet/
+
+# Databases, backups, and customer data
+*.mdf
+*.ldf
+*.ndf
+*.bak
+*.bacpac
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+/Data/
+/DatabaseBackups/
+
+# Runtime files
+/Logs/
+/logs/
+/Backups/
+/backups/
+*.log
+*.pid
+*.tmp
+*.temp
+
+# Published/deployed application output
+publish/
+Published/
+Deployment/
+deployment/
+dist/
+out/
+wwwroot/uploads/
+
+# Code coverage and test output
+coverage/
+coverage.*
+*.coverage
+*.coveragexml
+*.trx
+
+# Operating-system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Archive files should be distributed separately, not committed as source
+*.zip
+*.7z
+*.rar
+
+# Keep safe templates and documentation
+!appsettings.example.json
+!README.md

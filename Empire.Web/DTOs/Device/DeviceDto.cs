@@ -11,6 +11,8 @@ public class DeviceDto
     public decimal SellingPrice { get; set; }
     public string Status { get; set; } = string.Empty;
     public string? NetworkStatus { get; set; }
+    public string? Color { get; set; }
+    public string? Carrier { get; set; }
     public int? ShopId { get; set; }
     public string? ShopName { get; set; }
     public DateTime CreatedDate { get; set; }

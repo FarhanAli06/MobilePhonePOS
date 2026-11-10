@@ -25,6 +25,8 @@ public class CreateRepairRequest
     
     [Required]
     public decimal Cost { get; set; }
+
+    public decimal PartCost { get; set; } = 0m;
     
     public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Unpaid; // New field
     

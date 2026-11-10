@@ -4,6 +4,8 @@ using Empire.Web.DTOs.Device;
 using Empire.Web.Authorization;
 using Empire.Web.Services;
 using Empire.Web.Services.Device;
+using Empire.Web.Services.POS;
+using Empire.Web.DTOs.Pos;
 
 namespace Empire.Web.Controllers;
 
@@ -12,15 +14,18 @@ public class DevicesController : BaseController
 {
     private readonly IDeviceApiService _deviceApiService;
     private readonly IMapper _mapper;
+    private readonly IPOSApiService _posApiService;
 
     public DevicesController(
         IDeviceApiService deviceApiService, 
+        IPOSApiService posApiService,
         IMapper mapper,
         ITimezoneService timezoneService, 
         ILogger<DevicesController> logger)
         : base(logger, timezoneService)
     {
         _deviceApiService = deviceApiService;
+        _posApiService = posApiService;
         _mapper = mapper;
     }
 
@@ -35,7 +40,11 @@ public class DevicesController : BaseController
                 return RedirectToAction("Index", "Shop");
             }
 
-            var devices = await _deviceApiService.GetByShopAsync(currentShopId);
+            var allDevices = await _deviceApiService.GetByShopAsync(currentShopId);
+            var devices = allDevices?
+                .Where(device => !device.IsSold)
+                .OrderByDescending(device => device.CreatedDate)
+                .ToList();
 
             // Convert dates to user timezone
             if (devices != null)
@@ -136,6 +145,13 @@ public class DevicesController : BaseController
             _logger.LogError(ex, "Error getting device details");
             return Json(new { success = false, message = ex.Message });
         }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GetHistory(int id)
+    {
+        try { return Json(new { success = true, data = await _deviceApiService.GetHistoryAsync(id) }); }
+        catch (Exception ex) { _logger.LogError(ex, "Error getting device history"); return Json(new { success = false, message = ex.Message }); }
     }
 
     [HttpGet]
@@ -295,15 +311,61 @@ public class DevicesController : BaseController
                 return Json(new { success = false, message = "Access denied" });
             }
 
-            // Use service layer method to mark as sold
-            var updatedDevice = await _deviceApiService.MarkAsSoldAsync(
-                id,
-                request.CustomerId,
-                request.SalePrice ?? device.SellingPrice ?? 0m);
+            if (device.IsSold || !device.IsAvailableForSale)
+                return Json(new { success = false, message = "This device is no longer available for sale" });
 
-            if (updatedDevice != null)
+            // Create a real POS sale. POSService updates the exact device to Sold
+            // in the same transaction, so the sale report and device status can
+            // never drift apart.
+            var salePrice = request.SalePrice ?? device.SellingPrice ?? 0m;
+            var itemName = string.Join(" ", new[] { device.Brand, device.Model }
+                .Where(value => !string.IsNullOrWhiteSpace(value)));
+            var sale = await _posApiService.CreateSaleAsync(new POSCreateSaleRequestDto
             {
-                return Json(new { success = true, message = "Device marked as sold successfully" });
+                ShopId = currentShopId,
+                CustomerId = request.CustomerId,
+                SubTotal = salePrice,
+                TotalAmount = salePrice,
+                TaxAmount = 0,
+                DiscountAmount = 0,
+                PaymentStatus = "Paid",
+                CreatedByUserId = GetCurrentUserId(),
+                Items = new List<POSSaleItemRequestDto>
+                {
+                    new()
+                    {
+                        ItemType = "Device",
+                        ItemReferenceId = id,
+                        ItemName = string.IsNullOrWhiteSpace(itemName) ? "Device" : itemName,
+                        Description = string.Join(" | ", new[]
+                        {
+                            device.GB,
+                            device.Color,
+                            device.Carrier,
+                            string.IsNullOrWhiteSpace(device.IMEISerialNumber) ? null : $"IMEI: {device.IMEISerialNumber}"
+                        }.Where(value => !string.IsNullOrWhiteSpace(value))),
+                        Quantity = 1,
+                        UnitPrice = salePrice,
+                        TotalPrice = salePrice,
+                        Cost = device.BuyingPrice ?? 0m,
+                        IsTaxable = false,
+                        IsCustomItem = false,
+                        ItemStatus = "Sold"
+                    }
+                },
+                Payments = new List<POSPaymentRequestDto>
+                {
+                    new()
+                    {
+                        Amount = salePrice,
+                        PaymentMethod = string.IsNullOrWhiteSpace(request.PaymentMethod) ? "Cash" : request.PaymentMethod.Trim()
+                    }
+                }
+            });
+
+            if (sale != null && (sale.Id > 0 || sale.SaleId > 0))
+            {
+                return Json(new { success = true, message = "Device sale completed and added to Sales", saleId = sale.Id > 0 ? sale.Id : sale.SaleId });
             }
             else
             {
@@ -346,7 +408,10 @@ public class DevicesController : BaseController
             var allDevices = await _deviceApiService.GetByShopAsync(currentShopId);
 
             // Filter for sold devices
-            var devices = allDevices?.Where(d => d.IsSold).ToList();
+            var devices = allDevices?
+                .Where(d => d.IsSold)
+                .OrderByDescending(d => d.SoldDate ?? d.ModifiedDate ?? d.CreatedDate)
+                .ToList();
 
             return Json(new { success = true, devices = devices ?? new List<DeviceSelectionDto>() });
         }
@@ -407,6 +472,13 @@ public class DevicesController : BaseController
             // Get all devices for the shop
             var devices = await _deviceApiService.GetByShopAsync(currentShopId);
 
+            // Keep sold devices out of active inventory unless the Sold Devices
+            // backlog was explicitly requested.
+            if (devices != null && filter?.IsSold != true)
+            {
+                devices = devices.Where(d => !d.IsSold).ToList();
+            }
+
             // Apply client-side filtering if filter is provided
             if (filter != null && devices != null)
             {
@@ -415,9 +487,17 @@ public class DevicesController : BaseController
                     devices = devices.Where(d =>
                         (d.Brand != null && d.Brand.Contains(filter.SearchTerm, StringComparison.OrdinalIgnoreCase)) ||
                         (d.Model != null && d.Model.Contains(filter.SearchTerm, StringComparison.OrdinalIgnoreCase)) ||
-                        (d.IMEISerialNumber != null && d.IMEISerialNumber.Contains(filter.SearchTerm, StringComparison.OrdinalIgnoreCase))
+                        (d.IMEISerialNumber != null && d.IMEISerialNumber.Contains(filter.SearchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                        (d.Color != null && d.Color.Contains(filter.SearchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                        (d.Carrier != null && d.Carrier.Contains(filter.SearchTerm, StringComparison.OrdinalIgnoreCase)) ||
+                        (d.Notes != null && d.Notes.Contains(filter.SearchTerm, StringComparison.OrdinalIgnoreCase))
                     ).ToList();
                 }
+
+                if (!string.IsNullOrWhiteSpace(filter.Brand))
+                    devices = devices.Where(d => string.Equals(d.Brand, filter.Brand, StringComparison.OrdinalIgnoreCase)).ToList();
+                if (!string.IsNullOrWhiteSpace(filter.Model))
+                    devices = devices.Where(d => d.Model != null && d.Model.Contains(filter.Model, StringComparison.OrdinalIgnoreCase)).ToList();
 
                 if (filter.IsAvailableForSale.HasValue)
                 {

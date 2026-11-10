@@ -22,5 +22,6 @@ public class DashboardViewModel
     // Recent data
     public IEnumerable<RepairDto> RecentRepairs { get; set; } = new List<RepairDto>();
     public IEnumerable<InventoryItemDto> LowStockItems { get; set; } = new List<InventoryItemDto>();
+    public IEnumerable<WaitingPartAlertDto> ReadyWaitingParts { get; set; } = new List<WaitingPartAlertDto>();
 }
 

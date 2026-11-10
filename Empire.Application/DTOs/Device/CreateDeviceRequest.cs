@@ -21,6 +21,12 @@ public class CreateDeviceRequest
     
     [MaxLength(20)]
     public string? GB { get; set; }
+
+    [MaxLength(50)]
+    public string Color { get; set; } = string.Empty;
+
+    [MaxLength(100)]
+    public string Carrier { get; set; } = string.Empty;
     
     [Range(0, 100)]
     public int? BatteryHealthPercentage { get; set; }

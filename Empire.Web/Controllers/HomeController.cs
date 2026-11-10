@@ -8,6 +8,7 @@ using Empire.Web.Services;
 using Empire.Web.Services.Session;
 using Empire.Web.Services.PagePermission;
 using Empire.Web.Constants;
+using Empire.Web.Services.Http;
 
 namespace Empire.Web.Controllers;
 
@@ -19,6 +20,7 @@ public class HomeController : BaseController
     private readonly ISessionHelper _sessionHelper;
     private readonly IPagePermissionApiService _pagePermissionService;
     private readonly ILogger<HomeController> _logger;
+    private readonly IHttpClientService _httpClientService;
 
     public HomeController(
         IAuthApiService authService,
@@ -26,6 +28,7 @@ public class HomeController : BaseController
         ITokenStorageService tokenStorageService,
         ISessionHelper sessionHelper,
         IPagePermissionApiService pagePermissionService,
+        IHttpClientService httpClientService,
         ILogger<HomeController> logger,
         ITimezoneService timezoneService) : base(logger, timezoneService)
     {
@@ -34,7 +37,24 @@ public class HomeController : BaseController
         _tokenStorageService = tokenStorageService;
         _sessionHelper = sessionHelper;
         _pagePermissionService = pagePermissionService;
+        _httpClientService = httpClientService;
         _logger = logger;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> BackupStatus()
+    {
+        if (!_sessionHelper.IsAuthenticated()) return Unauthorized();
+        try
+        {
+            var status = await _httpClientService.GetAsync<System.Text.Json.JsonElement>("/api/backup/status");
+            return Json(new { success = true, data = status });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Could not read automatic backup status");
+            return Json(new { success = false, message = "Backup status unavailable" });
+        }
     }
 
     public IActionResult Index()
@@ -149,6 +169,12 @@ public class HomeController : BaseController
                 ModelState.AddModelError("", "Invalid username or password");
                 return View(model);
             }
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "Empire data service unavailable during login for user {Username}", model.Username);
+            ModelState.AddModelError("", "Empire Solution is still starting. Close and reopen Empire Solution, then try again.");
+            return View(model);
         }
         catch (Exception ex)
         {

@@ -13,9 +13,8 @@
 (function(window) {
     'use strict';
 
-    // Get API base URL from configuration (injected by _Layout.cshtml from appsettings.json)
-    // window.API_BASE_URL is set by _Layout.cshtml: ApiSettings:BaseUrl + '/api'
-    const API_BASE_URL = window.API_BASE_URL || '';
+    // Get API base URL from configuration or default
+    const API_BASE_URL = window.API_BASE_URL || 'https://localhost:7001/api';
     // Web-side base URL for session-based endpoints (no JWT required from browser JS)
     const WEB_BASE_URL = window.WEB_BASE_URL || window.location.origin;
     

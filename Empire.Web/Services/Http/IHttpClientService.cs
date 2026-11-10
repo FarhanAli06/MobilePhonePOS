@@ -40,4 +40,5 @@ public interface IHttpClientService
     /// Send POST request and return raw response
     /// </summary>
     Task<HttpResponseMessage> PostRawAsync<TRequest>(string endpoint, TRequest data);
+    Task<HttpResponseMessage> PutRawAsync<TRequest>(string endpoint, TRequest data);
 }
